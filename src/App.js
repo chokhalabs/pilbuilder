@@ -1,7 +1,9 @@
+import { useRef, useState } from "react";
 import './App.css';
-import { useState } from "react";
+import { AppBase } from "./pilBase";
 
 function App() {
+  const canvas = useRef(null);
   const [pil, setPil] = useState({
     "Item": {
       "id": "myButton_Symbol",
@@ -173,6 +175,15 @@ function App() {
     </div>
   );
 
+  function render() {
+    debugger
+    let app = new AppBase();
+    app.item = pil.Item;
+    app.mount(canvas.current).then(() => {
+      app.paint();
+    })
+  }
+
   return (
     <div className="app">
       <div className="states">
@@ -180,8 +191,7 @@ function App() {
         {states}
       </div>
       <div className="canvas">
-        Canvas
-        <canvas></canvas>
+        <canvas width="1600" height="1200" ref={canvas}></canvas>
       </div>
       <div className="settings">
         Settings
@@ -190,6 +200,7 @@ function App() {
         {images}
         <div>MouseArea</div>
         {mouseArea}
+        <button onClick={render}>Render</button>
       </div>
     </div>
   );

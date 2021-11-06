@@ -10,3 +10,14 @@
   color: white;
   padding: 10px;
 }
+
+.canvas {
+  padding: 20px;
+  background: #e2e1e0;
+  overflow: auto;
+}
+
+.canvas > canvas {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+  box-sizing: border-box;
+}
