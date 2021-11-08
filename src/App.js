@@ -4,6 +4,7 @@ import { AppBase } from "./pilBase";
 
 function App() {
   const canvas = useRef(null);
+  const [zoom, setZoom] = useState(1);
   const [pil, setPil] = useState({
     "Item": {
       "id": "myButton_Symbol",
@@ -105,6 +106,10 @@ function App() {
     })
   }
 
+  function onZoomChange(ev) {
+    setZoom(ev.target.value);
+  }
+
   const states = pil.Item.states.map(it => {
     return (
       <div key={it.name}>
@@ -176,7 +181,6 @@ function App() {
   );
 
   function render() {
-    debugger
     let app = new AppBase();
     app.item = pil.Item;
     app.mount(canvas.current).then(() => {
@@ -191,7 +195,15 @@ function App() {
         {states}
       </div>
       <div className="canvas">
-        <canvas width="1600" height="1200" ref={canvas}></canvas>
+        <canvas 
+          width="1600" 
+          height="1200" 
+          ref={canvas}
+          style={{
+            transform: "scale(" + zoom + ")"
+          }}
+        >
+        </canvas>
       </div>
       <div className="settings">
         Settings
@@ -200,6 +212,14 @@ function App() {
         {images}
         <div>MouseArea</div>
         {mouseArea}
+        <input 
+          type="range" 
+          value={zoom} 
+          onChange={ev => onZoomChange(ev)} 
+          min="0.2"
+          max="1"
+          step="0.1"
+        />
         <button onClick={render}>Render</button>
       </div>
     </div>
