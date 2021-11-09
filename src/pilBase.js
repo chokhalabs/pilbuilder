@@ -1,5 +1,28 @@
+class EventManager {
+  listeners = {};
+
+  addEventListener(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  emit(event, payload) {
+    if (!this.listeners.event) {
+      console.warn("No handlers bound for the event: ", event);
+    } else {
+      this.listeners.forEach(listener => {
+        listener.call(null, payload);
+      })
+    }
+  }
+}
+
 export class AppBase {
   item = null;
+  eventBus = new EventManager();
+
   mount(canvas) {
     this.canvas = canvas;
     const context = canvas.getContext("2d");
@@ -10,42 +33,65 @@ export class AppBase {
     this.item.images = this.item.images.map(image => {
       let img = new Image();
       img.src = image.source;
+      let downloaded = new Promise((resolve, reject) => {
+        img.onload = () => { 
+          console.log("Loaded");
+          resolve();
+        };
+        img.onerror = () => { 
+          console.log("errored");
+          reject();
+        };
+        img.onabort = () => { 
+          console.log("aborted");
+          reject();
+        };
+      });
+
       return {
         ...image,
         ref: img,
-        downloaded: new Promise((resolve, reject) => {
-          image.onload = resolve;
-          image.onerror = reject;
-          image.onabort = reject;
-        })
-      }
+        downloaded 
+      };
     });
 
     if (this.item.mouseArea && this.item.mouseArea.mousedown) {
       canvas.addEventListener("mousedown", (ev) => {
-        if (ev.x <= this.item.mouseArea.width && ev.y <= this.item.mouseArea.height && this.onButtonPress) {
-          this.onButtonPress();
+        if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+          // this.onButtonPress();
+          if (this.item.mouseArea.mousedown) {
+            this.eventBus.emit("mousedown");
+          }
+
+          this.item.states.forEach(state => {
+            if (state.when === "mousedown") {
+              this.setState(state.name)
+            }
+          })
         }
       });
     }
 
     if (this.item.mouseArea && this.item.mouseArea.mouseup) {
       canvas.addEventListener("mouseup", (ev) => {
-        if (ev.x <= this.item.mouseArea.width && ev.y <= this.item.mouseArea.height && this.onButtonRelease) {
-          this.onButtonRelease();
+        if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+          // this.onButtonRelease();
+          if (this.item.mouseArea.mouseup) {
+            this.eventBus.emit("mouseup");
+          }
+
+          this.item.states.forEach(state => {
+            if (state.when === "mouseup") {
+              this.setState(state.name)
+            }
+          })
         }
       });
     }
 
     this.setState(null, true);
-    
-    return Promise.all(this.item.states.map(it => it.downloaded)).then(() => {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
-    });
+
+    return Promise.all(this.item.images.map(it => it.downloaded));
   }
 
   setState(state, nopaint) {

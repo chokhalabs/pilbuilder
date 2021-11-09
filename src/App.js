@@ -5,7 +5,7 @@ import { AppBase } from "./pilBase";
 function App() {
   const canvas = useRef(null);
   const [zoom, setZoom] = useState(1);
-  const [pil, setPil] = useState({
+  const [pil, _setPil] = useState({
     "Item": {
       "id": "myButton_Symbol",
       "width": 115,
@@ -29,6 +29,7 @@ function App() {
         }
       ],
       "mouseArea": {
+        "id": "mouseArea",
         "x": 10,
         "y": 10,
         "width": 115,
@@ -41,6 +42,7 @@ function App() {
       "states": [
         {
           "name": "normal",
+          "when": "mouseup",
           "propertyChanges": [
             {
               "target": "myButton_Symbol_normal",
@@ -54,6 +56,7 @@ function App() {
         },
         {
           "name": "pressed",
+          "when": "mousedown",
           "propertyChanges": [
             {
               "target": "myButton_Symbol_normal",
@@ -68,6 +71,11 @@ function App() {
       ]
     }
   });
+
+  const setPil = function(state) {
+    render();
+    _setPil(state);
+  }
 
   function setPilState(state) {
     
@@ -110,6 +118,26 @@ function App() {
     setZoom(ev.target.value);
   }
 
+  function setStateCondition(ev, state) {
+    const value = ev.target.value;
+    const newPil = {
+      Item: {
+        ...pil.Item,
+        states: pil.Item.states.map(item => {
+          if (item.name !== state.name) {
+            return item;
+          } else {
+            return {
+              ...item,
+              when: value
+            }
+          }
+        })
+      }
+    };
+    setPil(newPil);
+  }
+
   const states = pil.Item.states.map(it => {
     return (
       <div key={it.name}>
@@ -121,6 +149,8 @@ function App() {
           onChange={() => setPilState(it.name)}
         />
         {it.name}
+        : activates when mouseArea
+        <textarea value={it.when} onChange={ev => setStateCondition(ev, it)}></textarea>
       </div>
     );
   });
@@ -170,10 +200,10 @@ function App() {
         />
           Show Boundingbox
         </div>
-      <div>OnPress 
+      <div>OnMousedown 
         <div>
-          <input type="radio" />
-          External handler
+          <input type="radio" name="mousedown" />
+          Emit event
           <input type="text" />
         </div>
       </div>
@@ -181,10 +211,12 @@ function App() {
   );
 
   function render() {
-    let app = new AppBase();
-    app.item = pil.Item;
-    app.mount(canvas.current).then(() => {
-      app.paint();
+    setTimeout(() => {
+      let app = new AppBase();
+      app.item = pil.Item;
+      app.mount(canvas.current).then(() => {
+        app.paint();
+      })
     })
   }
 
