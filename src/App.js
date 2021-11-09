@@ -216,7 +216,7 @@ function App() {
       app.item = pil.Item;
       app.mount(canvas.current).then(() => {
         app.paint();
-      })
+      }) 
     })
   }
 
