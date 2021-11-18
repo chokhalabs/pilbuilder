@@ -4,6 +4,7 @@ import { AppBase } from "./pilBase";
 
 function App() {
   const canvas = useRef(null);
+  const filePicker = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [pil, _setPil] = useState({
     "Item": {
@@ -160,7 +161,7 @@ function App() {
       <div key={it.source}>
         <img src={it.source}></img>
         <label>visible
-          <input type="checkbox" checked={it.visible}></input>
+          <input type="checkbox" checked={it.visible} readOnly></input>
         </label>
       </div>
     );
@@ -169,9 +170,9 @@ function App() {
   const settings = (
     <div>
       <div>Width</div>
-      <input type="number" value={pil.Item.width}/>
+      <input type="number" value={pil.Item.width} readOnly/>
       <div>Height</div>
-      <input type="number" value={pil.Item.height}/>
+      <input type="number" value={pil.Item.height} readOnly/>
       <div>
         <input type="checkbox" 
           checked={pil.Item.draw} 
@@ -185,13 +186,13 @@ function App() {
   const mouseArea = (
     <div>
       <div>X</div>
-      <input type="number" value={pil.Item.mouseArea.x}/>
+      <input type="number" value={pil.Item.mouseArea.x} readOnly/>
       <div>Y</div>
-      <input type="number" value={pil.Item.mouseArea.y}/>
+      <input type="number" value={pil.Item.mouseArea.y} readOnly/>
       <div>Width</div>
-      <input type="number" value={pil.Item.mouseArea.width}/>
+      <input type="number" value={pil.Item.mouseArea.width} readOnly/>
       <div>Height</div>
-      <input type="number" value={pil.Item.mouseArea.height}/>
+      <input type="number" value={pil.Item.mouseArea.height} readOnly/>
       <div>
         <input 
           type="checkbox" 
@@ -220,6 +221,46 @@ function App() {
     })
   }
 
+  function eject() {
+    fetch("http://localhost:3030/", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(pil)
+    })
+  }
+
+  function uploadFile() {
+    const formData = new FormData();
+    const file = filePicker.current.files[0];
+    formData.append("image", file);
+    fetch("http://localhost:3030/images", {
+      method: "POST",
+      body:  formData
+    })
+    .then(res => res.json())
+    .then(res => {
+      const newImages = pil.Item.images.concat({
+        id: Date.now(),
+        source: `http://localhost:3030/image/${res.filename}`,
+        visible: false,
+        x: 10,
+        y: 10
+      });
+
+      setPil({
+        Item: {
+          ...pil.Item,
+          images: newImages
+        }
+      })
+    })
+    .catch(err => {
+      console.error("Failed to upload image file");
+    })
+  }
+
   return (
     <div className="app">
       <div className="states">
@@ -242,6 +283,7 @@ function App() {
         {settings}
         <div>Images</div>
         {images}
+        <input type="file" ref={filePicker} /> <button onClick={uploadFile}>Upload</button>
         <div>MouseArea</div>
         {mouseArea}
         <input 
@@ -252,7 +294,12 @@ function App() {
           max="1"
           step="0.1"
         />
-        <button onClick={render}>Render</button>
+        <div>
+          <button onClick={render}>Render</button>
+        </div>
+        <div>
+          <button onClick={eject}>Eject</button>
+        </div>
       </div>
     </div>
   );

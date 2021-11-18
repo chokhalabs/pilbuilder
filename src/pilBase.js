@@ -9,10 +9,10 @@ class EventManager {
   }
 
   emit(event, payload) {
-    if (!this.listeners.event) {
+    if (!this.listeners[event]) {
       console.warn("No handlers bound for the event: ", event);
     } else {
-      this.listeners.forEach(listener => {
+      (this.listeners[event] || []).forEach(listener => {
         listener.call(null, payload);
       })
     }

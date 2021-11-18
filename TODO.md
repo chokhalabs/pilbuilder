@@ -3,6 +3,7 @@
 3. ~~Merge pilcrow and builder to make the pilcrow code importable in builder for rendering and state management~~
 4. ~~Allow zooming of the board~~
 5. ~~Wire up click listeners~~
+7. Allow uploading image files to pilserver and using in the app
 6. Add export functionality to export pilcrow component
 
 1. Add text rendering component
