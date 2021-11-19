@@ -13,22 +13,7 @@ function App() {
       "height": 100,
       "draw": false,
       "state": "normal",
-      "images": [
-        {
-          "id": "myButton_Symbol_normal",
-          "x": 10,
-          "y": 10,
-          "source": "/normal.png",
-          "visible": true
-        },
-        {
-          "id": "myButton_Symbol_pressed",
-          "x": 10,
-          "y": 10,
-          "source": "/pressed.png",
-          "visible": false
-        }
-      ],
+      "images": [],
       "mouseArea": {
         "id": "mouseArea",
         "x": 10,
@@ -139,6 +124,38 @@ function App() {
     setPil(newPil);
   }
 
+  function wireImageToState(ev, image) {
+    const newStates = pil.Item.states.map(currentState => {
+      if (currentState.name === pil.Item.state) {
+        const existingChange = currentState.propertyChanges.find(it => it.target === image.id && it.visible !== undefined);
+        if (existingChange) {
+          existingChange.visible = ev.target.checked;
+        } else {
+          currentState.propertyChanges.push({
+            target: image.id,
+            visible: ev.target.checked
+          })
+        }
+      }
+      return currentState;
+    });
+    
+    const newImages = pil.Item.images.map(it => {
+      if (it.id === image.id) {
+        it.visible = ev.target.checked;
+      }
+      return it;
+    })
+
+    setPil({
+      Item: {
+        ...pil.Item,
+        states: newStates,
+        images: newImages
+      }
+    })
+  }
+
   const states = pil.Item.states.map(it => {
     return (
       <div key={it.name}>
@@ -161,7 +178,7 @@ function App() {
       <div key={it.source}>
         <img src={it.source}></img>
         <label>visible
-          <input type="checkbox" checked={it.visible} readOnly></input>
+          <input type="checkbox" checked={it.visible} onChange={(ev) => wireImageToState(ev, it)}></input>
         </label>
       </div>
     );
@@ -242,7 +259,7 @@ function App() {
     .then(res => res.json())
     .then(res => {
       const newImages = pil.Item.images.concat({
-        id: Date.now(),
+        id: res.filename,
         source: `http://localhost:3030/image/${res.filename}`,
         visible: false,
         x: 10,
