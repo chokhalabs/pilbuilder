@@ -29,30 +29,12 @@ function App() {
         {
           "name": "normal",
           "when": "mouseup",
-          "propertyChanges": [
-            {
-              "target": "myButton_Symbol_normal",
-              "visible": true
-            },
-            {
-              "target": "myButton_Symbol_pressed",
-              "visible": false
-            }
-          ]
+          "propertyChanges": []
         },
         {
           "name": "pressed",
           "when": "mousedown",
-          "propertyChanges": [
-            {
-              "target": "myButton_Symbol_normal",
-              "visible": false
-            },
-            {
-              "target": "myButton_Symbol_pressed",
-              "visible": true
-            }
-          ]
+          "propertyChanges": []
         }
       ]
     }
