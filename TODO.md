@@ -7,7 +7,10 @@
 8. ~~Start with a blank images array and upload images~~
 9. ~~Allow configuring the state object by mapping the propertyChanges to the uploaded images using the UI~~
 10. ~~Update the state change when conditions if required to use correct ids~~
-6. Add export functionality to export pilcrow component
+6. ~~Add export functionality to export pilcrow component~~
+12. ~~Allow downloading project zip files from the server~~
+11. Add a list of all generated projects on the server
+13. Add ability to use existing project
 
 1. Add text rendering component
 2. Add text edit component

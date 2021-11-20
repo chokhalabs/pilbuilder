@@ -228,6 +228,43 @@ function App() {
       },
       body: JSON.stringify(pil)
     })
+    .then(res => res.json())
+    .then(res => {
+      console.log("Project created: ", res.generated_project);
+      downloadProject(res.generated_project);
+    })
+  }
+
+  function downloadProject(uuid) {
+    console.log("Waiting 5 sec");
+    setTimeout(() => {
+      console.log("Trying...");
+      fetch(`http://localhost:3030/project/${uuid}`)
+      .then(res => {
+        if (res.statusCode === 404) {
+          downloadProject(uuid);
+          return Promise.reject();
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then(() => {
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        a.href = `http://localhost:3030/project/${uuid}`;
+        a.download = uuid;
+        a.click();
+        document.body.removeChild(a);
+      })
+      .catch(err => {
+        if (err.statusCode === 404) {
+          downloadProject(uuid);
+        } else {
+          console.error("Failed to download: ", err);
+        }
+      })
+    }, 5000);
   }
 
   function uploadFile() {
