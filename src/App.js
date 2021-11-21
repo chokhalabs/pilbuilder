@@ -9,15 +9,18 @@ function App() {
   const [pil, _setPil] = useState({
     "Item": {
       "id": "myButton_Symbol",
+      "type": "Item",
       "width": 115,
       "height": 100,
+      "x": 0,
+      "y": 0,
       "draw": false,
       "state": "normal",
       "images": [],
       "mouseArea": {
         "id": "mouseArea",
-        "x": 10,
-        "y": 10,
+        "x": 0,
+        "y": 0,
         "width": 115,
         "height": 100,
         "hoverEnabled": false,
@@ -25,7 +28,7 @@ function App() {
         "mouseup": true,
         "draw": false
       },
-      "states": [
+      states: [
         {
           "name": "normal",
           "when": "mouseup",
@@ -36,7 +39,23 @@ function App() {
           "when": "mousedown",
           "propertyChanges": []
         }
-      ]
+      ],
+      children: {
+        text1: {
+          type: "Text",
+          id: "text1",
+          width: 100,
+          text: "Some text here",
+          color: "#000000"
+        },
+        text2: {
+          type: "Text",
+          id: "text2",
+          width: 100,
+          text: "Some other text here",
+          color: "#FF0000"
+        }
+      }
     }
   });
 
@@ -211,13 +230,9 @@ function App() {
   );
 
   function render() {
-    setTimeout(() => {
-      let app = new AppBase();
-      app.item = pil.Item;
-      app.mount(canvas.current).then(() => {
-        app.paint();
-      }) 
-    })
+    let app = new AppBase();
+    app.item = pil.Item;
+    app.mount(canvas.current);
   }
 
   function eject() {
@@ -281,8 +296,8 @@ function App() {
         id: res.filename,
         source: `http://localhost:3030/image/${res.filename}`,
         visible: false,
-        x: 10,
-        y: 10
+        x: 0,
+        y: 0
       });
 
       setPil({

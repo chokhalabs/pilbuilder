@@ -12,7 +12,10 @@
 11. Add a list of all generated projects on the server
 13. Add ability to use existing project
 
-1. Add text rendering component
+1. ~~Add text rendering component~~
++ Add a preprocessor to calculate absolute positioning of elements in the tree
+6. Add a tree of children where a node can be selected and its properties edited on the right
+5. Add custom event emitter
 2. Add text edit component
 3. Add image component
 4. Make chat component
