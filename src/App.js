@@ -256,6 +256,10 @@ function App() {
 
     settings = (
       <div>
+        <div>X</div>
+        <input type="number" value={currentNode.x} readOnly/>
+        <div>Y</div>
+        <input type="number" value={currentNode.y} readOnly/>
         <div>Width</div>
         <input type="number" value={currentNode.width} readOnly/>
         <div>Height</div>
