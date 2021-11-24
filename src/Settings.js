@@ -85,7 +85,7 @@ export default function({node, onNodeUpdate}) {
               name="state" 
               value={it.name} 
               checked={node.state === it.name} 
-              onchange={() => {}}
+              onChange={() => onNodeUpdate({ ...node, state: it.name })}
             />
             {it.name}
             : activates when mouseArea

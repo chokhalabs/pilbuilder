@@ -118,8 +118,13 @@ function App() {
 
   function onNodeUpdate(node) {
     // Find the node that is getting updated and update it
-    const newPil = {...pil.Item};
-    updateNodeInPil(node, newPil);
+    let newPil = {...pil.Item};
+    if (newPil.state !== node.state) {
+      newPil.state = node.state;
+      newPil = applyPropertyChanges(newPil, node.state);
+    } else {
+      updateNodeInPil(node, newPil);
+    }
     setPil({ Item: newPil });
   }
 
@@ -142,9 +147,9 @@ function App() {
   // Should be imported from pilBase
   function applyPropertyChanges(node, stateName) {
     node = JSON.parse(JSON.stringify(node));
-    stateName = node.states.find(it => it.name === stateName);
-    if (stateName) {
-      stateName.propertyChanges.forEach(pchange => {
+    const state = node.states.find(it => it.name === stateName);
+    if (state) {
+      state.propertyChanges.forEach(pchange => {
         const updateTarget = findNodeById(node, pchange.target);
         const propertyKey = Object.keys(pchange).find(key => key !== "target");
         if (updateTarget) {
@@ -175,23 +180,39 @@ function App() {
   function updateNodeInPil(nodeWithUpdates, cursorNode) {
     if (nodeWithUpdates.id === cursorNode.id) {
       // Calculate property changes if any
-      const nodeInOtherStatets = []
+      const nodeInOtherStates = []
       if (nodeWithUpdates.state === cursorNode.state) {
         for (let state of Object.values(nodeWithUpdates.states).filter(it => it.name !== cursorNode.state)) {
-          nodeInOtherStatets[state.name] = applyPropertyChanges(JSON.parse(JSON.stringify(cursorNode)), state.name);  
+          nodeInOtherStates[state.name] = applyPropertyChanges(JSON.parse(JSON.stringify(cursorNode)), state.name);  
+        }
+
+        for (let state of Object.values(nodeWithUpdates.states)) {
+          let updatedNodeState = nodeWithUpdates.states.find(it => it.name === state.name);
+          if (state.name === nodeWithUpdates.state) {
+            updatedNodeState.propertyChanges = [];
+            Object.keys(nodeWithUpdates).map(key => {
+              if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStates)) {
+                updatedNodeState.propertyChanges.push({
+                  target: nodeWithUpdates.id,
+                  [key]: nodeWithUpdates[key]
+                });
+              }
+              cursorNode[key] = nodeWithUpdates[key];
+            });
+          } else {
+            Object.keys(nodeWithUpdates).map(key => {
+              if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStates)) {
+                updatedNodeState.propertyChanges.push({
+                  target: nodeWithUpdates.id,
+                  [key]: nodeInOtherStates[state.name][key]
+                });
+              }
+              cursorNode[key] = nodeWithUpdates[key];
+            });
+          }
         }
       } 
-
-      nodeWithUpdates.propertyChanges = [];
-      Object.keys(nodeWithUpdates).map(key => {
-        cursorNode[key] = nodeWithUpdates[key];
-        if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStatets)) {
-          nodeWithUpdates.propertyChanges.push({
-            target: nodeWithUpdates.id,
-            [key]: nodeWithUpdates[key]
-          })
-        }
-      });
+      
     } else if (cursorNode.children) {
       Object.keys(cursorNode.children).forEach((key) => {
         updateNodeInPil(nodeWithUpdates, cursorNode.children[key]);
