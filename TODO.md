@@ -14,7 +14,13 @@
 
 1. ~~Add text rendering component~~
 + Add a preprocessor to calculate absolute positioning of elements in the tree
-6. Add a tree of children where a node can be selected and its properties edited on the right
+6. ~~Add a tree of children where a node can be selected and its properties edited on the right~~
++ Update pilstatesetters so that they don't just set it in the root but find the correct node and set it there
++ Make x, y, width, height editable for item
++ Render boundingbox of item
++ Update x, y, width and height with arrow keys 
++ split builder components
++ Add fonts to text renderer
 5. Add custom event emitter
 2. Add text edit component
 3. Add image component

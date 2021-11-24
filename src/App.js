@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import './App.css';
 import { AppBase } from "./pilBase";
+import Settings from "./Settings";
 
 function App() {
   const canvas = useRef(null);
-  const filePicker = useRef(null);
+  
   const [zoom, setZoom] = useState(1);
   const [selectedNode, selectNode] = useState("myButton_Symbol");
   const [pil, _setPil] = useState({
@@ -17,8 +18,8 @@ function App() {
       "y": 0,
       "draw": false,
       "state": "normal",
-      "images": [],
-      "mouseArea": {
+      images: [],
+      mouseArea: {
         "id": "mouseArea",
         "x": 0,
         "y": 0,
@@ -61,10 +62,11 @@ function App() {
   });
 
   const setPil = function(state) {
-    render();
     _setPil(state);
+    render();
   }
 
+  /*
   function setPilState(state) {
     
     const newPil = {
@@ -86,26 +88,13 @@ function App() {
 
     setPil(newPil);
   }
-
-  function setPilMouseArea(mouseArea) {
-    setPil({
-      Item: {
-        ...pil.Item,
-        mouseArea
-      }
-    })
-  }
-
-  function setPilItem(item) {
-    setPil({
-      Item: item
-    })
-  }
+  */
 
   function onZoomChange(ev) {
     setZoom(ev.target.value);
   }
 
+  /*
   function setStateCondition(ev, state) {
     const value = ev.target.value;
     const newPil = {
@@ -125,7 +114,94 @@ function App() {
     };
     setPil(newPil);
   }
+  */
 
+  function onNodeUpdate(node) {
+    // Find the node that is getting updated and update it
+    const newPil = {...pil.Item};
+    updateNodeInPil(node, newPil);
+    setPil({ Item: newPil });
+  }
+
+  function findNodeById(node, id) {
+    if (node.id === id) {
+      return node;
+    } else if (node.children) {
+      for (let key of Object.keys(node.children)) {
+        const child = node.children[key];
+        const node = findNodeById(child, id);
+        if (node) {
+          return node;
+        }    
+      }
+    } else {
+      return null;
+    }
+  }
+
+  // Should be imported from pilBase
+  function applyPropertyChanges(node, stateName) {
+    node = JSON.parse(JSON.stringify(node));
+    stateName = node.states.find(it => it.name === stateName);
+    if (stateName) {
+      stateName.propertyChanges.forEach(pchange => {
+        const updateTarget = findNodeById(node, pchange.target);
+        const propertyKey = Object.keys(pchange).find(key => key !== "target");
+        if (updateTarget) {
+          updateTarget[propertyKey] = pchange[propertyKey];
+        } else {
+          console.error("Target not found for property change: ", pchange);
+        }
+      })
+    } else {
+      console.error("State not found when applying property changes")
+    }
+    return node;
+  }
+
+  function propertyIsDifferentInOtherStates(node, key, nodeInOtherStatets) {
+    if (node && typeof node[key] === "object") {
+      console.info("Cannot detect changes in non scalars: ", node, key)
+      return false;
+    } else if (node) {
+      return node.states.some(state => {
+        return nodeInOtherStatets[state.name] && nodeInOtherStatets[state.name][key] !== node[key];
+      })
+    } else {
+      console.info("node was not defined: ", node, key)
+    }
+  }
+
+  function updateNodeInPil(nodeWithUpdates, cursorNode) {
+    if (nodeWithUpdates.id === cursorNode.id) {
+      // Calculate property changes if any
+      const nodeInOtherStatets = []
+      if (nodeWithUpdates.state === cursorNode.state) {
+        for (let state of Object.values(nodeWithUpdates.states).filter(it => it.name !== cursorNode.state)) {
+          nodeInOtherStatets[state.name] = applyPropertyChanges(JSON.parse(JSON.stringify(cursorNode)), state.name);  
+        }
+      } 
+
+      nodeWithUpdates.propertyChanges = [];
+      Object.keys(nodeWithUpdates).map(key => {
+        cursorNode[key] = nodeWithUpdates[key];
+        if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStatets)) {
+          nodeWithUpdates.propertyChanges.push({
+            target: nodeWithUpdates.id,
+            [key]: nodeWithUpdates[key]
+          })
+        }
+      });
+    } else if (cursorNode.children) {
+      Object.keys(cursorNode.children).forEach((key) => {
+        updateNodeInPil(nodeWithUpdates, cursorNode.children[key]);
+      });
+    } else {
+      console.info("Failed to find node in the subtree")
+    }
+  }
+
+  /*
   function wireImageToState(ev, image) {
     const newStates = pil.Item.states.map(currentState => {
       if (currentState.name === pil.Item.state) {
@@ -157,7 +233,9 @@ function App() {
       }
     })
   }
+  */
 
+  /* 
   const states = pil.Item.states.map(it => {
     return (
       <div key={it.name}>
@@ -174,6 +252,7 @@ function App() {
       </div>
     );
   });
+  */
 
   // const images = pil.Item.images.map(it => {
   //   return (
@@ -207,120 +286,6 @@ function App() {
 
   // Find out which node's settings to render and  update the settings bar
   const currentNode = findCurrentNode(pil.Item);
-  let settings = (<div>Select a node to edit its settings</div>);
-  if (currentNode.type === "Item") {
-    let images = null;
-    if (currentNode.images) {
-      images = currentNode.images.map(it => {
-        return (
-          <div key={it.source}>
-            <img src={it.source}></img>
-            <label>visible
-              <input type="checkbox" checked={it.visible} onChange={(ev) => wireImageToState(ev, it)}></input>
-            </label>
-          </div>
-        );
-      });
-    }
-
-    let mouseArea = null;
-    if (currentNode.mouseArea) {
-      mouseArea = (
-        <div>
-          <div>X</div>
-          <input type="number" value={currentNode.mouseArea.x} readOnly/>
-          <div>Y</div>
-          <input type="number" value={currentNode.mouseArea.y} readOnly/>
-          <div>Width</div>
-          <input type="number" value={currentNode.mouseArea.width} readOnly/>
-          <div>Height</div>
-          <input type="number" value={currentNode.mouseArea.height} readOnly/>
-          <div>
-            <input 
-              type="checkbox" 
-              checked={currentNode.mouseArea.draw} 
-              onChange={(e) => setPilMouseArea({ ...currentNode.mouseArea, draw: e.target.checked })} 
-            />
-              Show Boundingbox
-            </div>
-          <div>OnMousedown 
-            <div>
-              <input type="radio" name="mousedown" />
-              Emit event
-              <input type="text" />
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    settings = (
-      <div>
-        <div>X</div>
-        <input type="number" value={currentNode.x} readOnly/>
-        <div>Y</div>
-        <input type="number" value={currentNode.y} readOnly/>
-        <div>Width</div>
-        <input type="number" value={currentNode.width} readOnly/>
-        <div>Height</div>
-        <input type="number" value={currentNode.height} readOnly/>
-        <div>
-          <input type="checkbox" 
-            checked={currentNode.draw} 
-            onChange={(e) => setPilItem({ ...pil.Item, draw: e.target.checked })}
-          />
-          Show Boundingbox
-        </div>
-        <div>Images</div>
-        {images}
-        <input type="file" ref={filePicker} /> <button onClick={uploadFile}>Upload</button>
-        {mouseArea && <div>MouseArea</div> }
-        {mouseArea}
-      </div>
-    );
-  } else if (currentNode.type === "Text") {
-    settings = (
-      <div>
-        <div> value
-          <input type="text" readOnly value={currentNode.text}></input>
-        </div>
-        <div> color
-          <input type="color" readOnly value={currentNode.color}></input>
-        </div>
-        <div> maxWidth
-          <input type="number" readOnly value={currentNode.width}></input>
-        </div>
-      </div>
-    );
-  }
-
-  const mouseArea = (
-    <div>
-      <div>X</div>
-      <input type="number" value={pil.Item.mouseArea.x} readOnly/>
-      <div>Y</div>
-      <input type="number" value={pil.Item.mouseArea.y} readOnly/>
-      <div>Width</div>
-      <input type="number" value={pil.Item.mouseArea.width} readOnly/>
-      <div>Height</div>
-      <input type="number" value={pil.Item.mouseArea.height} readOnly/>
-      <div>
-        <input 
-          type="checkbox" 
-          checked={pil.Item.mouseArea.draw} 
-          onChange={(e) => setPilMouseArea({ ...pil.Item.mouseArea, draw: e.target.checked })} 
-        />
-          Show Boundingbox
-        </div>
-      <div>OnMousedown 
-        <div>
-          <input type="radio" name="mousedown" />
-          Emit event
-          <input type="text" />
-        </div>
-      </div>
-    </div>
-  );
 
   function render() {
     let app = new AppBase();
@@ -375,36 +340,6 @@ function App() {
     }, 5000);
   }
 
-  function uploadFile() {
-    const formData = new FormData();
-    const file = filePicker.current.files[0];
-    formData.append("image", file);
-    fetch("http://localhost:3030/images", {
-      method: "POST",
-      body:  formData
-    })
-    .then(res => res.json())
-    .then(res => {
-      const newImages = pil.Item.images.concat({
-        id: res.filename,
-        source: `http://localhost:3030/image/${res.filename}`,
-        visible: false,
-        x: 0,
-        y: 0
-      });
-
-      setPil({
-        Item: {
-          ...pil.Item,
-          images: newImages
-        }
-      })
-    })
-    .catch(err => {
-      console.error("Failed to upload image file");
-    })
-  }
-
   const pilTree = (
     <div>
       { renderPilTree(pil.Item) }
@@ -426,9 +361,6 @@ function App() {
   return (
     <div className="app">
       <div className="states">
-        States
-        {states}
-        <div>Pil</div>
         {pilTree}
       </div>
       <div className="canvas">
@@ -444,7 +376,10 @@ function App() {
       </div>
       <div className="settings">
         Settings
-        {settings}
+        <Settings 
+          node={currentNode}
+          onNodeUpdate={node => onNodeUpdate(node)}
+        />
         <input 
           type="range" 
           value={zoom} 
