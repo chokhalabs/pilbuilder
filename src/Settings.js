@@ -89,7 +89,7 @@ export default function({node, onNodeUpdate}) {
             />
             {it.name}
             : activates when mouseArea
-            <textarea value={it.when} onchange={() => {}}></textarea>
+            <textarea value={it.when} onChange={() => {}}></textarea>
           </div>
         );
       });
@@ -131,7 +131,7 @@ export default function({node, onNodeUpdate}) {
             <input 
               type="checkbox" 
               checked={node.mouseArea.draw} 
-              onchange={(e) => onMouseareaUpdate({ ...node.mouseArea, draw: e.target.checked })} 
+              onChange={(e) => onMouseareaUpdate({ ...node.mouseArea, draw: e.target.checked })} 
             />
               show boundingbox
             </div>
@@ -154,21 +154,21 @@ export default function({node, onNodeUpdate}) {
         <input 
           type="number" 
           value={node.x} 
-          onchange={ev => onNodeUpdate({ ...node, x: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, x: ev.target.value })}
         />
 
         <div>y</div>
         <input 
           type="number" 
           value={node.y} 
-          onchange={ev => onNodeUpdate({ ...node, y: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, y: ev.target.value })}
         />
 
         <div>width</div>
         <input 
           type="number" 
           value={node.width} 
-          onchange={ev => onNodeUpdate({ ...node, width: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, width: ev.target.value })}
         />
 
         <div>height</div>

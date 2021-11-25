@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import './App.css';
 import { AppBase } from "./pilBase";
 import Settings from "./Settings";
@@ -63,8 +63,10 @@ function App() {
 
   const setPil = function(state) {
     _setPil(state);
-    render();
   }
+
+  // Just repaint the canvas after every update to the component
+  useEffect(() => render());
 
   /*
   function setPilState(state) {
@@ -372,7 +374,7 @@ function App() {
     return (
       <div>
         <div style={{ color: isSelected ? "cornflowerblue": "white", cursor: "pointer" }} onClick={() => selectNode(node.id)}>{node.type}</div>
-        <div style={{'margin-left': 10 }}>
+        <div style={{marginLeft: 10 }}>
           {node.children ? Object.values(node.children).map(child => renderPilTree(child)) : null}
         </div>
       </div>

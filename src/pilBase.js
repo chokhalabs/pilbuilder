@@ -26,6 +26,8 @@ export class AppBase {
   mount(canvas) {
     this.canvas = canvas;
     const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.beginPath();
     if (context) {
       this.context = context;
     }
@@ -143,6 +145,13 @@ export class AppBase {
 
   paint(node) {
     const context = this.context;
+    if (node.draw) {
+      context.strokeStyle = "#0000FF";
+      context.rect(node.x, node.y, node.width, node.height);
+      context.stroke();
+      context.strokeStyle = "#000000";
+    }
+
     if (node.images) {
       const images = node.images.filter(image => image.visible);
 
