@@ -166,16 +166,33 @@ function App() {
     return node;
   }
 
-  function propertyIsDifferentInOtherStates(node, key, nodeInOtherStatets) {
-    if (node && typeof node[key] === "object") {
-      console.info("Cannot detect changes in non scalars: ", node, key)
-      return false;
-    } else if (node) {
-      return node.states.some(state => {
-        return nodeInOtherStatets[state.name] && nodeInOtherStatets[state.name][key] !== node[key];
-      })
-    } else {
+  function propertyIsDifferentInOtherStates(node, key, nodeInOtherStates) {
+    if (node && typeof node[key] === "object" && key !== "states") {
+      const propertyInOtherStates = node.states.reduce((accum, state) => {
+        const nodeInOtherState = nodeInOtherStates[state.name];
+        if (nodeInOtherState) {
+          accum[state.name] = nodeInOtherState[key];
+        }
+        return accum;
+      }, {});
+      const propertyInCurrentState = node[key];
+      propertyInCurrentState.states = node.states.map(state => ({ name: state.name }));
+      const isDifferent = Object.keys(propertyInCurrentState).some(k => propertyIsDifferentInOtherStates(propertyInCurrentState, k, propertyInOtherStates));
+      console.log(isDifferent)
+      return isDifferent;
+    } else if (node && key !== "states") {
+      const isDifferent = node.states.some(state => {
+        return nodeInOtherStates[state.name] && nodeInOtherStates[state.name][key] !== node[key];
+      });
+      console.log(isDifferent)
+      return isDifferent;
+    } else if (key !== "states") {
       console.info("node was not defined: ", node, key)
+      return true;
+    } else if (key === "states") {
+      return false;
+    } else {
+      console.error("Unhandled state while diffing", node, key)
     }
   }
 
