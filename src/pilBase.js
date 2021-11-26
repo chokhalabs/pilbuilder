@@ -76,10 +76,8 @@ export class AppBase {
     if (node.children) {
       const rendered = Object.keys(node.children).map(child_id => {
         const child = node.children[child_id];
-        child.absolute_x = node.x + (child.x || 0);
-        child.absolute_y = node.y + (child.y || 0);
         if (child.type === "Text") {
-          this.paint(child);
+          this.paint(child, node);
           return Promise.resolve();
         } else {
           return this.renderChildren(child);
@@ -143,34 +141,47 @@ export class AppBase {
     } 
   }
 
-  paint(node) {
+  paint(node, parentNode) {
     const context = this.context;
     if (node.draw) {
       context.strokeStyle = "#0000FF";
-      context.rect(node.x, node.y, node.width, node.height);
+      let x = node.x, y = node.y;
+      if (parentNode && parentNode.type === "Item") {
+        x = parseFloat(parentNode.x) + parseFloat(node.x);
+        y = parseFloat(parentNode.y) + parseFloat(node.y);
+      }
+      context.rect(x, y, node.width, node.height);
       context.stroke();
       context.strokeStyle = "#000000";
     }
 
     if (node.images) {
       const images = node.images.filter(image => image.visible);
-
       for (let image of images) {
-        context.drawImage(image.ref, image.x, image.y, node.width, node.height);
+        let x = parseFloat(node.x) + parseFloat(image.x);
+        let y = parseFloat(node.y) + parseFloat(image.y);
+        context.drawImage(image.ref, x, y, node.width, node.height);
       }
     }
 
     if (node.type === "Text") {
       const lineHeight = 10;
       context.fillStyle = node.color || "black";
-      context.fillText(node.text, node.absolute_x, node.absolute_y + lineHeight, node.width);
+      let x = 0, y = 0;
+      if (parentNode) {
+        x = x + parseFloat(parentNode.x);
+        y = y + parseFloat(parentNode.y) + lineHeight;
+      }
+      context.fillText(node.text, x, y, node.width);
       context.fillStyle = "black";
     }
 
     let mouseArea = node.mouseArea;
     if (mouseArea && mouseArea.draw) {
+      const x = parseFloat(node.x) + parseFloat(node.mouseArea).x;
+      const y = parseFloat(node.y) + parseFloat(node.mouseArea).y;
       context.strokeStyle = "#FF0000";
-      context.rect(mouseArea.x, mouseArea.y, mouseArea.width, mouseArea.height);
+      context.rect(x, y, mouseArea.width, mouseArea.height);
       context.stroke();
     }
   }
