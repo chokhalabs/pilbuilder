@@ -120,7 +120,7 @@ function App() {
 
   function onNodeUpdate(node) {
     // Find the node that is getting updated and update it
-    let newPil = {...pil.Item};
+    let newPil = JSON.parse(JSON.stringify(pil.Item));
     if (newPil.state !== node.state) {
       newPil.state = node.state;
       newPil = applyPropertyChanges(newPil, node.state);
@@ -133,15 +133,17 @@ function App() {
   function findNodeById(node, id) {
     if (node.id === id) {
       return node;
-    } else if (node.children) {
-      for (let key of Object.keys(node.children)) {
-        const child = node.children[key];
-        const node = findNodeById(child, id);
-        if (node) {
-          return node;
-        }    
-      }
+    } else if (node.children && node.children[id]) {
+      return node.children[id];
     } else {
+      const candidateNodes = Object.keys(node).filter(key => typeof node[key] === "object");
+      for (let key of candidateNodes) {
+        const child = node[key];
+        const n = findNodeById(child, id);
+        if (n) {
+          return n;
+        }     
+      }
       return null;
     }
   }
@@ -153,11 +155,15 @@ function App() {
     if (state) {
       state.propertyChanges.forEach(pchange => {
         const updateTarget = findNodeById(node, pchange.target);
-        const propertyKey = Object.keys(pchange).find(key => key !== "target");
         if (updateTarget) {
-          updateTarget[propertyKey] = pchange[propertyKey];
+          const propertyKey = Object.keys(pchange).find(key => key !== "target");
+          if (updateTarget) {
+            updateTarget[propertyKey] = pchange[propertyKey];
+          } else {
+            console.error("Target not found for property change: ", pchange);
+          }
         } else {
-          console.error("Target not found for property change: ", pchange);
+          console.error("Update target not found when trying to apply property changes!")
         }
       })
     } else {
@@ -178,67 +184,97 @@ function App() {
       const propertyInCurrentState = node[key];
       propertyInCurrentState.states = node.states.map(state => ({ name: state.name }));
       const isDifferent = Object.keys(propertyInCurrentState).some(k => propertyIsDifferentInOtherStates(propertyInCurrentState, k, propertyInOtherStates));
-      console.log(isDifferent)
       return isDifferent;
     } else if (node && key !== "states") {
       const isDifferent = node.states.some(state => {
         return nodeInOtherStates[state.name] && nodeInOtherStates[state.name][key] !== node[key];
       });
-      console.log(isDifferent)
       return isDifferent;
     } else if (key !== "states") {
       console.info("node was not defined: ", node, key)
       return true;
-    } else if (key === "states") {
+    } else if (key === "state") {
       return false;
     } else {
       console.error("Unhandled state while diffing", node, key)
     }
   }
 
-  function updateNodeInPil(nodeWithUpdates, cursorNode) {
-    if (nodeWithUpdates.id === cursorNode.id) {
-      // Calculate property changes if any
-      const nodeInOtherStates = []
-      if (nodeWithUpdates.state === cursorNode.state) {
-        for (let state of Object.values(nodeWithUpdates.states).filter(it => it.name !== cursorNode.state)) {
-          nodeInOtherStates[state.name] = applyPropertyChanges(JSON.parse(JSON.stringify(cursorNode)), state.name);  
-        }
+  function updateNodeInPil(nodeWithUpdates, rootNode) {
+    calculatePropertyChanges(nodeWithUpdates);
+    recursiveReplaceNode(nodeWithUpdates, rootNode);
+  }
 
-        for (let state of Object.values(nodeWithUpdates.states)) {
-          let updatedNodeState = nodeWithUpdates.states.find(it => it.name === state.name);
-          if (state.name === nodeWithUpdates.state) {
-            updatedNodeState.propertyChanges = [];
-            Object.keys(nodeWithUpdates).map(key => {
-              if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStates)) {
-                updatedNodeState.propertyChanges.push({
-                  target: nodeWithUpdates.id,
-                  [key]: nodeWithUpdates[key]
-                });
-              }
-              cursorNode[key] = nodeWithUpdates[key];
-            });
-          } else {
-            Object.keys(nodeWithUpdates).map(key => {
-              if (propertyIsDifferentInOtherStates(nodeWithUpdates, key, nodeInOtherStates)) {
-                updatedNodeState.propertyChanges.push({
-                  target: nodeWithUpdates.id,
-                  [key]: nodeInOtherStates[state.name][key]
-                });
-              }
-              cursorNode[key] = nodeWithUpdates[key];
-            });
-          }
-        }
-      } 
-      
-    } else if (cursorNode.children) {
-      Object.keys(cursorNode.children).forEach((key) => {
-        updateNodeInPil(nodeWithUpdates, cursorNode.children[key]);
+  function recursiveReplaceNode(nodeWithUpdates, cursorNode) {
+    if (nodeWithUpdates.id === cursorNode.id) {
+      Object.keys(nodeWithUpdates).forEach(key => {
+        cursorNode[key] = nodeWithUpdates[key];
       });
+    } else if (cursorNode.children && cursorNode.children[nodeWithUpdates.id]) {
+      cursorNode.children[nodeWithUpdates.id] = nodeWithUpdates;
     } else {
-      console.info("Failed to find node in the subtree")
+      Object.values(cursorNode.children).forEach(node => {
+        recursiveReplaceNode(nodeWithUpdates, node);
+      });
     }
+  }
+
+  function calculatePropertyChanges(nodeWithUpdates) {
+    // Find the node in pil that has the same id
+    const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil.Item);
+
+    // Find the keys that have been updated
+    const updateTargets = getUpdateTargets(nodeWithUpdates, unUpdatedNode);
+
+    for (let propertyChange of updateTargets) {
+      addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode); 
+    }
+  }
+
+  function addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode) {
+    for (let i = 0; i < unUpdatedNode.states.length; i++) {
+      const state = unUpdatedNode.states[i];
+      const propKey = Object.keys(propertyChange).filter(key => key !== 'target');
+      const targetExists = state.propertyChanges.filter(propChange => {
+        const sameTarget = propChange.target === propertyChange.target;
+        const sameValue = propertyChange[propKey] === propChange[propKey];
+        return sameTarget && sameValue;
+      }).length > 0;
+      if (!targetExists && state.name === nodeWithUpdates.state) {
+        nodeWithUpdates.states[i].propertyChanges.push(propertyChange);
+      } else if (!targetExists && state.name !== nodeWithUpdates.state) {
+        const n = findNodeById(unUpdatedNode, propertyChange.target);
+        nodeWithUpdates.states[i].propertyChanges.push({
+          target: propertyChange.target,
+          [propKey]: n[propKey]
+        });
+      } else {
+        console.error("Not adding property change because  this state already has one")
+      }
+    }
+  }
+
+  function getUpdateTargets(nodeWithUpdates, unUpdatedNode) {
+    const updateTargets = Object.keys(nodeWithUpdates).map(key => {
+      if (typeof nodeWithUpdates[key] !== 'object' && nodeWithUpdates[key] !== unUpdatedNode[key]) {
+        return {
+          target: nodeWithUpdates.id,
+          [key]: nodeWithUpdates[key]
+        };
+      } else if ( typeof nodeWithUpdates[key] === 'object' && !Array.isArray(nodeWithUpdates[key]) ) {
+        return getUpdateTargets(nodeWithUpdates[key], unUpdatedNode[key]);
+      } else if (typeof nodeWithUpdates[key] === 'object') {
+        return nodeWithUpdates[key].map((item, i) => {
+          const unUpdatedNodeChild = unUpdatedNode[key].find(it => it.id === item.id);
+          if (unUpdatedNodeChild) {
+            return getUpdateTargets(item, unUpdatedNodeChild);
+          } else {
+            return null;
+          }
+        });
+      }
+    });
+    return updateTargets.flat(Infinity).filter(it => !!it && !!it.target);
   }
 
   /*
@@ -321,6 +357,28 @@ function App() {
         console.info("no node is selected");
         return null;
       }
+    }
+  }
+
+  function findNodeInPil(id, cursorNode) {
+    if (cursorNode.id === id) {
+      return cursorNode;
+    } else {
+      const lookIn = Object.keys(cursorNode).filter(key => typeof cursorNode[key] === "object");
+      for (let key of lookIn) {
+        if (Array.isArray(cursorNode[key])) {
+          const node = cursorNode[key].map(arrItem => findNodeInPil(id, arrItem)).find(it => !!it);
+          if (node) {
+            return node;
+          }
+        } else {
+          const node = findNodeInPil(id, cursorNode[key]);
+          if (node) {
+            return node;
+          }
+        }
+      }
+      return null;
     }
   }
 

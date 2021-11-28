@@ -1,29 +1,14 @@
-1. ~~Make states selectable and populate settings according to selected state~~
-2. ~~Preserve edited states in memory~~
-3. ~~Merge pilcrow and builder to make the pilcrow code importable in builder for rendering and state management~~
-4. ~~Allow zooming of the board~~
-5. ~~Wire up click listeners~~
-7. ~~Allow uploading image files to pilserver and using in the app~~
-8. ~~Start with a blank images array and upload images~~
-9. ~~Allow configuring the state object by mapping the propertyChanges to the uploaded images using the UI~~
-10. ~~Update the state change when conditions if required to use correct ids~~
-6. ~~Add export functionality to export pilcrow component~~
-12. ~~Allow downloading project zip files from the server~~
-11. Add a list of all generated projects on the server
-13. Add ability to use existing project
++ Wire up event listeners in the component
++ Add text edit component
++ Remove state variables that are getting added during diffing
++ Check if the paint function is clearing the canvas too much
 
-1. ~~Add text rendering component~~
-+ Add a preprocessor to calculate absolute positioning of elements in the tree
-6. ~~Add a tree of children where a node can be selected and its properties edited on the right~~
-+ Update pilstatesetters so that they don't just set it in the root but find the correct node and set it there
-+ Make x, y, width, height editable for item
-+ Render boundingbox of item
++ Add a list of all generated projects on the server
++ Add ability to use existing project
 + Update x, y, width and height with arrow keys 
 + split builder components
 + Add fonts to text renderer
-5. Add custom event emitter
-2. Add text edit component
-3. Add image component
-4. Make chat component
-
-1. Allow editing on canvas without using the sidebar
++ Add custom event emitter
++ Add image component
++ Make chat component
++ Allow editing on canvas without using the sidebar
