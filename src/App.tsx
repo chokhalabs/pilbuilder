@@ -1,10 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import './App.css';
 import { assertNever, IdObj, ItemNode, PilNode, PropertyChange } from "./pilBase";
-// @ts-ignore
-import { AppBase } from "./pilBase.ts";
-// @ts-ignore
-import Settings from "./Settings.tsx";
+import { AppBase } from "./pilBase";
+import Settings from "./Settings";
 
 function App() {
   const canvas = useRef(null);
@@ -145,37 +143,52 @@ function App() {
   }
 
   function updateNodeInPil(nodeWithUpdates: PilNode, rootNode: ItemNode) {
-    calculatePropertyChanges(nodeWithUpdates);
+    switch (nodeWithUpdates.type) {
+      case "Text":
+        console.error("TextNode cannot have a state and hence propertyChanges");
+        break;
+      case "Item":
+        calculatePropertyChanges(nodeWithUpdates);
+        break;
+      default:
+        return assertNever(nodeWithUpdates);
+    }
     recursiveReplaceNode(nodeWithUpdates, rootNode);
   }
 
   function recursiveReplaceNode(nodeWithUpdates: PilNode, cursorNode: PilNode) {
     if (nodeWithUpdates.id === cursorNode.id) {
       Object.keys(nodeWithUpdates).forEach(key => {
+        // @ts-ignore
         cursorNode[key] = nodeWithUpdates[key];
       });
     } else if (cursorNode.children && cursorNode.children[nodeWithUpdates.id]) {
       cursorNode.children[nodeWithUpdates.id] = nodeWithUpdates;
-    } else {
+    } else if (cursorNode.children) {
       Object.values(cursorNode.children).forEach(node => {
         recursiveReplaceNode(nodeWithUpdates, node);
       });
+    } else {
+      console.info("Search exhausted in subtree");
     }
   }
 
-  function calculatePropertyChanges(nodeWithUpdates: PilNode) {
-    // Find the node in pil that has the same id
-    const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil.Item);
+  function calculatePropertyChanges(nodeWithUpdates: ItemNode) {
+    // Find the node in pil that has the same id which should come out as an ItemNode
+    const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil.Item) as ItemNode;
 
-    // Find the keys that have been updated
-    const updateTargets = getUpdateTargets(nodeWithUpdates, unUpdatedNode);
-
-    for (let propertyChange of updateTargets) {
-      addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode); 
+    if (unUpdatedNode) {
+      // Find the keys that have been updated
+      const updateTargets = getUpdateTargets(nodeWithUpdates, unUpdatedNode);
+      for (let propertyChange of updateTargets) {
+        addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode); 
+      }
+    } else {
+      console.error("Could not find unUpdated node to calculate property changes")
     }
   }
 
-  function addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode) {
+  function addPropertyChange(nodeWithUpdates: ItemNode, propertyChange: PropertyChange, unUpdatedNode: ItemNode) {
     for (let i = 0; i < unUpdatedNode.states.length; i++) {
       const state = unUpdatedNode.states[i];
       const propKey = Object.keys(propertyChange).filter(key => key !== 'target')[0];
@@ -202,34 +215,35 @@ function App() {
     }
   }
 
-  function getUpdateTargets(nodeWithUpdates: PilNode, unUpdatedNode: PilNode): PropertyChange[] {
+  function getUpdateTargets(nodeWithUpdates: IdObj, unUpdatedNode: IdObj): PropertyChange[] {
     const updateTargets = Object.keys(nodeWithUpdates).map(key => {
-      if (typeof nodeWithUpdates[key] !== 'object' && nodeWithUpdates[key] !== unUpdatedNode[key]) {
+      if (nodeWithUpdates[key] && typeof nodeWithUpdates[key] !== 'object' && nodeWithUpdates[key] !== unUpdatedNode[key]) {
         return {
           target: nodeWithUpdates.id,
           [key]: nodeWithUpdates[key]
         };
-      } else if ( typeof nodeWithUpdates[key] === 'object' && !Array.isArray(nodeWithUpdates[key]) ) {
+      } else if ( nodeWithUpdates[key] && typeof nodeWithUpdates[key] === 'object' && !Array.isArray(nodeWithUpdates[key]) ) {
         return getUpdateTargets(nodeWithUpdates[key], unUpdatedNode[key]);
-      } else if (typeof nodeWithUpdates[key] === 'object') {
-        return nodeWithUpdates[key].map((item, i) => {
-          const unUpdatedNodeChild = unUpdatedNode[key].find(it => it.id === item.id);
+      } else if (nodeWithUpdates[key] && typeof nodeWithUpdates[key] === 'object') { // Its an array with IdObjs
+        return nodeWithUpdates[key].map((item: IdObj) => {
+          const unUpdatedNodeChild = unUpdatedNode[key].find((it: IdObj) => it.id === item.id);
           if (unUpdatedNodeChild) {
             return getUpdateTargets(item, unUpdatedNodeChild);
           } else {
             return null;
           }
         });
-      }
+      } 
     });
     return updateTargets.flat(Infinity).filter(it => !!it && !!it.target);
   }
 
-  function findCurrentNode(node) {
+  function findCurrentNode(node: IdObj) {
     if (node.id === selectedNode) {
       return node;
     } else {
-      let childnode = Object.values(node.children || {}).map(child => {
+      const children: Record<string, IdObj> = node.children || {};
+      let childnode: Array<IdObj|null|undefined> = Object.values(children).map(child => {
         return findCurrentNode(child);
       }).filter(it => !!it);
       if (childnode.length === 1) {
@@ -267,12 +281,15 @@ function App() {
   }
 
   // Find out which node's settings to render and  update the settings bar
-  const currentNode = findCurrentNode(pil.Item);
+  const currentNode: PilNode = findCurrentNode(pil.Item) as PilNode;
 
   function render() {
-    let app = new AppBase();
-    app.item = pil.Item;
-    app.mount(canvas.current);
+    if (canvas.current) {
+      let app = new AppBase(canvas.current, pil.Item);
+      app.mount();
+    } else {
+      throw new Error("Could not create app because canvas was not found!")
+    }
   }
 
   function eject() {
@@ -359,10 +376,12 @@ function App() {
       </div>
       <div className="settings">
         Settings
-        <Settings 
-          node={currentNode}
-          onNodeUpdate={(node: PilNode) => onNodeUpdate(node)}
-        />
+        { currentNode && 
+          <Settings 
+            node={currentNode}
+            onNodeUpdate={(node: PilNode) => onNodeUpdate(node)}
+          />
+        }
         <input 
           type="range" 
           value={zoom} 

@@ -1,14 +1,14 @@
 class EventManager {
-  listeners = {};
+  listeners: Record<string, Array<(payload: any) => void>> = {};
 
-  addEventListener(event, callback) {
+  addEventListener(event: string, callback: (payload?: any) => void) {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
   }
 
-  emit(event, payload) {
+  emit(event: string, payload: any) {
     if (!this.listeners[event]) {
       console.warn("No handlers bound for the event: ", event);
     } else {
@@ -33,8 +33,9 @@ export type ItemImage = {
   y: number;
   id: string;
   visible: boolean;
-  ref: ImageBitmap | null;
+  ref: HTMLImageElement | null;
   source: string;
+  downloaded: null | Promise<any>;
 };
 
 export type MouseArea = {
@@ -82,18 +83,24 @@ export function assertNever(x: never) : never {
 }
 
 export class AppBase {
-  item = null;
+  item: ItemNode;
   eventBus = new EventManager();
-  canvas: HTMLCanvasElement|null = null;
-  context: CanvasRenderingContext2D|null = null;
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
 
-  mount(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, item: ItemNode) {
+    this.item = item;
     this.canvas = canvas;
     const context = canvas.getContext("2d");
     if (context) {
       this.context = context;
-      context.clearRect(0, 0, canvas.width, canvas.height);
+    } else {
+      throw new Error("Could not get rendering context on canvas");
     }
+  }
+
+  mount() {
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
     this.downloadImages();
     this.setupMouseArea();
@@ -103,39 +110,45 @@ export class AppBase {
     this.activateState(initialState, donotPaint);
 
     return Promise.all(this.item.images.map(it => it.downloaded)).then(() => {
-      this.paint(this.item);
-      return this.renderChildren(this.item);
+      if (this.item) {
+        this.paint(this.item);
+        return this.renderChildren(this.item);
+      } else {
+        return Promise.reject("No item found to render!");
+      }
     })
   }
 
   downloadImages() {
-    this.item.images = this.item.images.map(image => {
-      let img = new Image();
-      img.src = image.source;
-      let downloaded = new Promise((resolve, reject) => {
-        img.onload = () => { 
-          console.log("Loaded");
-          resolve({});
-        };
-        img.onerror = () => { 
-          console.log("errored");
-          reject();
-        };
-        img.onabort = () => { 
-          console.log("aborted");
-          reject();
+    if (this.item) {
+      this.item.images = this.item.images.map(image => {
+        let img = new Image();
+        img.src = image.source;
+        let downloaded = new Promise((resolve, reject) => {
+          img.onload = () => { 
+            console.log("Loaded");
+            resolve({});
+          };
+          img.onerror = () => { 
+            console.log("errored");
+            reject();
+          };
+          img.onabort = () => { 
+            console.log("aborted");
+            reject();
+          };
+        });
+
+        return {
+          ...image,
+          ref: img,
+          downloaded 
         };
       });
-
-      return {
-        ...image,
-        ref: img,
-        downloaded 
-      };
-    });
+    }
   }
 
-  renderChildren(node) {
+  renderChildren(node: ItemNode): Promise<any> {
     if (node.children) {
       const rendered = Object.keys(node.children).map(child_id => {
         const child = node.children[child_id];
@@ -151,7 +164,6 @@ export class AppBase {
       console.info("No children in : " + node.id);
       return Promise.resolve();
     }
-    // paint them
   }
 
   setupMouseArea() {
@@ -190,15 +202,18 @@ export class AppBase {
     }
   }
 
-  activateState(state, nopaint?: boolean) {
+  activateState(state: string|null, nopaint?: boolean) {
     state = state || this.item.state;
     const stateConfig = this.item.states.find(stateConf => stateConf.name === state);
-    for (let change of stateConfig.propertyChanges) {
-      const targetImg = this.item.images.find(image => image.id === change.target);
-      if (targetImg) {
-        targetImg.visible = change.visible;
+    if (stateConfig) {
+      for (let change of stateConfig.propertyChanges) {
+        const targetImg = this.item.images.find(image => image.id === change.target);
+        if (targetImg) {
+          targetImg.visible = !!change.visible;
+        }
       }
     }
+    
     if (!nopaint) {
       this.paint(this.item);
     } 
@@ -241,7 +256,11 @@ export class AppBase {
     for (let image of images) {
       let x = node.x + image.x;
       let y = node.y + image.y;
-      context.drawImage(image.ref, x, y, node.width, node.height);
+      if (image.ref) {
+        context.drawImage(image.ref, x, y, node.width, node.height);
+      } else {
+        console.error("Could not render image: ", image);
+      }
     }
 
     let mouseArea = node.mouseArea;

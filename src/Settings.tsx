@@ -73,7 +73,8 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
             visible: false,
             x: 0,
             y: 0,
-            ref: null
+            ref: null,
+            downloaded: null
           });
 
           onNodeUpdate({
