@@ -1,58 +1,95 @@
 import { useRef } from "react";
-export default function({node, onNodeUpdate}) {
-  const filePicker = useRef(null);
+import { assertNever, ItemImage, ItemNode, MouseArea, PilNode } from "./pilBase";
+export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => void; }) {
+  const { node, onNodeUpdate } = props;
+  const filePicker = useRef<HTMLInputElement>(null);
   let settings = (<div>Select a node to edit its settings</div>);
   
-  function onImageUpdate(image) {
-    let images = node.images.map(img => {
-      if (img.id !== image.id) {
-        return img;
-      } else {
-        return image;
-      }
-    });
+  function onImageUpdate(image: ItemImage) {
+    switch (node.type) {
+      case "Text":
+        console.error("Cannot set image on TextNode")
+        break;
+      case "Item":
+        {
+          let images = node.images.map(img => {
+            if (img.id !== image.id) {
+              return img;
+            } else {
+              return image;
+            }
+          });
 
-    let newNode = {
-      ...node,
-      images
-    };
-
-    onNodeUpdate(newNode);
+          let newNode = {
+            ...node,
+            images
+          };
+          onNodeUpdate(newNode);
+        }
+        break;
+      default: 
+        return assertNever(node);
+    }
   }
 
-  function onMouseareaUpdate(mouseArea) {
-    onNodeUpdate({
-      ...node,
-      mouseArea
-    })
+  function onMouseareaUpdate(mouseArea: MouseArea) {
+    switch (node.type) {
+      case "Item":
+        onNodeUpdate({
+          ...node,
+          mouseArea
+        })
+        break;
+      case "Text":
+        break;
+      default:
+        return assertNever(node);
+    }
   }
 
   function uploadFile() {
-    const formData = new FormData();
-    const file = filePicker.current.files[0];
-    formData.append("image", file);
-    fetch("http://localhost:3030/images", {
-      method: "POST",
-      body:  formData
-    })
-    .then(res => res.json())
-    .then(res => {
-      const images = node.images.concat({
-        id: res.filename,
-        source: `http://localhost:3030/image/${res.filename}`,
-        visible: false,
-        x: 0,
-        y: 0
-      });
+    switch (node.type) {
+      case "Text":
+        console.error("Cannot upload image in text node");
+        break;
+      case "Item":
+        {
+        const formData = new FormData();
+        let file = null; 
+        if (filePicker.current) {
+          // @ts-ignore
+          file = filePicker.current.files[0];
+          formData.append("image", file);
+        }
+        fetch("http://localhost:3030/images", {
+          method: "POST",
+          body:  formData
+        })
+        .then(res => res.json())
+        .then(res => {
+          const images = node.images.concat({
+            id: res.filename,
+            source: `http://localhost:3030/image/${res.filename}`,
+            visible: false,
+            x: 0,
+            y: 0,
+            ref: null
+          });
 
-      onNodeUpdate({
-        ...node,
-        images
-      });
-    })
-    .catch(err => {
-      console.error("Failed to upload image file", err);
-    })
+          onNodeUpdate({
+            ...node,
+            images
+          });
+        })
+        .catch(err => {
+          console.error("Failed to upload image file", err);
+        })
+        }
+        break;
+      default:
+        return assertNever(node);
+    }
+    
   }
 
   if (node.type === "Item") {

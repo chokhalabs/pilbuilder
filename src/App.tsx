@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import './App.css';
-import { ItemNode, PilNode, PropertyChange } from "./pilBase";
+import { assertNever, IdObj, ItemNode, PilNode, PropertyChange } from "./pilBase";
 // @ts-ignore
 import { AppBase } from "./pilBase.ts";
 // @ts-ignore
@@ -51,43 +51,58 @@ function App() {
           id: "text1",
           width: 100,
           text: "Some text here",
-          color: "#000000"
+          color: "#000000",
+          children: null
         },
         text2: {
           type: "Text",
           id: "text2",
           width: 100,
           text: "Some other text here",
-          color: "#FF0000"
+          color: "#FF0000",
+          children: null
         }
       }
     }
   });
 
-  const setPil = function(state) {
+  const setPil = function(state: { Item: ItemNode }) {
     _setPil(state);
   }
 
   // Just repaint the canvas after every update to the component
   useEffect(() => render());
 
-  function onZoomChange(ev) {
-    setZoom(ev.target.value);
+  function onZoomChange(ev: React.ChangeEvent<HTMLInputElement>) {
+    if (ev.target) {
+      setZoom(parseFloat(ev.target.value));
+    } else {
+      console.error("Couldn't set zoom")
+    }
   }
 
-  function onNodeUpdate(node) {
+  function onNodeUpdate(node: PilNode) {
     // Find the node that is getting updated and update it
     let newPil = JSON.parse(JSON.stringify(pil.Item));
-    if (newPil.state !== node.state) {
-      newPil.state = node.state;
-      newPil = applyPropertyChanges(newPil, node.state);
-    } else {
-      updateNodeInPil(node, newPil);
+    switch (node.type) {
+      case "Item":
+        if (newPil.state !== node.state) {
+          newPil.state = node.state;
+          newPil = applyPropertyChanges(newPil, node.state);
+        } else {
+          updateNodeInPil(node, newPil);
+        }
+        break;
+      case "Text":
+        updateNodeInPil(node, newPil);
+        break;
+      default:
+        return assertNever(node);
     }
     setPil({ Item: newPil });
   }
 
-  function findNodeById(node, id) {
+  function findNodeById(node: IdObj, id: string): null | IdObj {
     if (node.id === id) {
       return node;
     } else if (node.children && node.children[id]) {
@@ -106,7 +121,7 @@ function App() {
   }
 
   // Should be imported from pilBase
-  function applyPropertyChanges(node, stateName) {
+  function applyPropertyChanges(node: ItemNode, stateName: string) {
     node = JSON.parse(JSON.stringify(node));
     const state = node.states.find(it => it.name === stateName);
     if (state) {
@@ -114,7 +129,7 @@ function App() {
         const updateTarget = findNodeById(node, pchange.target);
         if (updateTarget) {
           const propertyKey = Object.keys(pchange).find(key => key !== "target");
-          if (updateTarget) {
+          if (propertyKey) {
             updateTarget[propertyKey] = pchange[propertyKey];
           } else {
             console.error("Target not found for property change: ", pchange);
@@ -129,12 +144,12 @@ function App() {
     return node;
   }
 
-  function updateNodeInPil(nodeWithUpdates, rootNode) {
+  function updateNodeInPil(nodeWithUpdates: PilNode, rootNode: ItemNode) {
     calculatePropertyChanges(nodeWithUpdates);
     recursiveReplaceNode(nodeWithUpdates, rootNode);
   }
 
-  function recursiveReplaceNode(nodeWithUpdates, cursorNode) {
+  function recursiveReplaceNode(nodeWithUpdates: PilNode, cursorNode: PilNode) {
     if (nodeWithUpdates.id === cursorNode.id) {
       Object.keys(nodeWithUpdates).forEach(key => {
         cursorNode[key] = nodeWithUpdates[key];
@@ -148,7 +163,7 @@ function App() {
     }
   }
 
-  function calculatePropertyChanges(nodeWithUpdates) {
+  function calculatePropertyChanges(nodeWithUpdates: PilNode) {
     // Find the node in pil that has the same id
     const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil.Item);
 
@@ -173,10 +188,14 @@ function App() {
         nodeWithUpdates.states[i].propertyChanges.push(propertyChange);
       } else if (propKey && !targetExists && state.name !== nodeWithUpdates.state) {
         const n = findNodeById(unUpdatedNode, propertyChange.target);
-        nodeWithUpdates.states[i].propertyChanges.push({
-          target: propertyChange.target,
-          [propKey]: n[propKey]
-        });
+        if (n) {
+          nodeWithUpdates.states[i].propertyChanges.push({
+            target: propertyChange.target,
+            [propKey]: n[propKey]
+          });
+        } else {
+          console.error("node not found for: ", propertyChange);
+        }
       } else {
         console.error("Not adding property change because  this state already has one")
       }
@@ -225,14 +244,14 @@ function App() {
     }
   }
 
-  function findNodeInPil(id, cursorNode) {
+  function findNodeInPil(id: string, cursorNode: IdObj): IdObj | null {
     if (cursorNode.id === id) {
       return cursorNode;
     } else {
       const lookIn = Object.keys(cursorNode).filter(key => typeof cursorNode[key] === "object");
       for (let key of lookIn) {
         if (Array.isArray(cursorNode[key])) {
-          const node = cursorNode[key].map(arrItem => findNodeInPil(id, arrItem)).find(it => !!it);
+          const node = cursorNode[key].map((arrItem: IdObj) => findNodeInPil(id, arrItem)).find((it: IdObj | undefined) => !!it);
           if (node) {
             return node;
           }
@@ -271,7 +290,7 @@ function App() {
     })
   }
 
-  function downloadProject(uuid) {
+  function downloadProject(uuid: string) {
     console.log("Waiting 5 sec");
     setTimeout(() => {
       console.log("Trying...");
@@ -310,7 +329,7 @@ function App() {
     </div>
   );
 
-  function renderPilTree(node) {
+  function renderPilTree(node: PilNode) {
     const isSelected = node.id === selectedNode;
     return (
       <div>
@@ -342,7 +361,7 @@ function App() {
         Settings
         <Settings 
           node={currentNode}
-          onNodeUpdate={node => onNodeUpdate(node)}
+          onNodeUpdate={(node: PilNode) => onNodeUpdate(node)}
         />
         <input 
           type="range" 

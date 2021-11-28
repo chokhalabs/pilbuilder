@@ -21,10 +21,33 @@ class EventManager {
 
 export type PilNode = ItemNode | TextNode;
 
+export type IdObj = { id: string , [k: string]: any };
+
 export type PropertyChange = {
   target: string;
   [k: string]: number | boolean | string;
 }
+
+export type ItemImage = {
+  x: number;
+  y: number;
+  id: string;
+  visible: boolean;
+  ref: ImageBitmap | null;
+  source: string;
+};
+
+export type MouseArea = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  draw: boolean;
+  hoverEnabled: boolean;
+  mouseup: boolean;
+  mousedown: boolean;
+};
 
 export type ItemNode = {
   id: string;
@@ -34,24 +57,8 @@ export type ItemNode = {
   draw: boolean;
   width: number;
   height: number;
-  images: Array<{
-    x: number;
-    y: number;
-    id: string;
-    visible: boolean;
-    ref: ImageBitmap;
-  }>;
-  mouseArea: {
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    draw: boolean;
-    hoverEnabled: boolean;
-    mouseup: boolean;
-    mousedown: boolean;
-  };
+  images: ItemImage[];
+  mouseArea: MouseArea;
   children: Record<string, PilNode>;
   state: string;
   states: Array<{
@@ -67,24 +74,25 @@ export type TextNode = {
   color: string;
   text: string;
   width: number;
+  children: null;
 }
 
-function assertNever(x: never) : never {
+export function assertNever(x: never) : never {
   throw new Error("Unexpected value: " + x);
 }
 
 export class AppBase {
   item = null;
   eventBus = new EventManager();
-  canvas: HTMLCanvasElement;
-  context: CanvasRenderingContext2D;
+  canvas: HTMLCanvasElement|null = null;
+  context: CanvasRenderingContext2D|null = null;
 
-  mount(canvas) {
+  mount(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const context = canvas.getContext("2d");
-    context.clearRect(0, 0, canvas.width, canvas.height);
     if (context) {
       this.context = context;
+      context.clearRect(0, 0, canvas.width, canvas.height);
     }
     
     this.downloadImages();
