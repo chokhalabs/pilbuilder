@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import './App.css';
-import { assertNever, IdObj, ItemNode, PilNode, PropertyChange } from "./pilBase";
-import { AppBase } from "./pilBase";
+import { assertNever, IdObj, ItemNode, PilNode, PropertyChange, TextEditNode } from "./pilBase";
+import { AppBase, isStateFulNode } from "./pilBase";
 import Settings from "./Settings";
 
 function App() {
@@ -9,62 +9,77 @@ function App() {
   
   const [zoom, setZoom] = useState(1);
   const [selectedNode, selectNode] = useState("myButton_Symbol");
-  const [pil, _setPil] = useState<{ Item: ItemNode }>({
-    "Item": {
-      "id": "myButton_Symbol",
-      "type": "Item",
-      "width": 115,
-      "height": 100,
-      "x": 0,
-      "y": 0,
-      "draw": false,
-      "state": "normal",
+  const [pil, _setPil] = useState<PilNode>({
+      id: "root",
+      type: "Item",
+      draw: false,
+      x: 0,
+      y: 0,
+      height: 100,
+      width: 100,
       images: [],
-      mouseArea: {
-        "id": "mouseArea",
-        "x": 0,
-        "y": 0,
-        "width": 115,
-        "height": 100,
-        "hoverEnabled": false,
-        "mousedown": true,
-        "mouseup": true,
-        "draw": false
-      },
+      state: "default",
       states: [
         {
-          "name": "normal",
-          "when": "mouseup",
-          "propertyChanges": []
-        },
-        {
-          "name": "pressed",
-          "when": "mousedown",
-          "propertyChanges": []
+          name: "default",
+          when: "true",
+          propertyChanges: []
         }
       ],
+      mouseArea: {
+        id: "mouseArea",
+        x: 0,
+        y: 0,
+        width: 115,
+        height: 30,
+        hoverEnabled: false,
+        mousedown: true,
+        mouseup: true,
+        draw: false
+      },
       children: {
-        text1: {
-          type: "Text",
-          id: "text1",
-          width: 100,
-          text: "Some text here",
-          color: "#000000",
-          children: null
-        },
-        text2: {
-          type: "Text",
-          id: "text2",
-          width: 100,
-          text: "Some other text here",
-          color: "#FF0000",
-          children: null
+        "textedit": {
+          id: "inputelem",
+          type: "TextEdit",
+          width: 115,
+          height: 30,
+          x: 0,
+          y: 0,
+          state: "normal",
+          images: [],
+          props: {
+            value: ""
+          },
+          currentText: "some text",
+          events: {
+            onChange: {
+              when: "keydown",
+              payload: "inputelem.currentText"
+            }
+          },
+          states: [
+            {
+              name: "inactive",
+              when: "esc",
+              propertyChanges: [
+                {
+                  target: "inputelem",
+                  currentText: "props.value"
+                }
+              ]
+            },
+            {
+              name: "active",
+              when: "mousedown",
+              propertyChanges: []
+            }
+          ],
+          children: null        
         }
       }
-    }
   });
 
-  const setPil = function(state: { Item: ItemNode }) {
+  const setPil = function(state: PilNode ) {
     _setPil(state);
   }
 
@@ -81,10 +96,11 @@ function App() {
 
   function onNodeUpdate(node: PilNode) {
     // Find the node that is getting updated and update it
-    let newPil = JSON.parse(JSON.stringify(pil.Item));
+    let newPil: PilNode = JSON.parse(JSON.stringify(pil));
     switch (node.type) {
+      case "TextEdit":
       case "Item":
-        if (newPil.state !== node.state) {
+        if (isStateFulNode(newPil) && newPil.state !== node.state) {
           newPil.state = node.state;
           newPil = applyPropertyChanges(newPil, node.state);
         } else {
@@ -97,7 +113,7 @@ function App() {
       default:
         return assertNever(node);
     }
-    setPil({ Item: newPil });
+    setPil(newPil);
   }
 
   function findNodeById(node: IdObj, id: string): null | IdObj {
@@ -119,7 +135,7 @@ function App() {
   }
 
   // Should be imported from pilBase
-  function applyPropertyChanges(node: ItemNode, stateName: string) {
+  function applyPropertyChanges(node: ItemNode|TextEditNode, stateName: string) {
     node = JSON.parse(JSON.stringify(node));
     const state = node.states.find(it => it.name === stateName);
     if (state) {
@@ -142,12 +158,13 @@ function App() {
     return node;
   }
 
-  function updateNodeInPil(nodeWithUpdates: PilNode, rootNode: ItemNode) {
+  function updateNodeInPil(nodeWithUpdates: PilNode, rootNode: PilNode) {
     switch (nodeWithUpdates.type) {
       case "Text":
         console.error("TextNode cannot have a state and hence propertyChanges");
         break;
       case "Item":
+      case "TextEdit":
         calculatePropertyChanges(nodeWithUpdates);
         break;
       default:
@@ -173,9 +190,9 @@ function App() {
     }
   }
 
-  function calculatePropertyChanges(nodeWithUpdates: ItemNode) {
+  function calculatePropertyChanges(nodeWithUpdates: ItemNode | TextEditNode) {
     // Find the node in pil that has the same id which should come out as an ItemNode
-    const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil.Item) as ItemNode;
+    const unUpdatedNode = findNodeInPil(nodeWithUpdates.id, pil) as ItemNode | TextEditNode;
 
     if (unUpdatedNode) {
       // Find the keys that have been updated
@@ -188,7 +205,7 @@ function App() {
     }
   }
 
-  function addPropertyChange(nodeWithUpdates: ItemNode, propertyChange: PropertyChange, unUpdatedNode: ItemNode) {
+  function addPropertyChange(nodeWithUpdates: ItemNode|TextEditNode, propertyChange: PropertyChange, unUpdatedNode: ItemNode|TextEditNode) {
     for (let i = 0; i < unUpdatedNode.states.length; i++) {
       const state = unUpdatedNode.states[i];
       const propKey = Object.keys(propertyChange).filter(key => key !== 'target')[0];
@@ -281,11 +298,11 @@ function App() {
   }
 
   // Find out which node's settings to render and  update the settings bar
-  const currentNode: PilNode = findCurrentNode(pil.Item) as PilNode;
+  const currentNode: PilNode = findCurrentNode(pil) as PilNode;
 
   function render() {
     if (canvas.current) {
-      let app = new AppBase(canvas.current, pil.Item);
+      let app = new AppBase(canvas.current, pil);
       app.mount();
     } else {
       throw new Error("Could not create app because canvas was not found!")
@@ -342,7 +359,7 @@ function App() {
 
   const pilTree = (
     <div>
-      { renderPilTree(pil.Item) }
+      { renderPilTree(pil) }
     </div>
   );
 

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { assertNever, ItemImage, ItemNode, MouseArea, PilNode } from "./pilBase";
+import { assertNever, isMouseareaNode, ItemImage, ItemNode, MouseArea, PilNode } from "./pilBase";
 export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => void; }) {
   const { node, onNodeUpdate } = props;
   const filePicker = useRef<HTMLInputElement>(null);
@@ -10,6 +10,7 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
       case "Text":
         console.error("Cannot set image on TextNode")
         break;
+      case "TextEdit":
       case "Item":
         {
           let images = node.images.map(img => {
@@ -33,17 +34,13 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
   }
 
   function onMouseareaUpdate(mouseArea: MouseArea) {
-    switch (node.type) {
-      case "Item":
-        onNodeUpdate({
-          ...node,
-          mouseArea
-        })
-        break;
-      case "Text":
-        break;
-      default:
-        return assertNever(node);
+    if (isMouseareaNode(node)) {
+      onNodeUpdate({
+        ...node,
+        mouseArea
+      });    
+    } else {
+      console.error("Cannot update mouse area on this node");
     }
   }
 
@@ -52,6 +49,7 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
       case "Text":
         console.error("Cannot upload image in text node");
         break;
+      case "TextEdit":
       case "Item":
         {
         const formData = new FormData();

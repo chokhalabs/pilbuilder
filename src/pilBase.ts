@@ -19,7 +19,7 @@ class EventManager {
   }
 }
 
-export type PilNode = ItemNode | TextNode;
+export type PilNode = ItemNode | TextNode | TextEditNode;
 
 export type IdObj = { id: string , [k: string]: any };
 
@@ -69,6 +69,33 @@ export type ItemNode = {
   }>;
 }
 
+export type TextEditNode = {
+  id: string;
+  type: "TextEdit";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  images: ItemImage[];
+  children: null;
+  state: string;
+  states: Array<{
+    name: string;
+    when: string;
+    propertyChanges: PropertyChange[];
+  }>;
+  props: {
+    value: string;
+  };
+  events: {
+    onChange: {
+      when: string;
+      payload: string;
+    }
+  };
+  currentText: string;
+}
+
 export type TextNode = {
   id: string;
   type: "Text";
@@ -82,13 +109,31 @@ export function assertNever(x: never) : never {
   throw new Error("Unexpected value: " + x);
 }
 
+export function isStateFulNode(node: PilNode): node is (ItemNode | TextEditNode) {
+  if ((node as ItemNode).state !== undefined) {
+    return true;
+  } else if ((node as TextEditNode).state !== undefined) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function isMouseareaNode(node: PilNode): node is ItemNode {
+  if ((node as ItemNode).mouseArea !== undefined) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export class AppBase {
-  item: ItemNode;
+  item: PilNode;
   eventBus = new EventManager();
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
 
-  constructor(canvas: HTMLCanvasElement, item: ItemNode) {
+  constructor(canvas: HTMLCanvasElement, item: PilNode) {
     this.item = item;
     this.canvas = canvas;
     const context = canvas.getContext("2d");
@@ -109,7 +154,12 @@ export class AppBase {
     const donotPaint = true;
     this.activateState(initialState, donotPaint);
 
-    return Promise.all(this.item.images.map(it => it.downloaded)).then(() => {
+    let imageDownloads: Promise<any> = Promise.resolve();
+    if (isStateFulNode(this.item)) {
+      imageDownloads = Promise.all(this.item.images.map(it => it.downloaded));
+    }
+
+    return imageDownloads.then(() => {
       if (this.item) {
         this.paint(this.item);
         return this.renderChildren(this.item);
@@ -120,7 +170,7 @@ export class AppBase {
   }
 
   downloadImages() {
-    if (this.item) {
+    if (isStateFulNode(this.item)) {
       this.item.images = this.item.images.map(image => {
         let img = new Image();
         img.src = image.source;
@@ -148,11 +198,11 @@ export class AppBase {
     }
   }
 
-  renderChildren(node: ItemNode): Promise<any> {
+  renderChildren(node: PilNode): Promise<any> {
     if (node.children) {
       const rendered = Object.keys(node.children).map(child_id => {
         const child = node.children[child_id];
-        if (child.type === "Text") {
+        if (child.type === "Text" || child.type === "TextEdit") {
           this.paint(child, node);
           return Promise.resolve();
         } else {
@@ -167,56 +217,68 @@ export class AppBase {
   }
 
   setupMouseArea() {
-    if (this.item.mouseArea && this.item.mouseArea.mousedown) {
+    if (isMouseareaNode(this.item) && this.item.mouseArea && this.item.mouseArea.mousedown) {
       this.canvas.addEventListener("mousedown", (ev) => {
-        if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
-          // this.onButtonPress();
-          if (this.item.mouseArea.mousedown) {
-            this.eventBus.emit("mousedown", ev);
-          }
-
-          this.item.states.forEach(state => {
-            if (state.when === "mousedown") {
-              this.activateState(state.name);
+        if (isMouseareaNode(this.item)) {
+          if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+            // this.onButtonPress();
+            if (this.item.mouseArea.mousedown) {
+              this.eventBus.emit("mousedown", ev);
             }
-          })
+
+            this.item.states.forEach(state => {
+              if (state.when === "mousedown") {
+                this.activateState(state.name);
+              }
+            })
+          } else {
+            console.error("Cannot run mousearea on this node")
+          }
         }
       });
     }
 
-    if (this.item.mouseArea && this.item.mouseArea.mouseup) {
+    if (isMouseareaNode(this.item) && this.item.mouseArea && this.item.mouseArea.mouseup) {
       this.canvas.addEventListener("mouseup", (ev) => {
-        if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
-          // this.onButtonRelease();
-          if (this.item.mouseArea.mouseup) {
-            this.eventBus.emit("mouseup", ev);
-          }
-
-          this.item.states.forEach(state => {
-            if (state.when === "mouseup") {
-              this.activateState(state.name);
+        if (isMouseareaNode(this.item)) {
+          if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+            // this.onButtonRelease();
+            if (this.item.mouseArea.mouseup) {
+              this.eventBus.emit("mouseup", ev);
             }
-          })
+
+            this.item.states.forEach(state => {
+              if (state.when === "mouseup") {
+                this.activateState(state.name);
+              }
+            })
+          }
+        } else {
+          console.error("Cannot run mousearea on this node")
         }
       });
     }
   }
 
   activateState(state: string|null, nopaint?: boolean) {
-    state = state || this.item.state;
-    const stateConfig = this.item.states.find(stateConf => stateConf.name === state);
-    if (stateConfig) {
-      for (let change of stateConfig.propertyChanges) {
-        const targetImg = this.item.images.find(image => image.id === change.target);
-        if (targetImg) {
-          targetImg.visible = !!change.visible;
+    if (isStateFulNode(this.item)) {
+      state = state || this.item.state;
+      const stateConfig = this.item.states.find(stateConf => stateConf.name === state);
+      if (stateConfig) {
+        for (let change of stateConfig.propertyChanges) {
+          const targetImg = this.item.images.find(image => image.id === change.target);
+          if (targetImg) {
+            targetImg.visible = !!change.visible;
+          }
         }
       }
+      
+      if (!nopaint) {
+        this.paint(this.item);
+      }
+    } else {
+      console.error("Cannot activate state on this node");
     }
-    
-    if (!nopaint) {
-      this.paint(this.item);
-    } 
   }
 
   paint(node: PilNode, parentNode?: undefined | null | PilNode) {
@@ -231,9 +293,30 @@ export class AppBase {
           console.error("Cannot paint text node outside of an item node");
         }
         break;
+      case "TextEdit":
+        if ((parentNode && parentNode.type === "Item") || !parentNode) {
+          this.paintTextEdit(node, parentNode);
+        } else {
+          console.error("Cannot paint a textEdit inside a ", parentNode);
+        }
+        break;
       default:
         return assertNever(node);
     }
+  }
+
+  paintTextEdit(node: TextEditNode, parentNode: ItemNode|undefined|null) {
+    const context = this.context;
+    context.beginPath();
+    let x = node.x, y = node.y;
+    if (parentNode && parentNode.type === "Item") {
+      x = parentNode.x + node.x;
+      y = parentNode.y + node.y;
+    }
+    context.rect(x, y, node.width, node.height);
+    context.fillText(node.currentText, x, y + 10);
+    context.stroke();
+    context.closePath();
   }
 
   paintItem(node: ItemNode, parentNode?: undefined | null | PilNode) {
