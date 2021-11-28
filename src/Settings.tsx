@@ -103,28 +103,28 @@ export default function({node, onNodeUpdate}) {
           <input 
             type="number" 
             value={node.mouseArea.x} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, x: ev.target.value })}
+            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, x: parseFloat(ev.target.value) })}
           />
 
           <div>y</div>
           <input 
             type="number" 
             value={node.mouseArea.y} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, y: ev.target.value })}
+            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, y: parseFloat(ev.target.value) })}
           />
 
           <div>width</div>
           <input 
             type="number" 
             value={node.mouseArea.width} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, width: ev.target.value })}
+            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, width: parseFloat(ev.target.value) })}
           />
 
           <div>height</div>
           <input 
             type="number" 
             value={node.mouseArea.height} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, height: ev.target.value })}
+            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, height: parseFloat(ev.target.value) })}
           />
 
           <div>
@@ -154,28 +154,28 @@ export default function({node, onNodeUpdate}) {
         <input 
           type="number" 
           value={node.x} 
-          onChange={ev => onNodeUpdate({ ...node, x: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, x: parseFloat(ev.target.value) })}
         />
 
         <div>y</div>
         <input 
           type="number" 
           value={node.y} 
-          onChange={ev => onNodeUpdate({ ...node, y: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, y: parseFloat(ev.target.value) })}
         />
 
         <div>width</div>
         <input 
           type="number" 
           value={node.width} 
-          onChange={ev => onNodeUpdate({ ...node, width: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, width: parseFloat(ev.target.value) })}
         />
 
         <div>height</div>
         <input 
           type="number" 
           value={node.height} 
-          onChange={ev => onNodeUpdate({ ...node, height: ev.target.value })}
+          onChange={ev => onNodeUpdate({ ...node, height: parseFloat(ev.target.value) })}
         />
 
         <div>
@@ -206,14 +206,14 @@ export default function({node, onNodeUpdate}) {
         <div> color
           <input 
             type="color" 
-            onChange={ev => onNodeUpdate({ ...node, color: ev.target.color })} 
+            onChange={ev => onNodeUpdate({ ...node, color: ev.target.value })} 
             value={node.color}
           />
         </div>
         <div> maxWidth
           <input 
             type="number" 
-            onChange={ev => onNodeUpdate({ ...node, width: ev.target.value })} 
+            onChange={ev => onNodeUpdate({ ...node, width: parseFloat(ev.target.value) })} 
             value={node.width}
           />
         </div>

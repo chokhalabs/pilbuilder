@@ -1,14 +1,17 @@
 import { useRef, useState, useEffect } from "react";
 import './App.css';
-import { AppBase } from "./pilBase";
-import Settings from "./Settings";
+import { ItemNode, PilNode, PropertyChange } from "./pilBase";
+// @ts-ignore
+import { AppBase } from "./pilBase.ts";
+// @ts-ignore
+import Settings from "./Settings.tsx";
 
 function App() {
   const canvas = useRef(null);
   
   const [zoom, setZoom] = useState(1);
   const [selectedNode, selectNode] = useState("myButton_Symbol");
-  const [pil, _setPil] = useState({
+  const [pil, _setPil] = useState<{ Item: ItemNode }>({
     "Item": {
       "id": "myButton_Symbol",
       "type": "Item",
@@ -68,55 +71,9 @@ function App() {
   // Just repaint the canvas after every update to the component
   useEffect(() => render());
 
-  /*
-  function setPilState(state) {
-    
-    const newPil = {
-      Item: {
-        ...pil.Item,
-        state
-      }
-    };
-
-    // Apply property changes
-    const target_state = newPil.Item.states.find(it => it.name === state);
-    const propertyChanges = target_state.propertyChanges;
-
-    for (let change of propertyChanges) {
-      const target = newPil.Item.images.find(it => it.id === change.target);
-      if (target)
-        target.visible = change.visible;
-    }
-
-    setPil(newPil);
-  }
-  */
-
   function onZoomChange(ev) {
     setZoom(ev.target.value);
   }
-
-  /*
-  function setStateCondition(ev, state) {
-    const value = ev.target.value;
-    const newPil = {
-      Item: {
-        ...pil.Item,
-        states: pil.Item.states.map(item => {
-          if (item.name !== state.name) {
-            return item;
-          } else {
-            return {
-              ...item,
-              when: value
-            }
-          }
-        })
-      }
-    };
-    setPil(newPil);
-  }
-  */
 
   function onNodeUpdate(node) {
     // Find the node that is getting updated and update it
@@ -172,34 +129,6 @@ function App() {
     return node;
   }
 
-  function propertyIsDifferentInOtherStates(node, key, nodeInOtherStates) {
-    if (node && typeof node[key] === "object" && key !== "states") {
-      const propertyInOtherStates = node.states.reduce((accum, state) => {
-        const nodeInOtherState = nodeInOtherStates[state.name];
-        if (nodeInOtherState) {
-          accum[state.name] = nodeInOtherState[key];
-        }
-        return accum;
-      }, {});
-      const propertyInCurrentState = node[key];
-      propertyInCurrentState.states = node.states.map(state => ({ name: state.name }));
-      const isDifferent = Object.keys(propertyInCurrentState).some(k => propertyIsDifferentInOtherStates(propertyInCurrentState, k, propertyInOtherStates));
-      return isDifferent;
-    } else if (node && key !== "states") {
-      const isDifferent = node.states.some(state => {
-        return nodeInOtherStates[state.name] && nodeInOtherStates[state.name][key] !== node[key];
-      });
-      return isDifferent;
-    } else if (key !== "states") {
-      console.info("node was not defined: ", node, key)
-      return true;
-    } else if (key === "state") {
-      return false;
-    } else {
-      console.error("Unhandled state while diffing", node, key)
-    }
-  }
-
   function updateNodeInPil(nodeWithUpdates, rootNode) {
     calculatePropertyChanges(nodeWithUpdates);
     recursiveReplaceNode(nodeWithUpdates, rootNode);
@@ -234,15 +163,15 @@ function App() {
   function addPropertyChange(nodeWithUpdates, propertyChange, unUpdatedNode) {
     for (let i = 0; i < unUpdatedNode.states.length; i++) {
       const state = unUpdatedNode.states[i];
-      const propKey = Object.keys(propertyChange).filter(key => key !== 'target');
+      const propKey = Object.keys(propertyChange).filter(key => key !== 'target')[0];
       const targetExists = state.propertyChanges.filter(propChange => {
         const sameTarget = propChange.target === propertyChange.target;
-        const sameValue = propertyChange[propKey] === propChange[propKey];
+        const sameValue = propKey && propertyChange[propKey] === propChange[propKey];
         return sameTarget && sameValue;
       }).length > 0;
       if (!targetExists && state.name === nodeWithUpdates.state) {
         nodeWithUpdates.states[i].propertyChanges.push(propertyChange);
-      } else if (!targetExists && state.name !== nodeWithUpdates.state) {
+      } else if (propKey && !targetExists && state.name !== nodeWithUpdates.state) {
         const n = findNodeById(unUpdatedNode, propertyChange.target);
         nodeWithUpdates.states[i].propertyChanges.push({
           target: propertyChange.target,
@@ -254,7 +183,7 @@ function App() {
     }
   }
 
-  function getUpdateTargets(nodeWithUpdates, unUpdatedNode) {
+  function getUpdateTargets(nodeWithUpdates: PilNode, unUpdatedNode: PilNode): PropertyChange[] {
     const updateTargets = Object.keys(nodeWithUpdates).map(key => {
       if (typeof nodeWithUpdates[key] !== 'object' && nodeWithUpdates[key] !== unUpdatedNode[key]) {
         return {
@@ -276,70 +205,6 @@ function App() {
     });
     return updateTargets.flat(Infinity).filter(it => !!it && !!it.target);
   }
-
-  /*
-  function wireImageToState(ev, image) {
-    const newStates = pil.Item.states.map(currentState => {
-      if (currentState.name === pil.Item.state) {
-        const existingChange = currentState.propertyChanges.find(it => it.target === image.id && it.visible !== undefined);
-        if (existingChange) {
-          existingChange.visible = ev.target.checked;
-        } else {
-          currentState.propertyChanges.push({
-            target: image.id,
-            visible: ev.target.checked
-          })
-        }
-      }
-      return currentState;
-    });
-    
-    const newImages = pil.Item.images.map(it => {
-      if (it.id === image.id) {
-        it.visible = ev.target.checked;
-      }
-      return it;
-    })
-
-    setPil({
-      Item: {
-        ...pil.Item,
-        states: newStates,
-        images: newImages
-      }
-    })
-  }
-  */
-
-  /* 
-  const states = pil.Item.states.map(it => {
-    return (
-      <div key={it.name}>
-        <input 
-          type="radio" 
-          name="state" 
-          value={it.name} 
-          checked={pil.Item.state === it.name} 
-          onChange={() => setPilState(it.name)}
-        />
-        {it.name}
-        : activates when mouseArea
-        <textarea value={it.when} onChange={ev => setStateCondition(ev, it)}></textarea>
-      </div>
-    );
-  });
-  */
-
-  // const images = pil.Item.images.map(it => {
-  //   return (
-  //     <div key={it.source}>
-  //       <img src={it.source}></img>
-  //       <label>visible
-  //         <input type="checkbox" checked={it.visible} onChange={(ev) => wireImageToState(ev, it)}></input>
-  //       </label>
-  //     </div>
-  //   );
-  // });
 
   function findCurrentNode(node) {
     if (node.id === selectedNode) {
@@ -412,6 +277,7 @@ function App() {
       console.log("Trying...");
       fetch(`http://localhost:3030/project/${uuid}`)
       .then(res => {
+        // @ts-ignore
         if (res.statusCode === 404) {
           downloadProject(uuid);
           return Promise.reject();
@@ -422,7 +288,7 @@ function App() {
       .then(() => {
         var a = document.createElement("a");
         document.body.appendChild(a);
-        a.style = "display: none";
+        a.setAttribute("style", "display: none");
         a.href = `http://localhost:3030/project/${uuid}`;
         a.download = uuid;
         a.click();

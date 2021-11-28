@@ -1,5 +1,8 @@
-+ Wire up event listeners in the component
-+ Add text edit component
++ ~~Update server to download with latest pillbase~~
++ Add textedit component
++ Remove top level Item in pil
++ Fix bug with placement edit controls that paints wrongly
++ Add typescript
 + Remove state variables that are getting added during diffing
 + Check if the paint function is clearing the canvas too much
 
