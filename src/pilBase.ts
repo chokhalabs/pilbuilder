@@ -277,16 +277,30 @@ export class AppBase {
     }
   }
 
-  onNodeUpdate(node: PilNode) {
-    // Find the node and its parent in the item and replace it
-    let parent = this.findNodeAndParent(node, this.item, null);
-    if (parent) {
-      parent.children[node.id] = node;
-    } else if (this.item.id === node.id) {
-      this.item = node;
+  // onNodeUpdate(node: PilNode) {
+  //   // Find the node and its parent in the item and replace it
+  //   let parent = this.findNodeAndParent(node, this.item, null);
+  //   if (parent) {
+  //     parent.children[node.id] = node;
+  //   } else if (this.item.id === node.id) {
+  //     this.item = node;
+  //   } else {
+  //     throw new Error("Could not update node");
+  //   }
+  //   this.paint(node, parent);
+  // }
+
+  onNodePropertyUpdate(node: PilNode, key: string) {
+    const parent = this.findNodeAndParent(node, this.item, null);
+    let nodeRef: any;
+    if (node.id === this.item.id) {
+      nodeRef = this.item;
+    } else if (parent) {
+      nodeRef = parent.children[node.id];
     } else {
       throw new Error("Could not update node");
     }
+    nodeRef[key] = (node as any)[key];
     this.paint(node, parent);
   }
 
@@ -319,7 +333,7 @@ export class AppBase {
       if (stateConfig) {
         for (let cb of stateConfig.callOnEnter) {
           import(`./${node.type}`).then(fcns => {
-            Reflect.apply(fcns[cb], null, [node, this.onNodeUpdate.bind(this)]);
+            Reflect.apply(fcns[cb], null, [node, this.onNodePropertyUpdate.bind(this)]);
           })
         }
 

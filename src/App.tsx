@@ -73,12 +73,7 @@ function App() {
             {
               name: "inactive",
               when: "esc",
-              propertyChanges: [
-                {
-                  target: "inputelem",
-                  currentText: "props.value"
-                }
-              ],
+              propertyChanges: [],
               callOnEnter: []
             },
             {
