@@ -50,6 +50,13 @@ export type MouseArea = {
   mousedown: boolean;
 };
 
+export type NodeState = {
+  name: string;
+  when: string;
+  propertyChanges: PropertyChange[];
+  callOnEnter: string[];
+};
+
 export type ItemNode = {
   id: string;
   type: "Item";
@@ -62,11 +69,7 @@ export type ItemNode = {
   mouseArea: MouseArea;
   children: Record<string, PilNode>;
   state: string;
-  states: Array<{
-    name: string;
-    when: string;
-    propertyChanges: PropertyChange[];
-  }>;
+  states: NodeState[]; 
 }
 
 export type TextEditNode = {
@@ -79,11 +82,8 @@ export type TextEditNode = {
   images: ItemImage[];
   children: null;
   state: string;
-  states: Array<{
-    name: string;
-    when: string;
-    propertyChanges: PropertyChange[];
-  }>;
+  states: NodeState[];
+  mouseArea: MouseArea;
   props: {
     value: string;
   };
@@ -127,6 +127,24 @@ export function isMouseareaNode(node: PilNode): node is ItemNode {
   }
 }
 
+export function findNodeById(node: IdObj, id: string): null | IdObj {
+    if (node.id === id) {
+      return node;
+    } else if (node.children && node.children[id]) {
+      return node.children[id];
+    } else {
+      const candidateNodes = Object.keys(node).filter(key => typeof node[key] === "object");
+      for (let key of candidateNodes) {
+        const child = node[key];
+        const n = findNodeById(child, id);
+        if (n) {
+          return n;
+        }     
+      }
+      return null;
+    }
+  }
+
 export class AppBase {
   item: PilNode;
   eventBus = new EventManager();
@@ -144,34 +162,51 @@ export class AppBase {
     }
   }
 
-  mount() {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  mount(node?: PilNode, parent?: ItemNode) {
+    if (!node) {
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      node = this.item;
+    }
     
-    this.downloadImages();
-    this.setupMouseArea();
+    this.downloadImages(node);
+    this.setupMouseArea(node);
 
-    const initialState = null;
-    const donotPaint = true;
-    this.activateState(initialState, donotPaint);
+    if (isStateFulNode(node)) {
+      const donotPaint = true;
+      this.activateState(node.state, node, donotPaint);
+    }
 
     let imageDownloads: Promise<any> = Promise.resolve();
-    if (isStateFulNode(this.item)) {
-      imageDownloads = Promise.all(this.item.images.map(it => it.downloaded));
+    if (isStateFulNode(node)) {
+      imageDownloads = Promise.all(node.images.map(it => it.downloaded));
     }
 
     return imageDownloads.then(() => {
-      if (this.item) {
-        this.paint(this.item);
-        return this.renderChildren(this.item);
-      } else {
-        return Promise.reject("No item found to render!");
+      if (node) {
+        this.paint(node, parent);
+        if (node.children) {
+          Object.values(node.children).forEach(child => {
+            if (node) {
+              switch (node.type) {
+                case "Item":
+                  this.mount(child, node);
+                  break;
+                case "Text":
+                case "TextEdit":
+                  break;
+                default:
+                  assertNever(node);
+              }
+            }
+          });
+        }
       }
-    })
+    });
   }
 
-  downloadImages() {
-    if (isStateFulNode(this.item)) {
-      this.item.images = this.item.images.map(image => {
+  downloadImages(node: PilNode) {
+    if (isStateFulNode(node)) {
+      node.images = node.images.map(image => {
         let img = new Image();
         img.src = image.source;
         let downloaded = new Promise((resolve, reject) => {
@@ -198,37 +233,19 @@ export class AppBase {
     }
   }
 
-  renderChildren(node: PilNode): Promise<any> {
-    if (node.children) {
-      const rendered = Object.keys(node.children).map(child_id => {
-        const child = node.children[child_id];
-        if (child.type === "Text" || child.type === "TextEdit") {
-          this.paint(child, node);
-          return Promise.resolve();
-        } else {
-          return this.renderChildren(child);
-        }
-      });
-      return Promise.all(rendered);
-    } else {
-      console.info("No children in : " + node.id);
-      return Promise.resolve();
-    }
-  }
-
-  setupMouseArea() {
-    if (isMouseareaNode(this.item) && this.item.mouseArea && this.item.mouseArea.mousedown) {
+  setupMouseArea(node: PilNode) {
+    if (isMouseareaNode(node) && node.mouseArea && node.mouseArea.mousedown) {
       this.canvas.addEventListener("mousedown", (ev) => {
-        if (isMouseareaNode(this.item)) {
-          if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+        if (isMouseareaNode(node)) {
+          if (ev.offsetX <= node.mouseArea.width && ev.offsetY <= node.mouseArea.height) {
             // this.onButtonPress();
-            if (this.item.mouseArea.mousedown) {
+            if (node.mouseArea.mousedown) {
               this.eventBus.emit("mousedown", ev);
             }
 
-            this.item.states.forEach(state => {
+            node.states.forEach(state => {
               if (state.when === "mousedown") {
-                this.activateState(state.name);
+                this.activateState(state.name, node);
               }
             })
           } else {
@@ -238,18 +255,18 @@ export class AppBase {
       });
     }
 
-    if (isMouseareaNode(this.item) && this.item.mouseArea && this.item.mouseArea.mouseup) {
+    if (isMouseareaNode(node) && node.mouseArea && node.mouseArea.mouseup) {
       this.canvas.addEventListener("mouseup", (ev) => {
-        if (isMouseareaNode(this.item)) {
-          if (ev.offsetX <= this.item.mouseArea.width && ev.offsetY <= this.item.mouseArea.height) {
+        if (isMouseareaNode(node)) {
+          if (ev.offsetX <= node.mouseArea.width && ev.offsetY <= node.mouseArea.height) {
             // this.onButtonRelease();
-            if (this.item.mouseArea.mouseup) {
+            if (node.mouseArea.mouseup) {
               this.eventBus.emit("mouseup", ev);
             }
 
-            this.item.states.forEach(state => {
+            node.states.forEach(state => {
               if (state.when === "mouseup") {
-                this.activateState(state.name);
+                this.activateState(state.name, node);
               }
             })
           }
@@ -260,21 +277,68 @@ export class AppBase {
     }
   }
 
-  activateState(state: string|null, nopaint?: boolean) {
-    if (isStateFulNode(this.item)) {
-      state = state || this.item.state;
-      const stateConfig = this.item.states.find(stateConf => stateConf.name === state);
+  onNodeUpdate(node: PilNode) {
+    // Find the node and its parent in the item and replace it
+    let parent = this.findNodeAndParent(node, this.item, null);
+    if (parent) {
+      parent.children[node.id] = node;
+    } else if (this.item.id === node.id) {
+      this.item = node;
+    } else {
+      throw new Error("Could not update node");
+    }
+    this.paint(node, parent);
+  }
+
+  findNodeAndParent(node: PilNode, cursorNode: PilNode, parent: ItemNode | null): ItemNode | null {
+    if (node.id === cursorNode.id) {
+      return parent; 
+    } else if (cursorNode.children && cursorNode.children[node.id]) {
+      return cursorNode;
+    } else if (cursorNode.children) {
+      const parentCandidates = Object.values(cursorNode.children).map(child => {
+        return this.findNodeAndParent(node, child, cursorNode);
+      });
+      const p = parentCandidates.find(it => !!it); 
+      if (p) {
+        return p;
+      } else {
+        return null;
+      }
+    } else {
+      throw new Error("Looks like we couldn't find the parent of the node");
+    }
+  } 
+
+  // Take in node whose state to activate
+  // Expect changes other than visibility
+  // Run the handlers for the state if any
+  activateState(state: string, node: PilNode, nopaint?: boolean) {
+    if (isStateFulNode(node)) {
+      const stateConfig = node.states.find(stateConf => stateConf.name === state);
       if (stateConfig) {
+        for (let cb of stateConfig.callOnEnter) {
+          import(`./${node.type}`).then(fcns => {
+            Reflect.apply(fcns[cb], null, [node, this.onNodeUpdate.bind(this)]);
+          })
+        }
+
         for (let change of stateConfig.propertyChanges) {
-          const targetImg = this.item.images.find(image => image.id === change.target);
-          if (targetImg) {
-            targetImg.visible = !!change.visible;
+          const target = findNodeById(node, change.target);
+          const changekey = Object.keys(change).filter(key => key !== "target");
+          if (target) {
+            // @ts-ignore
+            target[changekey] = change[changekey];
+          } else {
+            console.error("Could not apply property change: ", change);
           }
         }
+      } else {
+        console.error("No state config found for: ", node, state);
       }
       
       if (!nopaint) {
-        this.paint(this.item);
+        this.paint(node);
       }
     } else {
       console.error("Cannot activate state on this node");
@@ -313,10 +377,15 @@ export class AppBase {
       x = parentNode.x + node.x;
       y = parentNode.y + node.y;
     }
-    context.rect(x, y, node.width, node.height);
+
+    context.clearRect(x, y, node.width, node.height);
+    if (node.state === "active") {
+      context.rect(x, y, node.width, node.height);
+    }
     context.fillText(node.currentText, x, y + 10);
     context.stroke();
     context.closePath();
+    
   }
 
   paintItem(node: ItemNode, parentNode?: undefined | null | PilNode) {

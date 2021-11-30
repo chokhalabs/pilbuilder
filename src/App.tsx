@@ -1,14 +1,14 @@
 import React, { useRef, useState, useEffect } from "react";
 import './App.css';
 import { assertNever, IdObj, ItemNode, PilNode, PropertyChange, TextEditNode } from "./pilBase";
-import { AppBase, isStateFulNode } from "./pilBase";
+import { AppBase, isStateFulNode, findNodeById } from "./pilBase";
 import Settings from "./Settings";
 
 function App() {
   const canvas = useRef(null);
   
   const [zoom, setZoom] = useState(1);
-  const [selectedNode, selectNode] = useState("myButton_Symbol");
+  const [selectedNode, selectNode] = useState("root");
   const [pil, _setPil] = useState<PilNode>({
       id: "root",
       type: "Item",
@@ -23,7 +23,8 @@ function App() {
         {
           name: "default",
           when: "true",
-          propertyChanges: []
+          propertyChanges: [],
+          callOnEnter: []
         }
       ],
       mouseArea: {
@@ -38,14 +39,14 @@ function App() {
         draw: false
       },
       children: {
-        "textedit": {
+        "inputelem": {
           id: "inputelem",
           type: "TextEdit",
           width: 115,
           height: 30,
           x: 0,
           y: 0,
-          state: "normal",
+          state: "inactive",
           images: [],
           props: {
             value: ""
@@ -57,6 +58,17 @@ function App() {
               payload: "inputelem.currentText"
             }
           },
+          mouseArea: {
+            id: "textedit_mousearea",
+            x: 0,
+            y: 0,
+            width: 115,
+            height: 30,
+            hoverEnabled: false,
+            mousedown: true,
+            mouseup: true,
+            draw: false
+          },
           states: [
             {
               name: "inactive",
@@ -66,12 +78,14 @@ function App() {
                   target: "inputelem",
                   currentText: "props.value"
                 }
-              ]
+              ],
+              callOnEnter: []
             },
             {
               name: "active",
               when: "mousedown",
-              propertyChanges: []
+              propertyChanges: [],
+              callOnEnter: [ "onActive" ]
             }
           ],
           children: null        
@@ -114,24 +128,6 @@ function App() {
         return assertNever(node);
     }
     setPil(newPil);
-  }
-
-  function findNodeById(node: IdObj, id: string): null | IdObj {
-    if (node.id === id) {
-      return node;
-    } else if (node.children && node.children[id]) {
-      return node.children[id];
-    } else {
-      const candidateNodes = Object.keys(node).filter(key => typeof node[key] === "object");
-      for (let key of candidateNodes) {
-        const child = node[key];
-        const n = findNodeById(child, id);
-        if (n) {
-          return n;
-        }     
-      }
-      return null;
-    }
   }
 
   // Should be imported from pilBase

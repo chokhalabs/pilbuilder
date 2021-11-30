@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { assertNever, isMouseareaNode, ItemImage, ItemNode, MouseArea, PilNode } from "./pilBase";
+import { assertNever, isMouseareaNode, isStateFulNode, ItemImage, ItemNode, MouseArea, PilNode } from "./pilBase";
 export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => void; }) {
   const { node, onNodeUpdate } = props;
   const filePicker = useRef<HTMLInputElement>(null);
@@ -111,81 +111,61 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
       });
     }
 
-    let states = null;
-    if (node.states) {
-      states = node.states.map(it => {
-        return (
-          <div key={it.name}>
-            <input 
-              type="radio" 
-              name="state" 
-              value={it.name} 
-              checked={node.state === it.name} 
-              onChange={() => onNodeUpdate({ ...node, state: it.name })}
-            />
-            {it.name}
-            : activates when mouseArea
-            <textarea value={it.when} onChange={() => {}}></textarea>
-          </div>
-        );
-      });
-    }
+    
 
     let mouseArea = null;
-    if (node.mouseArea) {
-      mouseArea = (
+    mouseArea = (
+      <div>
+        <div>x</div>
+        <input 
+          type="number" 
+          value={node.mouseArea.x} 
+          onChange={ev => onMouseareaUpdate({ ...node.mouseArea, x: parseFloat(ev.target.value) })}
+        />
+
+        <div>y</div>
+        <input 
+          type="number" 
+          value={node.mouseArea.y} 
+          onChange={ev => onMouseareaUpdate({ ...node.mouseArea, y: parseFloat(ev.target.value) })}
+        />
+
+        <div>width</div>
+        <input 
+          type="number" 
+          value={node.mouseArea.width} 
+          onChange={ev => onMouseareaUpdate({ ...node.mouseArea, width: parseFloat(ev.target.value) })}
+        />
+
+        <div>height</div>
+        <input 
+          type="number" 
+          value={node.mouseArea.height} 
+          onChange={ev => onMouseareaUpdate({ ...node.mouseArea, height: parseFloat(ev.target.value) })}
+        />
+
         <div>
-          <div>x</div>
           <input 
-            type="number" 
-            value={node.mouseArea.x} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, x: parseFloat(ev.target.value) })}
+            type="checkbox" 
+            checked={node.mouseArea.draw} 
+            onChange={(e) => onMouseareaUpdate({ ...node.mouseArea, draw: e.target.checked })} 
           />
-
-          <div>y</div>
-          <input 
-            type="number" 
-            value={node.mouseArea.y} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, y: parseFloat(ev.target.value) })}
-          />
-
-          <div>width</div>
-          <input 
-            type="number" 
-            value={node.mouseArea.width} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, width: parseFloat(ev.target.value) })}
-          />
-
-          <div>height</div>
-          <input 
-            type="number" 
-            value={node.mouseArea.height} 
-            onChange={ev => onMouseareaUpdate({ ...node.mouseArea, height: parseFloat(ev.target.value) })}
-          />
-
+            show boundingbox
+          </div>
+        <div>onmousedown 
           <div>
-            <input 
-              type="checkbox" 
-              checked={node.mouseArea.draw} 
-              onChange={(e) => onMouseareaUpdate({ ...node.mouseArea, draw: e.target.checked })} 
-            />
-              show boundingbox
-            </div>
-          <div>onmousedown 
-            <div>
-              <input type="radio" name="mousedown" />
-              emit event
-              <input type="text" />
-            </div>
+            <input type="radio" name="mousedown" />
+            emit event
+            <input type="text" />
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+
+    
 
     settings = (
       <div>
-        {states && <div>States</div>}
-        {states}
         <div>x</div>
         <input 
           type="number" 
@@ -256,5 +236,29 @@ export default function(props: {node: PilNode; onNodeUpdate: (node: PilNode) => 
       </div>
     );
   }
-  return settings;
+
+  let states = null;
+  if (isStateFulNode(node)) {
+    states = node.states.map(it => {
+      return (
+        <div key={it.name}>
+          <input 
+            type="radio" 
+            name="state" 
+            value={it.name} 
+            checked={node.state === it.name} 
+            onChange={() => onNodeUpdate({ ...node, state: it.name })}
+          />
+          {it.name}
+          : activates when mouseArea
+          <textarea value={it.when} onChange={() => {}}></textarea>
+        </div>
+      );
+    });
+  }
+
+  return (<div>
+    {states}
+    {settings}
+  </div>);
 }
