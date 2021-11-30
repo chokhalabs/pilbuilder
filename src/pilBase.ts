@@ -329,6 +329,7 @@ export class AppBase {
   // Run the handlers for the state if any
   activateState(state: string, node: PilNode, nopaint?: boolean) {
     if (isStateFulNode(node)) {
+      node.state = state;
       const stateConfig = node.states.find(stateConf => stateConf.name === state);
       if (stateConfig) {
         for (let cb of stateConfig.callOnEnter) {
