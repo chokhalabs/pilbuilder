@@ -85,7 +85,7 @@ export type TextEditNode = {
   states: NodeState[];
   mouseArea: MouseArea;
   props: {
-    value: string;
+    [k: string]: string;
   };
   events: {
     onChange: {
@@ -246,10 +246,14 @@ export class AppBase {
             node.states.forEach(state => {
               if (state.when === "mousedown") {
                 this.activateState(state.name, node);
-              }
+              } 
             })
           } else {
-            console.error("Cannot run mousearea on this node")
+            node.states.forEach(state => {
+              if (state.when === "clickoutside") {
+                this.activateState(state.name, node);
+              }
+            })
           }
         }
       });
@@ -332,12 +336,34 @@ export class AppBase {
       node.state = state;
       const stateConfig = node.states.find(stateConf => stateConf.name === state);
       if (stateConfig) {
+        // Call functions when entering state
         for (let cb of stateConfig.callOnEnter) {
           import(`./${node.type}`).then(fcns => {
             Reflect.apply(fcns[cb], null, [node, this.onNodePropertyUpdate.bind(this)]);
           })
         }
 
+        // Emit any events
+        if (node.type === "TextEdit") {
+          Object.keys(node.events).forEach(event => {
+            const eventConfig = node.events.onChange;
+            if (state === eventConfig.when) {
+              const path = eventConfig.payload.split(".");
+              const payload = path.reduce((cursorNode: any, key: string) => {
+                if (cursorNode && cursorNode[key]) {
+                  return cursorNode[key];
+                } else {
+                  console.error(`Could not read ${key} in ${path} of JSON.stringify(${node})`);
+                  return null;
+                }
+              }, node);
+              const eventName = event.substring(2).toLowerCase(); 
+              this.eventBus.emit(eventName, payload);
+            }
+          })
+        }
+
+        // Update properties according to state
         for (let change of stateConfig.propertyChanges) {
           const target = findNodeById(node, change.target);
           const changekey = Object.keys(change).filter(key => key !== "target");
@@ -347,6 +373,14 @@ export class AppBase {
           } else {
             console.error("Could not apply property change: ", change);
           }
+        }
+
+        // Bind props
+        if (node.type === "TextEdit") {
+          Object.keys(node.props).forEach(prop => {
+            // @ts-ignore
+            node[prop] = node.props[prop]; 
+          });
         }
       } else {
         console.error("No state config found for: ", node, state);
@@ -395,7 +429,7 @@ export class AppBase {
 
     context.clearRect(x, y, node.width, node.height);
     if (node.state === "active") {
-      context.rect(x, y, node.width, node.height);
+      context.rect(x, y, node.width - 2, node.height - 2);
     }
     context.fillText(node.currentText, x, y + 10);
     context.stroke();

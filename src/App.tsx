@@ -49,13 +49,13 @@ function App() {
           state: "inactive",
           images: [],
           props: {
-            value: ""
+            currentText: "text bound from outside"
           },
           currentText: "some text",
           events: {
             onChange: {
-              when: "keydown",
-              payload: "inputelem.currentText"
+              when: "inactive",
+              payload: "currentText"
             }
           },
           mouseArea: {
@@ -72,9 +72,9 @@ function App() {
           states: [
             {
               name: "inactive",
-              when: "esc",
+              when: "clickoutside",
               propertyChanges: [],
-              callOnEnter: []
+              callOnEnter: [ "onInactive" ]
             },
             {
               name: "active",
@@ -295,6 +295,7 @@ function App() {
     if (canvas.current) {
       let app = new AppBase(canvas.current, pil);
       app.mount();
+      app.eventBus.addEventListener("change", payload => console.log("event change: ", payload))
     } else {
       throw new Error("Could not create app because canvas was not found!")
     }

@@ -30,6 +30,6 @@ export function onActive(node: TextEditNode, onNodePropertyUpdate: (node: TextEd
   document.addEventListener("keydown", listener);
 }
 
-export function onInactive(node: TextEditNode) {
+export function onInactive(node: TextEditNode, onNodePropertyUpdate: (node: TextEditNode, key: string) => void) {
   document.removeEventListener("keydown", listenersRefs[node.id]);
 }
