@@ -258,16 +258,32 @@ function pointIsInRect(point: {x: number; y: number;}, rect: { x: number; y: num
     point.y <= rect.y + rect.height;
 }
 
-/*
-function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNode> {
-  Object.keys(inst.expr.eventHandlers).forEach(event => {
-    inst.eventBus.listeners[event] = payload => {
-      parent.eventBus.emit(inst.expr.eventHandlers[event].emitName, payload);
-    }
-  })
+function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInstance<PilNodeDef>): PilNodeInstance<ItemNode> {
+  // Wire the eventbus of the instance to deliver the event to its parent's bus
+  switch (parent.node.type) {
+    case "Item":
+      Object.keys(inst.expr.eventHandlers).forEach(event => {
+        const parentBus = parent.eventBus;
+        if (parentBus.listeners[event]) {
+          emit(parentBus, event, "No facility to send payload implemented yet");
+        } else {
+          console.error(`Parent ${parent} cannot listen to the ${event} on child ${inst}`);
+        }
+      })
+      break;
+    case "Text":
+    case "Column":
+    case "Row":
+    case "TextEdit":
+    case "VertScroll":
+      console.error(`Not able to setup emitters for parent ${parent}`);
+      break;
+    default:
+      assertNever(parent.node);
+  }
+  
   return inst;
 }
-*/
 
 export function init(expr: PilNodeExpression<ItemNode>, parentInst?: PilNodeInstance<ItemNode>):PilNodeInstance<ItemNode>; 
 export function init(expr: PilNodeExpression<PilNodeDef>, parentInst?: PilNodeInstance<PilNodeDef>) {
@@ -282,14 +298,11 @@ export function init(expr: PilNodeExpression<PilNodeDef>, parentInst?: PilNodeIn
       children 
     };
 
-    // setup mousearea
     instance = setupMouseArea(instance);
-    // setup eventEmitters if expression has eventHandlers object
-    /*
     if (parentInst) {
-      instance = setupEventEmitters(instance);
+      instance = setupEventEmitters(instance, parentInst);
     }
-    */
+    
     // bind props
     // Instantiate children
     /*
