@@ -98,9 +98,6 @@ interface PilNodeExpression<T extends PilNodeDef> {
 
 interface EventBus {
   listeners: Record<string, Array<(payload: any) => void>>;
-  // on: (bus: EventBus, eventname: string, listener: (payload: any) => void) => EventBus;
-  // off: (bus: EventBus, eventname: string, listener: (payload: any) => void) => EventBus;
-  // emit: (bus: EventBus, eventname: string, payload: any) => void;
 };
 
 export function emit(bus: EventBus, eventname: string, payload: any) {
@@ -184,9 +181,7 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
             height: canvas.height
           }
         }
-        canvas.addEventListener("mousedown", ev => {
-          deliverMouseDown(mountedInst, ev);
-        });
+        canvas.addEventListener("mousedown", ev => deliverMouseDown(mountedInst, ev));
         res(mountedInst);
       } else {
         rej("Could not obtain context");
@@ -239,11 +234,7 @@ function setupMouseArea(inst: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNo
             height: inst.node.mouseArea.height.value 
           };
 
-          if (pointIsInRect(ev, mouseAreaRect)) {
-            return true;
-          } else {
-            return false;
-          }
+          return pointIsInRect(ev, mouseAreaRect);
         }
       }
     ]
