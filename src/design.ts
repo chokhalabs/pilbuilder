@@ -48,13 +48,6 @@ function isContainerNode(node: Partial<PilNodeDef>): node is ContainerNodeDef {
   }
 }
 
-interface EventemitterNodeDef {
-  events: {
-    when: Expression<boolean>;
-    payload: Expression<any>;
-  };
-}
-
 interface ImagedNode {
   images: Array<{
     source: string;
@@ -74,17 +67,17 @@ interface StatefulNodeDef {
   }>;
 }
 
-type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & EventemitterNodeDef & StatefulNodeDef & ImagedNode;
+export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode;
 type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
-type TextEditNode = { type: "TextEdit" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & EventemitterNodeDef & StatefulNodeDef;
+type TextEditNode = { type: "TextEdit" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
 type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 
-type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode;
+export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode;
 
 // Used when making new PilNodeDefs
-interface PilNodeExpression<T extends PilNodeDef> {
+export interface PilNodeExpression<T extends PilNodeDef> {
   definition: T;
   props: Record<string, Expression<any>>;
   eventHandlers: Record<string, {
@@ -140,6 +133,11 @@ type paint<T extends PilNodeDef> = (reqs: PaintRequest<T>[]) => Promise<void>;
 type activateState = (node: PilNodeInstance<PilNodeDef>, state: string) => PaintRequest<PilNodeDef>;
 type bindProps<T extends PilNodeDef> = (node: PilNodeInstance<T>, prop: string, value: string|boolean|number) => PaintRequest<T>;
 
+export function paint(reqs: PaintRequest<PilNodeDef>[]) {
+  // TODO: Implement painter for canvas
+  return Promise.resolve();
+}
+
 export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEvent) {
   switch (inst.node.type) {
     case "Item":
@@ -151,6 +149,15 @@ export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEve
           console.info(`Ignore mousedown on ${inst.node}`);
         }
       });
+      if (inst.children) {
+        for (let child in inst.children) {
+          const mountedChild = {
+            ...inst.children[child],
+            renderingTarget: inst.renderingTarget
+          };
+          deliverMouseDown(mountedChild, ev);
+        }
+      }
       break;
     case "VertScroll":
     case "TextEdit":
@@ -164,7 +171,25 @@ export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEve
   }
 }
 
-export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Promise<MountedInstance<PilNodeDef>> {
+function collectPaintRequests(inst: MountedInstance<PilNodeDef>): PaintRequest<PilNodeDef>[] {
+  if (isItemNodeInstance(inst)) {
+    return Object.values(inst.children).map(childInst => {
+      const selfPaintRequest = {
+        inst: {
+          ...childInst,
+          renderingTarget: inst.renderingTarget
+        },
+        timestamp: Date.now()
+      };
+      // TODO: Add children of children recursively
+      return selfPaintRequest;
+    })
+  } else {
+    return [];
+  }
+}
+
+export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Promise<PaintRequest<PilNodeDef>[]> {
   return new Promise((res, rej) => {
     const canvas: HTMLCanvasElement|null = document.querySelector(canvasid);
     if (canvas) {
@@ -182,7 +207,12 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
           }
         }
         canvas.addEventListener("mousedown", ev => deliverMouseDown(mountedInst, ev));
-        res(mountedInst);
+        let paintRequests = [{
+          inst: mountedInst,
+          timestamp: Date.now()
+        }];
+        paintRequests.concat(collectPaintRequests(mountedInst));
+        res(paintRequests);
       } else {
         rej("Could not obtain context");
       }
@@ -203,6 +233,14 @@ function activateState(inst: PilNodeInstance<ItemNode>, state: string) {
 
 function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ItemNode> {
   if (expr.definition.type === "Item") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function isItemNodeInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ItemNode> {
+  if (inst.node.type === "Item") {
     return true;
   } else {
     return false;
@@ -276,8 +314,18 @@ function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInst
   return inst;
 }
 
-export function init(expr: PilNodeExpression<ItemNode>, parentInst?: PilNodeInstance<ItemNode>):PilNodeInstance<ItemNode>; 
-export function init(expr: PilNodeExpression<PilNodeDef>, parentInst?: PilNodeInstance<PilNodeDef>) {
+function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest<T> {
+  Object.keys(inst.expr.props).forEach(prop => {
+    const expr = inst.expr.props[prop];
+    // TODO
+  })
+  return {
+    inst,
+    timestamp: Date.now()
+  };
+}
+
+export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>) {
   if (isItemNodeExpression(expr)) {
     const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
     let instance: PilNodeInstance<ItemNode> = {
@@ -294,13 +342,10 @@ export function init(expr: PilNodeExpression<PilNodeDef>, parentInst?: PilNodeIn
       instance = setupEventEmitters(instance, parentInst);
     }
     
-    // bind props
-    // Instantiate children
-    /*
-    for (let child in instance.children) {
-      children[child] = init(instance.children[child], instance);
+    for (let child in instance.node.children) {
+      const childExpr = instance.node.children[child];
+      children[child] = init(childExpr, instance);
     }
-    */
     return instance;
   } else {
     throw new Error("Cannot instantiate expression: " + expr.definition.type); 
