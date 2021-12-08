@@ -78,7 +78,7 @@ export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertS
 
 // Used when making new PilNodeDefs
 export interface PilNodeExpression<T extends PilNodeDef> {
-  definition: T;
+  definition: T | string;
   props: Record<string, Expression<any>>;
   eventHandlers: Record<string, {
     emitName: string;
@@ -87,6 +87,23 @@ export interface PilNodeExpression<T extends PilNodeDef> {
       callback: string;
     }
   }>;
+}
+
+export interface ResolvedPilNodeExpression<T extends PilNodeDef> extends PilNodeExpression<T> {
+  definition: T;
+}
+
+function resolveExpression(expr: PilNodeExpression<PilNodeDef>): Promise<ResolvedPilNodeExpression<PilNodeDef>> {
+  if (typeof expr.definition === "string") {
+    return import(expr.definition).then(def => {
+      // TODO: Add better validation for the imported def
+      expr.definition = def;
+      return expr as ResolvedPilNodeExpression<PilNodeDef>;
+    });
+  } else {
+    const def = expr.definition;
+    return Promise.resolve({ ...expr, definition: def });
+  }
 }
 
 interface EventBus {
@@ -256,14 +273,14 @@ function activateState(inst: PilNodeInstance<ItemNode>, state: string) {
 }
 
 function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ItemNode> {
-  if (expr.definition.type === "Item") {
-    return true;
-  } else {
+  if (typeof expr.definition === "string") {
     return false;
+  } else {
+    return expr.definition.type === "Item";
   }
 }
 
-function isItemNodeInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ItemNode> {
+function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ItemNode> {
   if (inst.node.type === "Item") {
     return true;
   } else {
@@ -349,29 +366,42 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest
   };
 }
 
-export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>) {
+export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>): Promise<PilNodeInstance<PilNodeDef>> {
   if (isItemNodeExpression(expr)) {
-    const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
-    let instance: PilNodeInstance<ItemNode> = {
-      node: expr.definition,
-      expr,
-      eventBus: {
-        listeners: {}
-      },
-      children 
-    };
+    const resolvedExpr_p = resolveExpression(expr);
+    return resolvedExpr_p.then(resolvedExpr => {
+      const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
+      let instance: PilNodeInstance<PilNodeDef> = {
+        node: resolvedExpr.definition,
+        expr,
+        eventBus: {
+          listeners: {}
+        },
+        children 
+      };
 
-    instance = setupMouseArea(instance);
-    if (parentInst) {
-      instance = setupEventEmitters(instance, parentInst);
-    }
+
+      const childInstancePromises = [];
+      if (isItemNodeInstance(instance)) {
+        const itemNodeInstance = setupMouseArea(instance);
+        if (parentInst) {
+          instance = setupEventEmitters(itemNodeInstance , parentInst);
+        }
+       
+        for (let child in itemNodeInstance.node.children) {
+          const childExpr = itemNodeInstance.node.children[child];
+          childInstancePromises.push(
+            init(childExpr, instance).then(childInst => {
+              children[child] = childInst;
+            })
+          );
+        }
+      }
+
+      return Promise.all(childInstancePromises).then(() => instance);
+    })
     
-    for (let child in instance.node.children) {
-      const childExpr = instance.node.children[child];
-      children[child] = init(childExpr, instance);
-    }
-    return instance;
   } else {
-    throw new Error("Cannot instantiate expression: " + expr.definition.type); 
+    throw new Error("Cannot instantiate expression: " + expr); 
   }
 }

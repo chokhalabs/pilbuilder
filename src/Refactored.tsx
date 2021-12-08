@@ -39,14 +39,16 @@ export default function() {
       eventHandlers: {}
     };
 
-    const instance = init(expr);
-
-    (window as any).instance = instance;
 
     if (canvas.current) {
-      mount(instance, "#mountpoint").then(paintreqs => {
-        return paint(paintreqs); 
-      })
+      init(expr).then(instance => {
+        (window as any).instance = instance;
+        mount(instance, "#mountpoint").then(paintreqs => {
+          return paint(paintreqs); 
+        })
+      }).catch(err => {
+        console.error(`Failed to initialize expression, ${expr}`, err);
+      });
     }
   }, [canvas]);
 
