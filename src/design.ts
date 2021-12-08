@@ -133,8 +133,51 @@ type paint<T extends PilNodeDef> = (reqs: PaintRequest<T>[]) => Promise<void>;
 type activateState = (node: PilNodeInstance<PilNodeDef>, state: string) => PaintRequest<PilNodeDef>;
 type bindProps<T extends PilNodeDef> = (node: PilNodeInstance<T>, prop: string, value: string|boolean|number) => PaintRequest<T>;
 
+function isMountedItemInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ItemNode> {
+  if (inst.node.type === "Item") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export function paint(reqs: PaintRequest<PilNodeDef>[]) {
-  // TODO: Implement painter for canvas
+  for (let req of reqs) {
+    const context = req.inst.renderingTarget;
+    const instance = req.inst;
+    // The switch is required for exhaustiveness checking
+    switch(instance.node.type) {
+      case "Item":
+        // Required for safely narrowing instance type
+        if (isMountedItemInstance(instance)) {
+          paintItem(instance);
+          // Paint children
+        }
+        break;
+      case "Column":
+      case "Row":
+      case "Text":
+      case "TextEdit":
+      case "VertScroll":
+        break;
+      default:
+        assertNever(instance.node);
+    }
+  }
+  return Promise.resolve();
+}
+
+function paintItem(instance: MountedInstance<ItemNode>): Promise<void> {
+  const node = instance.node;
+  const { context, x: minx, y: miny, width: maxwidth, height: maxheight } = instance.renderingTarget;
+
+  context.beginPath();
+  if (node.draw) {
+    context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+  }
+  context.closePath();
+  context.stroke();
+
   return Promise.resolve();
 }
 
@@ -171,24 +214,6 @@ export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEve
   }
 }
 
-function collectPaintRequests(inst: MountedInstance<PilNodeDef>): PaintRequest<PilNodeDef>[] {
-  if (isItemNodeInstance(inst)) {
-    return Object.values(inst.children).map(childInst => {
-      const selfPaintRequest = {
-        inst: {
-          ...childInst,
-          renderingTarget: inst.renderingTarget
-        },
-        timestamp: Date.now()
-      };
-      // TODO: Add children of children recursively
-      return selfPaintRequest;
-    })
-  } else {
-    return [];
-  }
-}
-
 export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Promise<PaintRequest<PilNodeDef>[]> {
   return new Promise((res, rej) => {
     const canvas: HTMLCanvasElement|null = document.querySelector(canvasid);
@@ -211,7 +236,6 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
           inst: mountedInst,
           timestamp: Date.now()
         }];
-        paintRequests.concat(collectPaintRequests(mountedInst));
         res(paintRequests);
       } else {
         rej("Could not obtain context");
