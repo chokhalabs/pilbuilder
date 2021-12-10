@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import './App.css';
+// import './App.css';
 import { assertNever, IdObj, ItemNode, PilNode, PropertyChange, TextEditNode } from "./pilBase";
 import { AppBase, isStateFulNode, findNodeById } from "./pilBase";
 import Settings from "./Settings";

@@ -16,7 +16,7 @@ export default function() {
       draw: true,
       children: {
         "messagelist": {
-          definition: "./GenericItem",
+          definition: "http://localhost:3000/GenericItem.js",
           props: {
             x: { value: 11, context: "parent", def: "x + 1" },
             y: { value: 11, context: "parent", def: "y + 1" },
@@ -27,7 +27,7 @@ export default function() {
           eventHandlers: {}
         },
         "typingarea": {
-          definition: "./GenericItem",
+          definition: "http://localhost:3000/GenericItem.js",
           props: {
             x: { value: 11, context: "parent", def: "x + 1" },
             y: { value: 430, context: "parent", def: "y + 1" },

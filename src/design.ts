@@ -95,7 +95,7 @@ export interface ResolvedPilNodeExpression<T extends PilNodeDef> extends PilNode
 
 function resolveExpression(expr: PilNodeExpression<PilNodeDef>): Promise<ResolvedPilNodeExpression<PilNodeDef>> {
   if (typeof expr.definition === "string") { 
-    return import(expr.definition).then(def => {
+    return import(expr.definition).then(({default: def}) => {
       // TODO: Add better validation for the imported def
       expr.definition = def;
       return expr as ResolvedPilNodeExpression<PilNodeDef>;
