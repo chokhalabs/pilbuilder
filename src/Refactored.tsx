@@ -1,39 +1,46 @@
 import { useRef, useEffect } from "react";
 
-import { mount, init, ItemNode, PilNodeExpression, paint } from "./design";
+import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode } from "./design";
 
 export default function() {
   const canvas = useRef(null); 
 
   useEffect(() => {
-    const item: ItemNode = {
-      type: "Item",
+    const item: ColumnNode = {
+      type: "Column",
       id: "1",
       x: { value: 10, context: "", def: "" },
       y: { value: 10, context: "", def: "" },
-      width: { value: 50, context: "", def: "" },
-      height: { value: 50, context: "", def: "" },
+      width: { value: 300, context: "", def: "" },
+      height: { value: 450, context: "", def: "" },
       draw: true,
-      mouseArea: {
-        x: { value: 10, context: "", def: "" },
-        y: { value: 10, context: "", def: "" },
-        width: { value: 50, context: "", def: "" },
-        height: { value: 50, context: "", def: "" },
-        listeners: {},
-        customEvents: {}
+      children: {
+        "messagelist": {
+          definition: "./GenericItem",
+          props: {
+            x: { value: 11, context: "parent", def: "x + 1" },
+            y: { value: 11, context: "parent", def: "y + 1" },
+            width: { value: 298, context: "parent", def: "width - 2" },
+            height: { value: 418,  context: "parent", def: "height -2" },
+            draw: { value: true, context: "", def: "" }
+          },
+          eventHandlers: {}
+        },
+        "typingarea": {
+          definition: "./GenericItem",
+          props: {
+            x: { value: 11, context: "parent", def: "x + 1" },
+            y: { value: 430, context: "parent", def: "y + 1" },
+            width: { value: 298, context: "parent", def: "width - 2" },
+            height: { value: 28,  context: "parent", def: "height -2" },
+            draw: { value: true, context: "", def: "" }
+          },
+          eventHandlers: {}
+        }
       },
-      children: {},
-      state: "default",
-      states: [{
-        name: "default",
-        when: "mousedown",
-        propertyChanges: [],
-        onEnter: []
-      }],
-      images: []
     };
 
-    const expr: PilNodeExpression<ItemNode> = {
+    const expr: PilNodeExpression<ColumnNode> = {
       definition: item,
       props: {},
       eventHandlers: {}
@@ -43,7 +50,7 @@ export default function() {
     if (canvas.current) {
       init(expr).then(instance => {
         (window as any).instance = instance;
-        mount(instance, "#mountpoint").then(paintreqs => {
+        return mount(instance, "#mountpoint").then(paintreqs => {
           return paint(paintreqs); 
         })
       }).catch(err => {

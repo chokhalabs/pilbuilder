@@ -68,11 +68,11 @@ interface StatefulNodeDef {
 }
 
 export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode;
-type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
-type TextEditNode = { type: "TextEdit" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
-type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
-type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
-type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
+export type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
+export type TextEditNode = { type: "TextEdit" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
+export type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
+export type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
+export type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 
 export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode;
 
@@ -94,7 +94,7 @@ export interface ResolvedPilNodeExpression<T extends PilNodeDef> extends PilNode
 }
 
 function resolveExpression(expr: PilNodeExpression<PilNodeDef>): Promise<ResolvedPilNodeExpression<PilNodeDef>> {
-  if (typeof expr.definition === "string") {
+  if (typeof expr.definition === "string") { 
     return import(expr.definition).then(def => {
       // TODO: Add better validation for the imported def
       expr.definition = def;
@@ -124,7 +124,9 @@ interface PilNodeInstance<T extends PilNodeDef> {
   node: T;
   expr: PilNodeExpression<T>;
   eventBus: EventBus;
-  children: T extends ItemNode ? Record<string, PilNodeInstance<PilNodeDef>> : null;
+  children: T extends ItemNode ? Record<string, PilNodeInstance<PilNodeDef>> : 
+            T extends ColumnNode ? Record<string, PilNodeInstance<PilNodeDef>> :
+            null;
 }
 
 interface MountedInstance<T extends PilNodeDef> extends PilNodeInstance<T> {
@@ -158,6 +160,14 @@ function isMountedItemInstance(inst: MountedInstance<PilNodeDef>): inst is Mount
   }
 }
 
+function isMountedColumnInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ColumnNode> {
+  if (inst.node.type === "Column") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export function paint(reqs: PaintRequest<PilNodeDef>[]) {
   for (let req of reqs) {
     const context = req.inst.renderingTarget;
@@ -172,6 +182,20 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
         }
         break;
       case "Column":
+        if (isMountedColumnInstance(instance)) {
+          paintColumn(instance);
+          const childPaintReqs: PaintRequest<PilNodeDef>[] = Object.values(instance.children).map(inst => {
+            return {
+              inst: {
+                ...inst,
+                renderingTarget: instance.renderingTarget
+              },
+              timestamp: Date.now() 
+            }
+          })
+          paint(childPaintReqs);
+        }
+        break;
       case "Row":
       case "Text":
       case "TextEdit":
@@ -185,6 +209,20 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
 }
 
 function paintItem(instance: MountedInstance<ItemNode>): Promise<void> {
+  const node = instance.node;
+  const { context, x: minx, y: miny, width: maxwidth, height: maxheight } = instance.renderingTarget;
+
+  context.beginPath();
+  if (node.draw) {
+    context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+  }
+  context.closePath();
+  context.stroke();
+
+  return Promise.resolve();
+}
+
+function paintColumn(instance: MountedInstance<ColumnNode>): Promise<void> {
   const node = instance.node;
   const { context, x: minx, y: miny, width: maxwidth, height: maxheight } = instance.renderingTarget;
 
@@ -280,8 +318,24 @@ function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilN
   }
 }
 
+function isColumnNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ColumnNode> {
+  if (typeof expr.definition === "string") {
+    return false;
+  } else {
+    return expr.definition.type === "Column";
+  }
+}
+
 function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ItemNode> {
   if (inst.node.type === "Item") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function isColumnNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ColumnNode> {
+  if (inst.node.type === "Column") {
     return true;
   } else {
     return false;
@@ -367,9 +421,8 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest
 }
 
 export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>): Promise<PilNodeInstance<PilNodeDef>> {
-  if (isItemNodeExpression(expr)) {
-    const resolvedExpr_p = resolveExpression(expr);
-    return resolvedExpr_p.then(resolvedExpr => {
+  return resolveExpression(expr).then(resolvedExpr => {
+    if (isItemNodeExpression(resolvedExpr)) {
       const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
       let instance: PilNodeInstance<PilNodeDef> = {
         node: resolvedExpr.definition,
@@ -379,15 +432,14 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
         },
         children 
       };
-
-
+      
       const childInstancePromises = [];
       if (isItemNodeInstance(instance)) {
         const itemNodeInstance = setupMouseArea(instance);
         if (parentInst) {
           instance = setupEventEmitters(itemNodeInstance , parentInst);
         }
-       
+      
         for (let child in itemNodeInstance.node.children) {
           const childExpr = itemNodeInstance.node.children[child];
           childInstancePromises.push(
@@ -399,9 +451,30 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
       }
 
       return Promise.all(childInstancePromises).then(() => instance);
-    })
-    
-  } else {
-    throw new Error("Cannot instantiate expression: " + expr); 
-  }
+    } else if (isColumnNodeExpression(resolvedExpr)) {
+      const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
+      let instance: PilNodeInstance<PilNodeDef> = {
+        node: resolvedExpr.definition,
+        expr,
+        eventBus: {
+          listeners: {}
+        },
+        children 
+      };
+      const childInstancePromises = [];
+      if (isColumnNodeInstance(instance)) {
+        for (let child in instance.node.children) {
+          const childExpr = instance.node.children[child];
+          childInstancePromises.push(
+            init(childExpr, instance).then(childInst => {
+              children[child] = childInst;
+            })
+          );
+        }
+      }
+      return Promise.all(childInstancePromises).then(() => instance);
+    } else {
+      return Promise.reject("Cannot instantiate expression because node not recognized: " + JSON.stringify(expr, null, 4)); 
+    }
+  })
 }
