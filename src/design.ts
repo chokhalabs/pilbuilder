@@ -150,7 +150,6 @@ export interface PaintRequest<T extends PilNodeDef> {
 // type initPil<T extends PilNodeDef> = (nodeDef: T) => PilNodeInstance<T>;
 type paint<T extends PilNodeDef> = (reqs: PaintRequest<T>[]) => Promise<void>;
 type activateState = (node: PilNodeInstance<PilNodeDef>, state: string) => PaintRequest<PilNodeDef>;
-type bindProps<T extends PilNodeDef> = (node: PilNodeInstance<T>, prop: string, value: string|boolean|number) => PaintRequest<T>;
 
 function isMountedItemInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ItemNode> {
   if (inst.node.type === "Item") {
@@ -170,7 +169,6 @@ function isMountedColumnInstance(inst: MountedInstance<PilNodeDef>): inst is Mou
 
 export function paint(reqs: PaintRequest<PilNodeDef>[]) {
   for (let req of reqs) {
-    const context = req.inst.renderingTarget;
     const instance = req.inst;
     // The switch is required for exhaustiveness checking
     switch(instance.node.type) {
@@ -287,11 +285,8 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
           }
         }
         canvas.addEventListener("mousedown", ev => deliverMouseDown(mountedInst, ev));
-        let paintRequests = [{
-          inst: mountedInst,
-          timestamp: Date.now()
-        }];
-        res(paintRequests);
+        let paintRequest = bindProps(mountedInst);
+        res([paintRequest]);
       } else {
         rej("Could not obtain context");
       }
@@ -413,7 +408,24 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest
   Object.keys(inst.expr.props).forEach(prop => {
     const expr = inst.expr.props[prop];
     // TODO
-  })
+    (inst.node as any)[prop] = { value: expr.value };
+    
+  });
+
+  Object.keys(inst.children || []).forEach(childkey => {
+    if (inst.children) {
+      const child = inst.children[childkey];
+      let childPaintReq = bindProps({
+        ...child,
+        renderingTarget: inst.renderingTarget
+      });
+
+      inst.children[childkey] = {
+        ...childPaintReq.inst
+      }
+    }
+  });
+
   return {
     inst,
     timestamp: Date.now()
@@ -422,18 +434,19 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest
 
 export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>): Promise<PilNodeInstance<PilNodeDef>> {
   return resolveExpression(expr).then(resolvedExpr => {
+    const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
+    let instance: PilNodeInstance<PilNodeDef> = {
+      node: JSON.parse(JSON.stringify(resolvedExpr.definition)),
+      expr,
+      eventBus: {
+        listeners: {}
+      },
+      children 
+    };
+    
+    const childInstancePromises = [];
+    
     if (isItemNodeExpression(resolvedExpr)) {
-      const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
-      let instance: PilNodeInstance<PilNodeDef> = {
-        node: resolvedExpr.definition,
-        expr,
-        eventBus: {
-          listeners: {}
-        },
-        children 
-      };
-      
-      const childInstancePromises = [];
       if (isItemNodeInstance(instance)) {
         const itemNodeInstance = setupMouseArea(instance);
         if (parentInst) {
@@ -452,16 +465,6 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
 
       return Promise.all(childInstancePromises).then(() => instance);
     } else if (isColumnNodeExpression(resolvedExpr)) {
-      const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
-      let instance: PilNodeInstance<PilNodeDef> = {
-        node: resolvedExpr.definition,
-        expr,
-        eventBus: {
-          listeners: {}
-        },
-        children 
-      };
-      const childInstancePromises = [];
       if (isColumnNodeInstance(instance)) {
         for (let child in instance.node.children) {
           const childExpr = instance.node.children[child];

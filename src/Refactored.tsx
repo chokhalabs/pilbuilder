@@ -18,10 +18,11 @@ export default function() {
         "messagelist": {
           definition: "http://localhost:3000/GenericItem.js",
           props: {
-            x: { value: 11, context: "parent", def: "x + 1" },
-            y: { value: 11, context: "parent", def: "y + 1" },
-            width: { value: 298, context: "parent", def: "width - 2" },
-            height: { value: 418,  context: "parent", def: "height -2" },
+            id: { value: "messagelist", context: "", def: "" },
+            x: { value: 11, context: "parent", def: "" },
+            y: { value: 11, context: "parent", def: "" },
+            width: { value: 50, context: "parent", def: "" },
+            height: { value: 50,  context: "parent", def: "" },
             draw: { value: true, context: "", def: "" }
           },
           eventHandlers: {}
@@ -29,10 +30,11 @@ export default function() {
         "typingarea": {
           definition: "http://localhost:3000/GenericItem.js",
           props: {
-            x: { value: 11, context: "parent", def: "x + 1" },
-            y: { value: 430, context: "parent", def: "y + 1" },
-            width: { value: 298, context: "parent", def: "width - 2" },
-            height: { value: 28,  context: "parent", def: "height -2" },
+            id: { value: "typingarea", context: "", def: "" },
+            x: { value: 11, context: "parent", def: "" },
+            y: { value: 70, context: "parent", def: "" },
+            width: { value: 50, context: "parent", def: "" },
+            height: { value: 50,  context: "parent", def: "" },
             draw: { value: true, context: "", def: "" }
           },
           eventHandlers: {}

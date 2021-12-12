@@ -8958,7 +8958,6 @@
 	}
 	function paint(reqs) {
 	    var _loop_1 = function (req) {
-	        req.inst.renderingTarget;
 	        var instance = req.inst;
 	        // The switch is required for exhaustiveness checking
 	        switch (instance.node.type) {
@@ -9063,11 +9062,8 @@
 	                        height: canvas.height
 	                    } });
 	                canvas.addEventListener("mousedown", function (ev) { return deliverMouseDown(mountedInst_1, ev); });
-	                var paintRequests = [{
-	                        inst: mountedInst_1,
-	                        timestamp: Date.now()
-	                    }];
-	                res(paintRequests);
+	                var paintRequest = bindProps(mountedInst_1);
+	                res([paintRequest]);
 	            }
 	            else {
 	                rej("Could not obtain context");
@@ -9182,59 +9178,67 @@
 	    }
 	    return inst;
 	}
+	function bindProps(inst) {
+	    Object.keys(inst.expr.props).forEach(function (prop) {
+	        var expr = inst.expr.props[prop];
+	        // TODO
+	        inst.node[prop] = { value: expr.value };
+	    });
+	    Object.keys(inst.children || []).forEach(function (childkey) {
+	        if (inst.children) {
+	            var child = inst.children[childkey];
+	            var childPaintReq = bindProps(__assign(__assign({}, child), { renderingTarget: inst.renderingTarget }));
+	            inst.children[childkey] = __assign({}, childPaintReq.inst);
+	        }
+	    });
+	    return {
+	        inst: inst,
+	        timestamp: Date.now()
+	    };
+	}
 	function init(expr, parentInst) {
 	    return resolveExpression(expr).then(function (resolvedExpr) {
+	        var children = {};
+	        var instance = {
+	            node: JSON.parse(JSON.stringify(resolvedExpr.definition)),
+	            expr: expr,
+	            eventBus: {
+	                listeners: {}
+	            },
+	            children: children
+	        };
+	        var childInstancePromises = [];
 	        if (isItemNodeExpression(resolvedExpr)) {
-	            var children_1 = {};
-	            var instance_1 = {
-	                node: resolvedExpr.definition,
-	                expr: expr,
-	                eventBus: {
-	                    listeners: {}
-	                },
-	                children: children_1
-	            };
-	            var childInstancePromises = [];
-	            if (isItemNodeInstance(instance_1)) {
-	                var itemNodeInstance = setupMouseArea(instance_1);
+	            if (isItemNodeInstance(instance)) {
+	                var itemNodeInstance = setupMouseArea(instance);
 	                if (parentInst) {
-	                    instance_1 = setupEventEmitters(itemNodeInstance, parentInst);
+	                    instance = setupEventEmitters(itemNodeInstance, parentInst);
 	                }
 	                var _loop_2 = function (child) {
 	                    var childExpr = itemNodeInstance.node.children[child];
-	                    childInstancePromises.push(init(childExpr, instance_1).then(function (childInst) {
-	                        children_1[child] = childInst;
+	                    childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
+	                        children[child] = childInst;
 	                    }));
 	                };
 	                for (var child in itemNodeInstance.node.children) {
 	                    _loop_2(child);
 	                }
 	            }
-	            return Promise.all(childInstancePromises).then(function () { return instance_1; });
+	            return Promise.all(childInstancePromises).then(function () { return instance; });
 	        }
 	        else if (isColumnNodeExpression(resolvedExpr)) {
-	            var children_2 = {};
-	            var instance_2 = {
-	                node: resolvedExpr.definition,
-	                expr: expr,
-	                eventBus: {
-	                    listeners: {}
-	                },
-	                children: children_2
-	            };
-	            var childInstancePromises = [];
-	            if (isColumnNodeInstance(instance_2)) {
+	            if (isColumnNodeInstance(instance)) {
 	                var _loop_3 = function (child) {
-	                    var childExpr = instance_2.node.children[child];
-	                    childInstancePromises.push(init(childExpr, instance_2).then(function (childInst) {
-	                        children_2[child] = childInst;
+	                    var childExpr = instance.node.children[child];
+	                    childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
+	                        children[child] = childInst;
 	                    }));
 	                };
-	                for (var child in instance_2.node.children) {
+	                for (var child in instance.node.children) {
 	                    _loop_3(child);
 	                }
 	            }
-	            return Promise.all(childInstancePromises).then(function () { return instance_2; });
+	            return Promise.all(childInstancePromises).then(function () { return instance; });
 	        }
 	        else {
 	            return Promise.reject("Cannot instantiate expression because node not recognized: " + JSON.stringify(expr, null, 4));
@@ -9257,10 +9261,11 @@
 	                "messagelist": {
 	                    definition: "http://localhost:3000/GenericItem.js",
 	                    props: {
-	                        x: { value: 11, context: "parent", def: "x + 1" },
-	                        y: { value: 11, context: "parent", def: "y + 1" },
-	                        width: { value: 298, context: "parent", def: "width - 2" },
-	                        height: { value: 418, context: "parent", def: "height -2" },
+	                        id: { value: "messagelist", context: "", def: "" },
+	                        x: { value: 11, context: "parent", def: "" },
+	                        y: { value: 11, context: "parent", def: "" },
+	                        width: { value: 50, context: "parent", def: "" },
+	                        height: { value: 50, context: "parent", def: "" },
 	                        draw: { value: true, context: "", def: "" }
 	                    },
 	                    eventHandlers: {}
@@ -9268,10 +9273,11 @@
 	                "typingarea": {
 	                    definition: "http://localhost:3000/GenericItem.js",
 	                    props: {
-	                        x: { value: 11, context: "parent", def: "x + 1" },
-	                        y: { value: 430, context: "parent", def: "y + 1" },
-	                        width: { value: 298, context: "parent", def: "width - 2" },
-	                        height: { value: 28, context: "parent", def: "height -2" },
+	                        id: { value: "typingarea", context: "", def: "" },
+	                        x: { value: 11, context: "parent", def: "" },
+	                        y: { value: 70, context: "parent", def: "" },
+	                        width: { value: 50, context: "parent", def: "" },
+	                        height: { value: 50, context: "parent", def: "" },
 	                        draw: { value: true, context: "", def: "" }
 	                    },
 	                    eventHandlers: {}
