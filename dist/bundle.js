@@ -9000,7 +9000,7 @@
 	    var _a = instance.renderingTarget, context = _a.context; _a.x; _a.y; _a.width; _a.height;
 	    context.beginPath();
 	    if (node.draw) {
-	        context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+	        context.rect(node.x, node.y, node.width, node.height);
 	    }
 	    context.closePath();
 	    context.stroke();
@@ -9011,7 +9011,7 @@
 	    var _a = instance.renderingTarget, context = _a.context; _a.x; _a.y; _a.width; _a.height;
 	    context.beginPath();
 	    if (node.draw) {
-	        context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+	        context.rect(node.x, node.y, node.width, node.height);
 	    }
 	    context.closePath();
 	    context.stroke();
@@ -9134,10 +9134,10 @@
 	                },
 	                eventLocationChecker: function (ev) {
 	                    var mouseAreaRect = {
-	                        x: inst.node.mouseArea.x.value,
-	                        y: inst.node.mouseArea.y.value,
-	                        width: inst.node.mouseArea.width.value,
-	                        height: inst.node.mouseArea.height.value
+	                        x: inst.node.mouseArea.x,
+	                        y: inst.node.mouseArea.y,
+	                        width: inst.node.mouseArea.width,
+	                        height: inst.node.mouseArea.height
 	                    };
 	                    return pointIsInRect(ev, mouseAreaRect);
 	                }
@@ -9178,16 +9178,22 @@
 	    }
 	    return inst;
 	}
-	function bindProps(inst) {
+	function bindProps(inst, parent) {
 	    Object.keys(inst.expr.props).forEach(function (prop) {
 	        var expr = inst.expr.props[prop];
-	        // TODO
-	        inst.node[prop] = { value: expr.value };
+	        if (expr.context === "$parent" && parent) {
+	            window.$parent = parent.node;
+	            inst.node[prop] = eval(expr.def);
+	            window.$parent = null;
+	        }
+	        else {
+	            inst.node[prop] = expr.value;
+	        }
 	    });
 	    Object.keys(inst.children || []).forEach(function (childkey) {
 	        if (inst.children) {
 	            var child = inst.children[childkey];
-	            var childPaintReq = bindProps(__assign(__assign({}, child), { renderingTarget: inst.renderingTarget }));
+	            var childPaintReq = bindProps(__assign(__assign({}, child), { renderingTarget: inst.renderingTarget }), inst);
 	            inst.children[childkey] = __assign({}, childPaintReq.inst);
 	        }
 	    });
@@ -9252,20 +9258,20 @@
 	        var item = {
 	            type: "Column",
 	            id: "1",
-	            x: { value: 10, context: "", def: "" },
-	            y: { value: 10, context: "", def: "" },
-	            width: { value: 300, context: "", def: "" },
-	            height: { value: 450, context: "", def: "" },
+	            x: 10,
+	            y: 10,
+	            width: 300,
+	            height: 450,
 	            draw: true,
 	            children: {
 	                "messagelist": {
 	                    definition: "http://localhost:3000/GenericItem.js",
 	                    props: {
 	                        id: { value: "messagelist", context: "", def: "" },
-	                        x: { value: 11, context: "parent", def: "" },
-	                        y: { value: 11, context: "parent", def: "" },
-	                        width: { value: 50, context: "parent", def: "" },
-	                        height: { value: 50, context: "parent", def: "" },
+	                        x: { value: 11, context: "$parent", def: "$parent.x + 1" },
+	                        y: { value: 11, context: "$parent", def: "$parent.y + 1" },
+	                        width: { value: 50, context: "$parent", def: "$parent.width - 2" },
+	                        height: { value: 50, context: "$parent", def: "$parent.height - 40" },
 	                        draw: { value: true, context: "", def: "" }
 	                    },
 	                    eventHandlers: {}
@@ -9274,10 +9280,10 @@
 	                    definition: "http://localhost:3000/GenericItem.js",
 	                    props: {
 	                        id: { value: "typingarea", context: "", def: "" },
-	                        x: { value: 11, context: "parent", def: "" },
-	                        y: { value: 70, context: "parent", def: "" },
-	                        width: { value: 50, context: "parent", def: "" },
-	                        height: { value: 50, context: "parent", def: "" },
+	                        x: { value: 11, context: "$parent", def: "$parent.x + 1" },
+	                        y: { value: 70, context: "$parent", def: "$parent.height - 26" },
+	                        width: { value: 50, context: "$parent", def: "$parent.width - 2" },
+	                        height: { value: 50, context: "", def: "30" },
 	                        draw: { value: true, context: "", def: "" }
 	                    },
 	                    eventHandlers: {}

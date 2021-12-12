@@ -5,11 +5,17 @@ type ImportableModulePath = string;
 
 type evaluate<T> = (ex: Expression<T>) => T;
 
+declare global {
+  interface Window {
+    $parent: null | PilNodeDef;
+  }
+}
+
 type MouseArea = {
-  x: Expression<number>;
-  y: Expression<number>;
-  width: Expression<number>;
-  height: Expression<number>;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   listeners: Record<string, Array<{
     handler: (ev: MouseEvent) => void;
     eventLocationChecker: (ev: MouseEvent) => boolean;
@@ -25,10 +31,10 @@ interface BaseNodeDef {
 }
 
 interface PositionedNodeDef {
-  x: Expression<number>;
-  y: Expression<number>;
-  width: Expression<number>;
-  height: Expression<number>;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   draw: boolean;
 }
 
@@ -212,7 +218,7 @@ function paintItem(instance: MountedInstance<ItemNode>): Promise<void> {
 
   context.beginPath();
   if (node.draw) {
-    context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+    context.rect(node.x, node.y, node.width, node.height);
   }
   context.closePath();
   context.stroke();
@@ -226,7 +232,7 @@ function paintColumn(instance: MountedInstance<ColumnNode>): Promise<void> {
 
   context.beginPath();
   if (node.draw) {
-    context.rect(node.x.value, node.y.value, node.width.value, node.height.value);
+    context.rect(node.x, node.y, node.width, node.height);
   }
   context.closePath();
   context.stroke();
@@ -356,10 +362,10 @@ function setupMouseArea(inst: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNo
         },
         eventLocationChecker(ev) {
           const mouseAreaRect = { 
-            x: inst.node.mouseArea.x.value,
-            y: inst.node.mouseArea.y.value, 
-            width: inst.node.mouseArea.width.value, 
-            height: inst.node.mouseArea.height.value 
+            x: inst.node.mouseArea.x,
+            y: inst.node.mouseArea.y, 
+            width: inst.node.mouseArea.width, 
+            height: inst.node.mouseArea.height 
           };
 
           return pointIsInRect(ev, mouseAreaRect);
@@ -404,12 +410,17 @@ function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInst
   return inst;
 }
 
-function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest<T> {
+function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>, parent?: MountedInstance<T>): PaintRequest<T> {
   Object.keys(inst.expr.props).forEach(prop => {
     const expr = inst.expr.props[prop];
-    // TODO
-    (inst.node as any)[prop] = { value: expr.value };
-    
+
+    if (expr.context === "$parent" &&  parent) {
+      window.$parent = parent.node;
+      (inst.node as any)[prop] = eval(expr.def);
+      window.$parent = null;
+    } else {
+      (inst.node as any)[prop] = expr.value;
+    }
   });
 
   Object.keys(inst.children || []).forEach(childkey => {
@@ -418,7 +429,7 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>): PaintRequest
       let childPaintReq = bindProps({
         ...child,
         renderingTarget: inst.renderingTarget
-      });
+      }, inst);
 
       inst.children[childkey] = {
         ...childPaintReq.inst
