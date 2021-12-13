@@ -20,7 +20,7 @@ const Chatbox = {
       eventHandlers: {}
     },
     "typingarea": {
-      definition: "http://localhost:3000/GenericItem.js",
+      definition: "http://localhost:3000/TypingArea.js",
       props: {
         id: { value: "typingarea", context: "", def: "" },
         x: { value: 11, context: "$parent", def: "$parent.x + 1" },

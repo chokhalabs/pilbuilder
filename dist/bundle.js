@@ -9270,51 +9270,14 @@
 	function App () {
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
-	        // const expr: PilNodeExpression<ColumnNode> = {
-	        //   definition: "http://localhost:3000/ChatBox.js",
-	        //   props: {
-	        //     x: { value: 10, context: "", def: "" },
-	        //     y: { value: 10, context: "", def: "" },
-	        //     width: { value: 300, context: "", def: "" },
-	        //     height: { value: 450, context: "", def: "" }
-	        //   },
-	        //   eventHandlers: {}
-	        // };
 	        var expr = {
-	            definition: {
-	                id: "row",
-	                type: "Row",
-	                x: 10,
-	                y: 10,
-	                width: 300,
-	                height: 50,
-	                children: {
-	                    "textedit": {
-	                        definition: "http://localhost:3000/GenericItem.js",
-	                        props: {
-	                            id: { value: "textedit", context: "", def: "" },
-	                            x: { value: 0, context: "$parent", def: "$parent.x + 1" },
-	                            y: { value: 0, context: "$parent", def: "$parent.y + 1" },
-	                            width: { value: 0, context: "$parent", def: "$parent.width - 50" },
-	                            height: { value: 0, context: "$parent", def: "$parent.height - 2" }
-	                        },
-	                        eventHandlers: {}
-	                    },
-	                    "button": {
-	                        definition: "http://localhost:3000/GenericItem.js",
-	                        props: {
-	                            id: { value: "button", context: "", def: "" },
-	                            x: { value: 0, context: "$parent", def: "$parent.width - 50 + 12" },
-	                            y: { value: 0, context: "$parent", def: "$parent.y + 1" },
-	                            width: { value: 0, context: "$parent", def: "48" },
-	                            height: { value: 0, context: "$parent", def: "$parent.height - 2" }
-	                        },
-	                        eventHandlers: {}
-	                    }
-	                },
-	                draw: true
+	            definition: "http://localhost:3000/ChatBox.js",
+	            props: {
+	                x: { value: 10, context: "", def: "" },
+	                y: { value: 10, context: "", def: "" },
+	                width: { value: 300, context: "", def: "" },
+	                height: { value: 450, context: "", def: "" }
 	            },
-	            props: {},
 	            eventHandlers: {}
 	        };
 	        if (canvas.current) {
