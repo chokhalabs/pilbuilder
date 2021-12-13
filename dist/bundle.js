@@ -8956,6 +8956,9 @@
 	        return false;
 	    }
 	}
+	function isMountedTexteditInstance(inst) {
+	    return inst.node.type === "TextEdit";
+	}
 	function isMountedRowInstance(inst) {
 	    return inst.node.type === "Row";
 	}
@@ -8984,8 +8987,12 @@
 	                    paint(childPaintReqs);
 	                }
 	                break;
-	            case "Text":
 	            case "TextEdit":
+	                if (isMountedTexteditInstance(instance)) {
+	                    paintTextEdit(instance);
+	                }
+	                break;
+	            case "Text":
 	            case "VertScroll":
 	                console.error("Don't know how to paint: ", instance.node.type);
 	                break;
@@ -9013,6 +9020,17 @@
 	function paintColumn(instance) {
 	    var node = instance.node;
 	    var _a = instance.renderingTarget, context = _a.context; _a.x; _a.y; _a.width; _a.height;
+	    context.beginPath();
+	    if (node.draw) {
+	        context.rect(node.x, node.y, node.width, node.height);
+	    }
+	    context.closePath();
+	    context.stroke();
+	    return Promise.resolve();
+	}
+	function paintTextEdit(instance) {
+	    var node = instance.node;
+	    var context = instance.renderingTarget.context;
 	    context.beginPath();
 	    if (node.draw) {
 	        context.rect(node.x, node.y, node.width, node.height);
@@ -9095,6 +9113,14 @@
 	        return expr.definition.type === "Item";
 	    }
 	}
+	function isTextEditNodeExpression(expr) {
+	    if (typeof expr.definition === "string") {
+	        return false;
+	    }
+	    else {
+	        return expr.definition.type === "TextEdit";
+	    }
+	}
 	function isColumnNodeExpression(expr) {
 	    if (typeof expr.definition === "string") {
 	        return false;
@@ -9118,6 +9144,9 @@
 	    else {
 	        return false;
 	    }
+	}
+	function isTextEditNodeInstance(inst) {
+	    return inst.node.type === "TextEdit";
 	}
 	function isColumnNodeInstance(inst) {
 	    if (inst.node.type === "Column") {
@@ -9170,6 +9199,7 @@
 	function setupEventEmitters(inst, parent) {
 	    // Wire the eventbus of the instance to deliver the event to its parent's bus
 	    switch (parent.node.type) {
+	        case "TextEdit":
 	        case "Item":
 	            Object.keys(inst.expr.eventHandlers).forEach(function (event) {
 	                var parentBus = parent.eventBus;
@@ -9184,7 +9214,6 @@
 	        case "Text":
 	        case "Column":
 	        case "Row":
-	        case "TextEdit":
 	        case "VertScroll":
 	            console.error("Not able to setup emitters for parent ".concat(parent));
 	            break;
@@ -9229,7 +9258,7 @@
 	            children: children
 	        };
 	        var childInstancePromises = [];
-	        if (isItemNodeExpression(resolvedExpr)) {
+	        if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
 	            if (isItemNodeInstance(instance)) {
 	                var itemNodeInstance = setupMouseArea(instance);
 	                if (parentInst) {
@@ -9243,6 +9272,12 @@
 	                };
 	                for (var child in itemNodeInstance.node.children) {
 	                    _loop_2(child);
+	                }
+	            }
+	            else if (isTextEditNodeInstance(instance)) {
+	                var textEditNodeInstance = setupMouseArea(instance);
+	                if (parentInst) {
+	                    instance = setupEventEmitters(textEditNodeInstance, parentInst);
 	                }
 	            }
 	            return Promise.all(childInstancePromises).then(function () { return instance; });
@@ -9271,12 +9306,30 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: "http://localhost:3000/ChatBox.js",
+	            definition: {
+	                id: "textedit",
+	                state: "active",
+	                states: [],
+	                mouseArea: {
+	                    x: 0,
+	                    y: 0,
+	                    width: 0,
+	                    height: 0,
+	                    customEvents: {},
+	                    listeners: {}
+	                },
+	                type: "TextEdit",
+	                x: 0,
+	                y: 0,
+	                width: 300,
+	                height: 50,
+	                draw: true
+	            },
 	            props: {
 	                x: { value: 10, context: "", def: "" },
 	                y: { value: 10, context: "", def: "" },
 	                width: { value: 300, context: "", def: "" },
-	                height: { value: 450, context: "", def: "" }
+	                height: { value: 50, context: "", def: "" }
 	            },
 	            eventHandlers: {}
 	        };

@@ -173,6 +173,10 @@ function isMountedColumnInstance(inst: MountedInstance<PilNodeDef>): inst is Mou
   }
 }
 
+function isMountedTexteditInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<TextEditNode> {
+  return inst.node.type === "TextEdit";
+}
+
 function isMountedRowInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ColumnNode> {
   return inst.node.type === "Row";
 }
@@ -205,8 +209,12 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
           paint(childPaintReqs);
         }
         break;
-      case "Text":
       case "TextEdit":
+        if (isMountedTexteditInstance(instance)) {
+          paintTextEdit(instance);
+        }
+        break;
+      case "Text":
       case "VertScroll":
         console.error("Don't know how to paint: ", instance.node.type);
         break;
@@ -234,6 +242,20 @@ function paintItem(instance: MountedInstance<ItemNode>): Promise<void> {
 function paintColumn(instance: MountedInstance<ColumnNode>): Promise<void> {
   const node = instance.node;
   const { context, x: minx, y: miny, width: maxwidth, height: maxheight } = instance.renderingTarget;
+
+  context.beginPath();
+  if (node.draw) {
+    context.rect(node.x, node.y, node.width, node.height);
+  }
+  context.closePath();
+  context.stroke();
+
+  return Promise.resolve();
+}
+
+function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
+  const node = instance.node;
+  const context = instance.renderingTarget.context;
 
   context.beginPath();
   if (node.draw) {
@@ -307,7 +329,7 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
   })
 }
 
-function activateState(inst: PilNodeInstance<ItemNode>, state: string) {
+function activateState<T extends TextEditNode|ItemNode>(inst: PilNodeInstance<T>, state: string) {
   const targetState = inst.node.states.find(st => st.name === state);
   if (targetState) {
     inst.node.state = state;
@@ -321,6 +343,14 @@ function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilN
     return false;
   } else {
     return expr.definition.type === "Item";
+  }
+}
+
+function isTextEditNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<TextEditNode> {
+  if (typeof expr.definition === "string") {
+    return false;
+  } else {
+    return expr.definition.type === "TextEdit";
   }
 }
 
@@ -348,6 +378,10 @@ function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeI
   }
 }
 
+function isTextEditNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<TextEditNode> {
+  return inst.node.type === "TextEdit";
+}
+
 function isColumnNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ColumnNode> {
   if (inst.node.type === "Column") {
     return true;
@@ -360,7 +394,7 @@ function isRowNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeIn
   return inst.node.type === "Row";
 }
 
-function setupMouseArea(inst: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNode> {
+function setupMouseArea<T extends ItemNode|TextEditNode>(inst: PilNodeInstance<T>): PilNodeInstance<T> {
   inst.node.mouseArea.listeners = {
     mousedown: [
       {
@@ -400,9 +434,10 @@ function pointIsInRect(point: {x: number; y: number;}, rect: { x: number; y: num
     point.y <= rect.y + rect.height;
 }
 
-function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInstance<PilNodeDef>): PilNodeInstance<ItemNode> {
+function setupEventEmitters<T extends ItemNode|TextEditNode>(inst: PilNodeInstance<T>, parent: PilNodeInstance<PilNodeDef>): PilNodeInstance<T> {
   // Wire the eventbus of the instance to deliver the event to its parent's bus
   switch (parent.node.type) {
+    case "TextEdit":
     case "Item":
       Object.keys(inst.expr.eventHandlers).forEach(event => {
         const parentBus = parent.eventBus;
@@ -416,7 +451,6 @@ function setupEventEmitters(inst: PilNodeInstance<ItemNode>, parent: PilNodeInst
     case "Text":
     case "Column":
     case "Row":
-    case "TextEdit":
     case "VertScroll":
       console.error(`Not able to setup emitters for parent ${parent}`);
       break;
@@ -474,7 +508,7 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
     
     const childInstancePromises = [];
     
-    if (isItemNodeExpression(resolvedExpr)) {
+    if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
       if (isItemNodeInstance(instance)) {
         const itemNodeInstance = setupMouseArea(instance);
         if (parentInst) {
@@ -488,6 +522,11 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
               children[child] = childInst;
             })
           );
+        }
+      } else if (isTextEditNodeInstance(instance)) {
+        const textEditNodeInstance = setupMouseArea(instance);
+        if (parentInst) {
+          instance = setupEventEmitters(textEditNodeInstance, parentInst);
         }
       }
 
