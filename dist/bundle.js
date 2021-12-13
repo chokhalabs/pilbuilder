@@ -9035,6 +9035,7 @@
 	    if (node.draw) {
 	        context.rect(node.x, node.y, node.width, node.height);
 	    }
+	    context.fillText(node.value, node.x + 10, node.y + 10, node.width);
 	    context.closePath();
 	    context.stroke();
 	    return Promise.resolve();
@@ -9308,8 +9309,21 @@
 	        var expr = {
 	            definition: {
 	                id: "textedit",
-	                state: "active",
-	                states: [],
+	                state: "inactive",
+	                states: [
+	                    {
+	                        name: "active",
+	                        when: "mousedown",
+	                        propertyChanges: [],
+	                        onEnter: []
+	                    },
+	                    {
+	                        name: "inactive",
+	                        when: "clickoutside",
+	                        propertyChanges: [],
+	                        onEnter: []
+	                    }
+	                ],
 	                mouseArea: {
 	                    x: 0,
 	                    y: 0,
@@ -9323,7 +9337,8 @@
 	                y: 0,
 	                width: 300,
 	                height: 50,
-	                draw: true
+	                draw: false,
+	                value: "Some random text"
 	            },
 	            props: {
 	                x: { value: 10, context: "", def: "" },

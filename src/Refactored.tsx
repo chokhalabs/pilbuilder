@@ -9,8 +9,21 @@ export default function() {
     const expr: PilNodeExpression<TextEditNode> = {
       definition: {
         id: "textedit",
-        state: "active",
-        states: [],
+        state: "inactive",
+        states: [
+          {
+            name: "active",
+            when: "mousedown",
+            propertyChanges: [],
+            onEnter: []
+          },
+          {
+            name: "inactive",
+            when: "clickoutside",
+            propertyChanges: [],
+            onEnter: []
+          }
+        ],
         mouseArea: {
           x: 0,
           y: 0,
@@ -24,7 +37,8 @@ export default function() {
         y: 0,
         width: 300,
         height: 50,
-        draw: true
+        draw: false,
+        value: "Some random text"
       },
       props: {
         x: { value: 10, context: "", def: "" },

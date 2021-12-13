@@ -75,7 +75,7 @@ interface StatefulNodeDef {
 
 export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode;
 export type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
-export type TextEditNode = { type: "TextEdit" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
+export type TextEditNode = { type: "TextEdit"; value: string; } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
 export type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
@@ -261,6 +261,7 @@ function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
   if (node.draw) {
     context.rect(node.x, node.y, node.width, node.height);
   }
+  context.fillText(node.value, node.x + 10, node.y + 10, node.width);
   context.closePath();
   context.stroke();
 
