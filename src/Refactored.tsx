@@ -1,51 +1,58 @@
 import { useRef, useEffect } from "react";
 
-import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode } from "./design";
+import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode, RowNode } from "./design";
 
 export default function() {
   const canvas = useRef(null); 
 
   useEffect(() => {
-    const item: ColumnNode = {
-      type: "Column",
-      id: "1",
-      x: 10,
-      y:  10,
-      width:  300,
-      height:  450,
-      draw: true,
-      children: {
-        "messagelist": {
-          definition: "http://localhost:3000/GenericItem.js",
-          props: {
-            id: { value: "messagelist", context: "", def: "" },
-            x: { value: 11, context: "$parent", def: "$parent.x + 1" },
-            y: { value: 11, context: "$parent", def: "$parent.y + 1" },
-            width: { value: 50, context: "$parent", def: "$parent.width - 2" },
-            height: { value: 50,  context: "$parent", def: "$parent.height - 40" },
-            draw: { value: true, context: "", def: "" }
-          },
-          eventHandlers: {}
-        },
-        "typingarea": {
-          definition: "http://localhost:3000/GenericItem.js",
-          props: {
-            id: { value: "typingarea", context: "", def: "" },
-            x: { value: 11, context: "$parent", def: "$parent.x + 1" },
-            y: { value: 70, context: "$parent", def: "$parent.height - 26" },
-            width: { value: 50, context: "$parent", def: "$parent.width - 2" },
-            height: { value: 50,  context: "", def: "30" },
-            draw: { value: true, context: "", def: "" }
-          },
-          eventHandlers: {}
-        }
-      },
-    };
+    // const expr: PilNodeExpression<ColumnNode> = {
+    //   definition: "http://localhost:3000/ChatBox.js",
+    //   props: {
+    //     x: { value: 10, context: "", def: "" },
+    //     y: { value: 10, context: "", def: "" },
+    //     width: { value: 300, context: "", def: "" },
+    //     height: { value: 450, context: "", def: "" }
+    //   },
+    //   eventHandlers: {}
+    // };
 
-    const expr: PilNodeExpression<ColumnNode> = {
-      definition: item,
+    const expr: PilNodeExpression<RowNode> = {
+      definition: {
+        id: "row",
+        type: "Row",
+        x: 10,
+        y: 10,
+        width: 300,
+        height: 50,
+        children: {
+          "textedit": {
+            definition: "http://localhost:3000/GenericItem.js",
+            props: {
+              id: { value: "textedit", context: "", def: "" },
+              x: { value: 0, context: "$parent", def: "$parent.x + 1" },
+              y: { value: 0, context: "$parent", def: "$parent.y + 1" },
+              width: { value: 0, context: "$parent", def: "$parent.width - 50" },
+              height: { value: 0, context: "$parent", def: "$parent.height - 2" }
+            },
+            eventHandlers: {}
+          },
+          "button": {
+            definition: "http://localhost:3000/GenericItem.js",
+            props: {
+              id: { value: "button", context: "", def: "" },
+              x: { value: 0, context: "$parent", def: "$parent.width - 50 + 12" },
+              y: { value: 0, context: "$parent", def: "$parent.y + 1" },
+              width: { value: 0, context: "$parent", def: "48" },
+              height: { value: 0, context: "$parent", def: "$parent.height - 2" }
+            },
+            eventHandlers: {}
+          }
+        },
+        draw: true
+      },
       props: {},
-      eventHandlers: {}
+      eventHandlers:{}
     };
 
 

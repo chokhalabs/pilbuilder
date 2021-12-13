@@ -8956,6 +8956,9 @@
 	        return false;
 	    }
 	}
+	function isMountedRowInstance(inst) {
+	    return inst.node.type === "Row";
+	}
 	function paint(reqs) {
 	    var _loop_1 = function (req) {
 	        var instance = req.inst;
@@ -8968,8 +8971,9 @@
 	                    // Paint children
 	                }
 	                break;
+	            case "Row":
 	            case "Column":
-	                if (isMountedColumnInstance(instance)) {
+	                if (isMountedColumnInstance(instance) || isMountedRowInstance(instance)) {
 	                    paintColumn(instance);
 	                    var childPaintReqs = Object.values(instance.children).map(function (inst) {
 	                        return {
@@ -8980,10 +8984,10 @@
 	                    paint(childPaintReqs);
 	                }
 	                break;
-	            case "Row":
 	            case "Text":
 	            case "TextEdit":
 	            case "VertScroll":
+	                console.error("Don't know how to paint: ", instance.node.type);
 	                break;
 	            default:
 	                assertNever(instance.node);
@@ -9099,6 +9103,14 @@
 	        return expr.definition.type === "Column";
 	    }
 	}
+	function isRowNodeExpression(expr) {
+	    if (typeof expr.definition === "string") {
+	        return false;
+	    }
+	    else {
+	        return expr.definition.type === "Row";
+	    }
+	}
 	function isItemNodeInstance(inst) {
 	    if (inst.node.type === "Item") {
 	        return true;
@@ -9114,6 +9126,9 @@
 	    else {
 	        return false;
 	    }
+	}
+	function isRowNodeInstance(inst) {
+	    return inst.node.type === "Row";
 	}
 	function setupMouseArea(inst) {
 	    inst.node.mouseArea.listeners = {
@@ -9232,8 +9247,8 @@
 	            }
 	            return Promise.all(childInstancePromises).then(function () { return instance; });
 	        }
-	        else if (isColumnNodeExpression(resolvedExpr)) {
-	            if (isColumnNodeInstance(instance)) {
+	        else if (isColumnNodeExpression(resolvedExpr) || isRowNodeExpression(resolvedExpr)) {
+	            if (isColumnNodeInstance(instance) || isRowNodeInstance(instance)) {
 	                var _loop_3 = function (child) {
 	                    var childExpr = instance.node.children[child];
 	                    childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
@@ -9255,43 +9270,50 @@
 	function App () {
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
-	        var item = {
-	            type: "Column",
-	            id: "1",
-	            x: 10,
-	            y: 10,
-	            width: 300,
-	            height: 450,
-	            draw: true,
-	            children: {
-	                "messagelist": {
-	                    definition: "http://localhost:3000/GenericItem.js",
-	                    props: {
-	                        id: { value: "messagelist", context: "", def: "" },
-	                        x: { value: 11, context: "$parent", def: "$parent.x + 1" },
-	                        y: { value: 11, context: "$parent", def: "$parent.y + 1" },
-	                        width: { value: 50, context: "$parent", def: "$parent.width - 2" },
-	                        height: { value: 50, context: "$parent", def: "$parent.height - 40" },
-	                        draw: { value: true, context: "", def: "" }
-	                    },
-	                    eventHandlers: {}
-	                },
-	                "typingarea": {
-	                    definition: "http://localhost:3000/GenericItem.js",
-	                    props: {
-	                        id: { value: "typingarea", context: "", def: "" },
-	                        x: { value: 11, context: "$parent", def: "$parent.x + 1" },
-	                        y: { value: 70, context: "$parent", def: "$parent.height - 26" },
-	                        width: { value: 50, context: "$parent", def: "$parent.width - 2" },
-	                        height: { value: 50, context: "", def: "30" },
-	                        draw: { value: true, context: "", def: "" }
-	                    },
-	                    eventHandlers: {}
-	                }
-	            },
-	        };
+	        // const expr: PilNodeExpression<ColumnNode> = {
+	        //   definition: "http://localhost:3000/ChatBox.js",
+	        //   props: {
+	        //     x: { value: 10, context: "", def: "" },
+	        //     y: { value: 10, context: "", def: "" },
+	        //     width: { value: 300, context: "", def: "" },
+	        //     height: { value: 450, context: "", def: "" }
+	        //   },
+	        //   eventHandlers: {}
+	        // };
 	        var expr = {
-	            definition: item,
+	            definition: {
+	                id: "row",
+	                type: "Row",
+	                x: 10,
+	                y: 10,
+	                width: 300,
+	                height: 50,
+	                children: {
+	                    "textedit": {
+	                        definition: "http://localhost:3000/GenericItem.js",
+	                        props: {
+	                            id: { value: "textedit", context: "", def: "" },
+	                            x: { value: 0, context: "$parent", def: "$parent.x + 1" },
+	                            y: { value: 0, context: "$parent", def: "$parent.y + 1" },
+	                            width: { value: 0, context: "$parent", def: "$parent.width - 50" },
+	                            height: { value: 0, context: "$parent", def: "$parent.height - 2" }
+	                        },
+	                        eventHandlers: {}
+	                    },
+	                    "button": {
+	                        definition: "http://localhost:3000/GenericItem.js",
+	                        props: {
+	                            id: { value: "button", context: "", def: "" },
+	                            x: { value: 0, context: "$parent", def: "$parent.width - 50 + 12" },
+	                            y: { value: 0, context: "$parent", def: "$parent.y + 1" },
+	                            width: { value: 0, context: "$parent", def: "48" },
+	                            height: { value: 0, context: "$parent", def: "$parent.height - 2" }
+	                        },
+	                        eventHandlers: {}
+	                    }
+	                },
+	                draw: true
+	            },
 	            props: {},
 	            eventHandlers: {}
 	        };

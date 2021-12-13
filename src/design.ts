@@ -173,6 +173,10 @@ function isMountedColumnInstance(inst: MountedInstance<PilNodeDef>): inst is Mou
   }
 }
 
+function isMountedRowInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ColumnNode> {
+  return inst.node.type === "Row";
+}
+
 export function paint(reqs: PaintRequest<PilNodeDef>[]) {
   for (let req of reqs) {
     const instance = req.inst;
@@ -185,8 +189,9 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
           // Paint children
         }
         break;
+      case "Row":
       case "Column":
-        if (isMountedColumnInstance(instance)) {
+        if (isMountedColumnInstance(instance) || isMountedRowInstance(instance)) {
           paintColumn(instance);
           const childPaintReqs: PaintRequest<PilNodeDef>[] = Object.values(instance.children).map(inst => {
             return {
@@ -200,10 +205,10 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
           paint(childPaintReqs);
         }
         break;
-      case "Row":
       case "Text":
       case "TextEdit":
       case "VertScroll":
+        console.error("Don't know how to paint: ", instance.node.type);
         break;
       default:
         assertNever(instance.node);
@@ -327,6 +332,14 @@ function isColumnNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is Pi
   }
 }
 
+function isRowNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<RowNode> {
+  if (typeof expr.definition === "string") {
+    return false;
+  } else {
+    return expr.definition.type === "Row";
+  }
+}
+
 function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ItemNode> {
   if (inst.node.type === "Item") {
     return true;
@@ -341,6 +354,10 @@ function isColumnNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNod
   } else {
     return false;
   }
+}
+
+function isRowNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<RowNode> {
+  return inst.node.type === "Row";
 }
 
 function setupMouseArea(inst: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNode> {
@@ -475,8 +492,8 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
       }
 
       return Promise.all(childInstancePromises).then(() => instance);
-    } else if (isColumnNodeExpression(resolvedExpr)) {
-      if (isColumnNodeInstance(instance)) {
+    } else if (isColumnNodeExpression(resolvedExpr) || isRowNodeExpression(resolvedExpr)) {
+      if (isColumnNodeInstance(instance) || isRowNodeInstance(instance)) {
         for (let child in instance.node.children) {
           const childExpr = instance.node.children[child];
           childInstancePromises.push(
