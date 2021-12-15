@@ -15,22 +15,41 @@ export default function() {
             name: "active",
             when: "mousedown",
             propertyChanges: [],
-            onEnter: []
+            onEnter: [{
+              module: "http://localhost:3000/TextEdit.js",
+              callback: "onActive"
+            }]
           },
           {
             name: "inactive",
-            when: "clickoutside",
+            when: "inactivate",
             propertyChanges: [],
-            onEnter: []
+            onEnter: [{
+              module: "http://localhost:3000/TextEdit.js",
+              callback: "onInactive"
+            }]
           }
         ],
         mouseArea: {
           x: 0,
           y: 0,
-          width: 0,
-          height: 0,
-          customEvents: {},
-          listeners: {}
+          width: 300,
+          height: 50,
+          listeners: {},
+          customEvents: {
+            activate: {
+              when: "mousedown",
+              payload: ""
+            },
+            inactivate: {
+              when: "mousedown:outside",
+              payload: ""
+            },
+            change: {
+              when: "mousedown:outside",
+              payload: "$self.currentEditedText"
+            }
+          }
         },
         type: "TextEdit",
         x: 0,
@@ -38,13 +57,25 @@ export default function() {
         width: 300,
         height: 50,
         draw: false,
-        value: "Some random text"
+        value: "",
+        currentEditedText: "",
+        cursorPosition: 0,
+        children: {
+          cursor: {
+            definition: "AnimatedLine",
+            props: {
+              x: { value: 0, context: "$parent", def: "$parent.cursorPosition" }
+            },
+            eventHandlers: {}
+          }
+        }
       },
       props: {
         x: { value: 10, context: "", def: "" },
         y: { value: 10, context: "", def: "" },
         width: { value: 300, context: "", def: "" },
-        height: { value: 50, context: "", def: "" }
+        height: { value: 50, context: "", def: "" },
+        value: { value: "some text", context: "", def: "" }
       },
       eventHandlers: {}
     };

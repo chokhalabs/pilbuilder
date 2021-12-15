@@ -9032,16 +9032,23 @@
 	    var node = instance.node;
 	    var context = instance.renderingTarget.context;
 	    context.beginPath();
+	    context.clearRect(node.x, node.y, node.width, node.height);
 	    if (node.draw) {
 	        context.rect(node.x, node.y, node.width, node.height);
 	    }
-	    context.fillText(node.value, node.x + 10, node.y + 10, node.width);
+	    if (node.state === "inactive") {
+	        context.fillText(node.value, node.x + 10, node.y + 10, node.width);
+	    }
+	    else if (node.state === "active") {
+	        context.fillText(node.currentEditedText, node.x + 10, node.y + 10, node.width);
+	    }
 	    context.closePath();
 	    context.stroke();
 	    return Promise.resolve();
 	}
 	function deliverMouseDown(inst, ev) {
 	    switch (inst.node.type) {
+	        case "TextEdit":
 	        case "Item":
 	            var mousedowntargets = inst.node.mouseArea.listeners["mousedown"];
 	            mousedowntargets.forEach(function (listener) {
@@ -9060,11 +9067,10 @@
 	            }
 	            break;
 	        case "VertScroll":
-	        case "TextEdit":
 	        case "Text":
 	        case "Row":
 	        case "Column":
-	            console.info("Cannot deliver mousedown event to ".concat(inst.node));
+	            console.error("Cannot deliver mousedown event to ".concat(inst.node));
 	            break;
 	        default:
 	            assertNever(inst.node);
@@ -9084,6 +9090,7 @@
 	                        width: canvas.width,
 	                        height: canvas.height
 	                    } });
+	                mountedInst_1 = setupMouseArea(mountedInst_1);
 	                canvas.addEventListener("mousedown", function (ev) { return deliverMouseDown(mountedInst_1, ev); });
 	                var paintRequest = bindProps(mountedInst_1);
 	                res([paintRequest]);
@@ -9098,12 +9105,33 @@
 	    });
 	}
 	function activateState(inst, state) {
-	    var targetState = inst.node.states.find(function (st) { return st.name === state; });
-	    if (targetState) {
-	        inst.node.state = state;
+	    if (isMountedTexteditInstance(inst) || isMountedItemInstance(inst)) {
+	        var targetState = inst.node.states.find(function (st) { return st.name === state; });
+	        if (targetState) {
+	            inst.node.state = state;
+	            targetState.onEnter.forEach(function (handler) {
+	                import(handler.module).then(function (mod) {
+	                    var onNodePropertyUpdate = (function (prop, value) {
+	                        this.node[prop] = value;
+	                        paint([{
+	                                inst: inst,
+	                                timestamp: Date.now()
+	                            }]);
+	                    }).bind(inst);
+	                    (mod)[handler.callback].call(null, inst.node, onNodePropertyUpdate);
+	                })
+	                    .catch(function (err) {
+	                    console.error("Could not execute onEnter for", state, inst, err);
+	                });
+	            });
+	            // applyPropertyChanges
+	        }
+	        else {
+	            throw new Error("Cannot activate ".concat(state, " on ").concat(inst.node));
+	        }
 	    }
 	    else {
-	        throw new Error("Cannot activate ".concat(state, " on ").concat(inst.node));
+	        console.error("Cannot activate state on ", inst);
 	    }
 	}
 	function isItemNodeExpression(expr) {
@@ -9161,34 +9189,36 @@
 	    return inst.node.type === "Row";
 	}
 	function setupMouseArea(inst) {
-	    inst.node.mouseArea.listeners = {
-	        mousedown: [
-	            {
-	                handler: function (ev) {
-	                    // activate state if inst.node has a matching when clause
-	                    var targetState = inst.node.states.find(function (state) { return state.when === "mousedown"; });
-	                    if (targetState && inst.node.state !== targetState.name) {
-	                        activateState(inst, targetState.name);
-	                    }
-	                    // emit event if mouseArea is supposed to emit custom events
-	                    Object.keys(inst.node.mouseArea.customEvents).map(function (event) {
-	                        if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
-	                            emit(inst.eventBus, event, inst.node);
+	    if (isMountedItemInstance(inst) || isMountedTexteditInstance(inst)) {
+	        inst.node.mouseArea.listeners = {
+	            mousedown: [
+	                {
+	                    handler: function (ev) {
+	                        // activate state if inst.node has a matching when clause
+	                        var targetState = inst.node.states.find(function (state) { return state.when === "mousedown"; });
+	                        if (targetState && inst.node.state !== targetState.name) {
+	                            activateState(inst, targetState.name);
 	                        }
-	                    });
-	                },
-	                eventLocationChecker: function (ev) {
-	                    var mouseAreaRect = {
-	                        x: inst.node.mouseArea.x,
-	                        y: inst.node.mouseArea.y,
-	                        width: inst.node.mouseArea.width,
-	                        height: inst.node.mouseArea.height
-	                    };
-	                    return pointIsInRect(ev, mouseAreaRect);
+	                        // emit event if mouseArea is supposed to emit custom events
+	                        Object.keys(inst.node.mouseArea.customEvents).map(function (event) {
+	                            if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
+	                                emit(inst.eventBus, event, inst.node);
+	                            }
+	                        });
+	                    },
+	                    eventLocationChecker: function (ev) {
+	                        var mouseAreaRect = {
+	                            x: inst.node.mouseArea.x,
+	                            y: inst.node.mouseArea.y,
+	                            width: inst.node.mouseArea.width,
+	                            height: inst.node.mouseArea.height
+	                        };
+	                        return pointIsInRect(ev, mouseAreaRect);
+	                    }
 	                }
-	            }
-	        ]
-	    };
+	            ]
+	        };
+	    }
 	    return inst;
 	}
 	function pointIsInRect(point, rect) {
@@ -9261,24 +9291,23 @@
 	        var childInstancePromises = [];
 	        if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
 	            if (isItemNodeInstance(instance)) {
-	                var itemNodeInstance = setupMouseArea(instance);
 	                if (parentInst) {
-	                    instance = setupEventEmitters(itemNodeInstance, parentInst);
+	                    setupEventEmitters(instance, parentInst);
 	                }
 	                var _loop_2 = function (child) {
-	                    var childExpr = itemNodeInstance.node.children[child];
+	                    var childExpr = instance.node.children[child];
 	                    childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
 	                        children[child] = childInst;
 	                    }));
 	                };
-	                for (var child in itemNodeInstance.node.children) {
+	                for (var child in instance.node.children) {
 	                    _loop_2(child);
 	                }
 	            }
 	            else if (isTextEditNodeInstance(instance)) {
-	                var textEditNodeInstance = setupMouseArea(instance);
+	                // const textEditNodeInstance = setupMouseArea(instance);
 	                if (parentInst) {
-	                    instance = setupEventEmitters(textEditNodeInstance, parentInst);
+	                    instance = setupEventEmitters(instance, parentInst);
 	                }
 	            }
 	            return Promise.all(childInstancePromises).then(function () { return instance; });
@@ -9315,22 +9344,41 @@
 	                        name: "active",
 	                        when: "mousedown",
 	                        propertyChanges: [],
-	                        onEnter: []
+	                        onEnter: [{
+	                                module: "http://localhost:3000/TextEdit.js",
+	                                callback: "onActive"
+	                            }]
 	                    },
 	                    {
 	                        name: "inactive",
-	                        when: "clickoutside",
+	                        when: "inactivate",
 	                        propertyChanges: [],
-	                        onEnter: []
+	                        onEnter: [{
+	                                module: "http://localhost:3000/TextEdit.js",
+	                                callback: "onInactive"
+	                            }]
 	                    }
 	                ],
 	                mouseArea: {
 	                    x: 0,
 	                    y: 0,
-	                    width: 0,
-	                    height: 0,
-	                    customEvents: {},
-	                    listeners: {}
+	                    width: 300,
+	                    height: 50,
+	                    listeners: {},
+	                    customEvents: {
+	                        activate: {
+	                            when: "mousedown",
+	                            payload: ""
+	                        },
+	                        inactivate: {
+	                            when: "mousedown:outside",
+	                            payload: ""
+	                        },
+	                        change: {
+	                            when: "mousedown:outside",
+	                            payload: "$self.currentEditedText"
+	                        }
+	                    }
 	                },
 	                type: "TextEdit",
 	                x: 0,
@@ -9338,13 +9386,25 @@
 	                width: 300,
 	                height: 50,
 	                draw: false,
-	                value: "Some random text"
+	                value: "",
+	                currentEditedText: "",
+	                cursorPosition: 0,
+	                children: {
+	                    cursor: {
+	                        definition: "AnimatedLine",
+	                        props: {
+	                            x: { value: 0, context: "$parent", def: "$parent.cursorPosition" }
+	                        },
+	                        eventHandlers: {}
+	                    }
+	                }
 	            },
 	            props: {
 	                x: { value: 10, context: "", def: "" },
 	                y: { value: 10, context: "", def: "" },
 	                width: { value: 300, context: "", def: "" },
-	                height: { value: 50, context: "", def: "" }
+	                height: { value: 50, context: "", def: "" },
+	                value: { value: "some text", context: "", def: "" }
 	            },
 	            eventHandlers: {}
 	        };

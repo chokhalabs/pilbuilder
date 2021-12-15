@@ -73,9 +73,21 @@ interface StatefulNodeDef {
   }>;
 }
 
-export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode;
+interface AnimatedNodeDef {
+  animations: Array<Animation>;
+}
+
+interface Animation {
+  propertyName: string;
+  start: any;
+  end: any;
+  duration: number;
+  loop: boolean;
+}
+
+export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode & AnimatedNodeDef;
 export type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
-export type TextEditNode = { type: "TextEdit"; value: string; } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef;
+export type TextEditNode = { type: "TextEdit"; value: string; currentEditedText: string; cursorPosition: number; } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef & ContainerNodeDef;
 export type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
@@ -155,7 +167,6 @@ export interface PaintRequest<T extends PilNodeDef> {
 
 // type initPil<T extends PilNodeDef> = (nodeDef: T) => PilNodeInstance<T>;
 type paint<T extends PilNodeDef> = (reqs: PaintRequest<T>[]) => Promise<void>;
-type activateState = (node: PilNodeInstance<PilNodeDef>, state: string) => PaintRequest<PilNodeDef>;
 
 function isMountedItemInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ItemNode> {
   if (inst.node.type === "Item") {
@@ -258,10 +269,15 @@ function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
   const context = instance.renderingTarget.context;
 
   context.beginPath();
+  context.clearRect(node.x, node.y, node.width, node.height);
   if (node.draw) {
     context.rect(node.x, node.y, node.width, node.height);
   }
-  context.fillText(node.value, node.x + 10, node.y + 10, node.width);
+  if (node.state === "inactive") {
+    context.fillText(node.value, node.x + 10, node.y + 10, node.width);
+  } else if (node.state === "active") {
+    context.fillText(node.currentEditedText, node.x + 10, node.y + 10, node.width);
+  }
   context.closePath();
   context.stroke();
 
@@ -270,6 +286,7 @@ function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
 
 export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEvent) {
   switch (inst.node.type) {
+    case "TextEdit":
     case "Item":
       const mousedowntargets = inst.node.mouseArea.listeners["mousedown"];
       mousedowntargets.forEach(listener => {
@@ -290,11 +307,10 @@ export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEve
       }
       break;
     case "VertScroll":
-    case "TextEdit":
     case "Text":
     case "Row":
     case "Column":
-      console.info(`Cannot deliver mousedown event to ${inst.node}`);
+      console.error(`Cannot deliver mousedown event to ${inst.node}`);
       break;
     default:
       assertNever(inst.node);
@@ -307,7 +323,7 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
     if (canvas) {
       const context = canvas.getContext("2d");
       if (context) {
-        const mountedInst: MountedInstance<PilNodeDef> = {
+        let mountedInst: MountedInstance<PilNodeDef> = {
           ...inst,
           renderingTarget: {
             canvas,
@@ -318,6 +334,9 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
             height: canvas.height
           }
         }
+
+        mountedInst = setupMouseArea(mountedInst);
+        
         canvas.addEventListener("mousedown", ev => deliverMouseDown(mountedInst, ev));
         let paintRequest = bindProps(mountedInst);
         res([paintRequest]);
@@ -330,13 +349,33 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
   })
 }
 
-function activateState<T extends TextEditNode|ItemNode>(inst: PilNodeInstance<T>, state: string) {
-  const targetState = inst.node.states.find(st => st.name === state);
-  if (targetState) {
-    inst.node.state = state;
-  } else {
-    throw new Error(`Cannot activate ${state} on ${inst.node}`);
-  }
+function activateState(inst: MountedInstance<PilNodeDef>, state: string) {
+  if (isMountedTexteditInstance(inst) || isMountedItemInstance(inst)) {
+    const targetState = inst.node.states.find(st => st.name === state);
+    if (targetState) {
+      inst.node.state = state;
+      targetState.onEnter.forEach(handler => {
+        import(handler.module).then(mod => {
+          const onNodePropertyUpdate = (function (this: MountedInstance<PilNodeDef>, prop: string, value: string | boolean | number) {
+            (this.node as any)[prop] = value;
+            paint([{
+              inst,
+              timestamp: Date.now()
+            }])
+          }).bind(inst);
+          (mod)[handler.callback].call(null, inst.node, onNodePropertyUpdate)
+        })
+        .catch(err => {
+          console.error("Could not execute onEnter for", state, inst, err);
+        })
+      })
+      // applyPropertyChanges
+    } else {
+      throw new Error(`Cannot activate ${state} on ${inst.node}`);
+    }
+  } else  {
+    console.error("Cannot activate state on ", inst);
+  } 
 }
 
 function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ItemNode> {
@@ -395,36 +434,39 @@ function isRowNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeIn
   return inst.node.type === "Row";
 }
 
-function setupMouseArea<T extends ItemNode|TextEditNode>(inst: PilNodeInstance<T>): PilNodeInstance<T> {
-  inst.node.mouseArea.listeners = {
-    mousedown: [
-      {
-        handler(ev) {
-          // activate state if inst.node has a matching when clause
-          const targetState = inst.node.states.find(state => state.when === "mousedown");
-          if (targetState && inst.node.state !== targetState.name) {
-            activateState(inst, targetState.name);
-          }
-          // emit event if mouseArea is supposed to emit custom events
-          Object.keys(inst.node.mouseArea.customEvents).map(event => {
-            if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
-              emit(inst.eventBus, event, inst.node);
+function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilNodeDef> {
+  if (isMountedItemInstance(inst) || isMountedTexteditInstance(inst)) {
+    inst.node.mouseArea.listeners = {
+      mousedown: [
+        {
+          handler(ev) {
+            // activate state if inst.node has a matching when clause
+            const targetState = inst.node.states.find(state => state.when === "mousedown");
+            if (targetState && inst.node.state !== targetState.name) {
+              activateState(inst, targetState.name);
             }
-          })
-        },
-        eventLocationChecker(ev) {
-          const mouseAreaRect = { 
-            x: inst.node.mouseArea.x,
-            y: inst.node.mouseArea.y, 
-            width: inst.node.mouseArea.width, 
-            height: inst.node.mouseArea.height 
-          };
+            // emit event if mouseArea is supposed to emit custom events
+            Object.keys(inst.node.mouseArea.customEvents).map(event => {
+              if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
+                emit(inst.eventBus, event, inst.node);
+              }
+            })
+          },
+          eventLocationChecker(ev) {
+            const mouseAreaRect = { 
+              x: inst.node.mouseArea.x,
+              y: inst.node.mouseArea.y, 
+              width: inst.node.mouseArea.width, 
+              height: inst.node.mouseArea.height 
+            };
 
-          return pointIsInRect(ev, mouseAreaRect);
+            return pointIsInRect(ev, mouseAreaRect);
+          }
         }
-      }
-    ]
-  };
+      ]
+    };
+  }
+  
   return inst;
 }
 
@@ -511,13 +553,16 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
     
     if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
       if (isItemNodeInstance(instance)) {
-        const itemNodeInstance = setupMouseArea(instance);
+        // const itemNodeInstance = setupMouseArea(instance);
+        let castedInstance: PilNodeInstance<ItemNode>;
         if (parentInst) {
-          instance = setupEventEmitters(itemNodeInstance , parentInst);
+          castedInstance = setupEventEmitters(instance , parentInst);
+        } else {
+          castedInstance = instance;
         }
       
-        for (let child in itemNodeInstance.node.children) {
-          const childExpr = itemNodeInstance.node.children[child];
+        for (let child in instance.node.children) {
+          const childExpr = instance.node.children[child];
           childInstancePromises.push(
             init(childExpr, instance).then(childInst => {
               children[child] = childInst;
@@ -525,9 +570,9 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
           );
         }
       } else if (isTextEditNodeInstance(instance)) {
-        const textEditNodeInstance = setupMouseArea(instance);
+        // const textEditNodeInstance = setupMouseArea(instance);
         if (parentInst) {
-          instance = setupEventEmitters(textEditNodeInstance, parentInst);
+          instance = setupEventEmitters(instance, parentInst);
         }
       }
 
