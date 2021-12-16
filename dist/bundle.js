@@ -9046,23 +9046,18 @@
 	    context.stroke();
 	    return Promise.resolve();
 	}
-	function deliverMouseDown(inst, ev) {
+	function deliverMouseEvent(inst, ev, eventname) {
 	    switch (inst.node.type) {
 	        case "TextEdit":
 	        case "Item":
-	            var mousedowntargets = inst.node.mouseArea.listeners["mousedown"];
+	            var mousedowntargets = inst.node.mouseArea.listeners[eventname];
 	            mousedowntargets.forEach(function (listener) {
-	                if (listener.eventLocationChecker(ev)) {
-	                    listener.handler(ev);
-	                }
-	                else {
-	                    console.info("Ignore mousedown on ".concat(inst.node));
-	                }
+	                listener.handler(ev);
 	            });
 	            if (inst.children) {
 	                for (var child in inst.children) {
 	                    var mountedChild = __assign(__assign({}, inst.children[child]), { renderingTarget: inst.renderingTarget });
-	                    deliverMouseDown(mountedChild, ev);
+	                    deliverMouseEvent(mountedChild, ev, eventname);
 	                }
 	            }
 	            break;
@@ -9091,7 +9086,13 @@
 	                        height: canvas.height
 	                    } });
 	                mountedInst_1 = setupMouseArea(mountedInst_1);
-	                canvas.addEventListener("mousedown", function (ev) { return deliverMouseDown(mountedInst_1, ev); });
+	                canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
+	                if (isMountedItemInstance(mountedInst_1)) {
+	                    wireUpStateListeners(mountedInst_1);
+	                }
+	                else if (isMountedTexteditInstance(mountedInst_1)) {
+	                    wireUpStateListeners(mountedInst_1);
+	                }
 	                var paintRequest = bindProps(mountedInst_1);
 	                res([paintRequest]);
 	            }
@@ -9194,15 +9195,23 @@
 	            mousedown: [
 	                {
 	                    handler: function (ev) {
-	                        // activate state if inst.node has a matching when clause
-	                        var targetState = inst.node.states.find(function (state) { return state.when === "mousedown"; });
-	                        if (targetState && inst.node.state !== targetState.name) {
-	                            activateState(inst, targetState.name);
-	                        }
+	                        var mouseAreaRect = {
+	                            x: inst.node.mouseArea.x,
+	                            y: inst.node.mouseArea.y,
+	                            width: inst.node.mouseArea.width,
+	                            height: inst.node.mouseArea.height
+	                        };
 	                        // emit event if mouseArea is supposed to emit custom events
 	                        Object.keys(inst.node.mouseArea.customEvents).map(function (event) {
-	                            if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
-	                                emit(inst.eventBus, event, inst.node);
+	                            if (pointIsInRect(ev, mouseAreaRect)) {
+	                                if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
+	                                    emit(inst.eventBus, event, inst.node);
+	                                }
+	                            }
+	                            else {
+	                                if (inst.node.mouseArea.customEvents[event].when === "mousedown:outside") {
+	                                    emit(inst.eventBus, event, inst.node);
+	                                }
 	                            }
 	                        });
 	                    },
@@ -9251,6 +9260,20 @@
 	        default:
 	            assertNever(parent.node);
 	    }
+	    return inst;
+	}
+	function wireUpStateListeners(inst) {
+	    var node = inst.node;
+	    node.states.forEach(function (state) {
+	        if (!inst.eventBus.listeners[state.when]) {
+	            inst.eventBus.listeners[state.when] = [];
+	        }
+	        inst.eventBus.listeners[state.when].push(function () {
+	            if (inst.node.state !== state.name) {
+	                activateState(inst, state.name);
+	            }
+	        });
+	    });
 	    return inst;
 	}
 	function bindProps(inst, parent) {
@@ -9342,7 +9365,7 @@
 	                states: [
 	                    {
 	                        name: "active",
-	                        when: "mousedown",
+	                        when: "activate",
 	                        propertyChanges: [],
 	                        onEnter: [{
 	                                module: "http://localhost:3000/TextEdit.js",
@@ -9376,7 +9399,7 @@
 	                        },
 	                        change: {
 	                            when: "mousedown:outside",
-	                            payload: "$self.currentEditedText"
+	                            payload: ""
 	                        }
 	                    }
 	                },

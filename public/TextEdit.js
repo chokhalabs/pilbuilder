@@ -1,12 +1,12 @@
 function keyDownHandler(ev, node, onNodePropertyUpdate) {
   ev.preventDefault();
-  let newText = node.currentText;
+  let newText = node.currentEditedText;
   if (ev.key === "Backspace" || ev.key === "Delete") {
     newText = newText.slice(0, -1); 
   } else if (ev.key === "Control" || ev.key === "Shift" || ev.key === "Alt") {
     console.info("Ignoring ", ev.key);
   } else {
-    newText = node.currentText + ev.key;
+    newText = node.currentEditedText + ev.key;
   }
 
   onNodePropertyUpdate("currentEditedText", newText);

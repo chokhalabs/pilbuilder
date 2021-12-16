@@ -13,7 +13,7 @@ export default function() {
         states: [
           {
             name: "active",
-            when: "mousedown",
+            when: "activate",
             propertyChanges: [],
             onEnter: [{
               module: "http://localhost:3000/TextEdit.js",
@@ -47,7 +47,7 @@ export default function() {
             },
             change: {
               when: "mousedown:outside",
-              payload: "$self.currentEditedText"
+              payload: ""
             }
           }
         },

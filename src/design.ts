@@ -284,17 +284,13 @@ function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
   return Promise.resolve();
 }
 
-export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEvent) {
+export function deliverMouseEvent(inst: MountedInstance<PilNodeDef>, ev: MouseEvent, eventname: string) {
   switch (inst.node.type) {
     case "TextEdit":
     case "Item":
-      const mousedowntargets = inst.node.mouseArea.listeners["mousedown"];
+      const mousedowntargets = inst.node.mouseArea.listeners[eventname];
       mousedowntargets.forEach(listener => {
-        if (listener.eventLocationChecker(ev)) {
-          listener.handler(ev);
-        } else {
-          console.info(`Ignore mousedown on ${inst.node}`);
-        }
+        listener.handler(ev);
       });
       if (inst.children) {
         for (let child in inst.children) {
@@ -302,7 +298,7 @@ export function deliverMouseDown(inst: MountedInstance<PilNodeDef>, ev: MouseEve
             ...inst.children[child],
             renderingTarget: inst.renderingTarget
           };
-          deliverMouseDown(mountedChild, ev);
+          deliverMouseEvent(mountedChild, ev, eventname);
         }
       }
       break;
@@ -337,7 +333,14 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Prom
 
         mountedInst = setupMouseArea(mountedInst);
         
-        canvas.addEventListener("mousedown", ev => deliverMouseDown(mountedInst, ev));
+        canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
+
+        if (isMountedItemInstance(mountedInst)) {
+          wireUpStateListeners(mountedInst)
+        } else if (isMountedTexteditInstance(mountedInst)) {
+          wireUpStateListeners(mountedInst);
+        }
+
         let paintRequest = bindProps(mountedInst);
         res([paintRequest]);
       } else {
@@ -440,15 +443,23 @@ function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilN
       mousedown: [
         {
           handler(ev) {
-            // activate state if inst.node has a matching when clause
-            const targetState = inst.node.states.find(state => state.when === "mousedown");
-            if (targetState && inst.node.state !== targetState.name) {
-              activateState(inst, targetState.name);
-            }
+            const mouseAreaRect = { 
+              x: inst.node.mouseArea.x,
+              y: inst.node.mouseArea.y, 
+              width: inst.node.mouseArea.width, 
+              height: inst.node.mouseArea.height 
+            };
+
             // emit event if mouseArea is supposed to emit custom events
             Object.keys(inst.node.mouseArea.customEvents).map(event => {
-              if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
-                emit(inst.eventBus, event, inst.node);
+              if (pointIsInRect(ev, mouseAreaRect)) {
+                if (inst.node.mouseArea.customEvents[event].when === "mousedown") {
+                  emit(inst.eventBus, event, inst.node);
+                }
+              } else {
+                if (inst.node.mouseArea.customEvents[event].when === "mousedown:outside") {
+                  emit(inst.eventBus, event, inst.node);
+                }
               }
             })
           },
@@ -501,6 +512,23 @@ function setupEventEmitters<T extends ItemNode|TextEditNode>(inst: PilNodeInstan
       assertNever(parent.node);
   }
   
+  return inst;
+}
+
+function wireUpStateListeners<T extends ItemNode|TextEditNode>(inst: MountedInstance<T>): MountedInstance<T> {
+  const node = inst.node;
+  node.states.forEach(state => {
+    if (!inst.eventBus.listeners[state.when]) {
+      inst.eventBus.listeners[state.when] = [];
+    }
+    inst.eventBus.listeners[state.when].push(
+      () => {
+        if (inst.node.state !== state.name) {
+          activateState(inst, state.name);
+        }
+      }
+    )
+  })
   return inst;
 }
 
