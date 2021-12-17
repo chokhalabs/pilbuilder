@@ -7,7 +7,7 @@ export default function() {
 
   useEffect(() => {
     const expr: PilNodeExpression<TextEditNode> = {
-      definition: "http://localhost:3000/TypingArea.js",
+      definition: "http://localhost:3000/ChatBox.js",
       props: {
         
       },

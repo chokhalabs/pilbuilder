@@ -9046,25 +9046,31 @@
 	    context.stroke();
 	    return Promise.resolve();
 	}
+	function deliverEventToChildren(inst, ev, eventname, renderingTarget) {
+	    if (inst.children) {
+	        Object.values(inst.children).forEach(function (child) {
+	            deliverMouseEvent(__assign(__assign({}, child), { renderingTarget: renderingTarget }), ev, eventname);
+	        });
+	    }
+	}
 	function deliverMouseEvent(inst, ev, eventname) {
 	    switch (inst.node.type) {
 	        case "TextEdit":
 	        case "Item":
 	            var mousedowntargets = inst.node.mouseArea.listeners[eventname];
-	            mousedowntargets.forEach(function (listener) {
-	                listener.handler(ev);
-	            });
-	            if (inst.children) {
-	                for (var child in inst.children) {
-	                    var mountedChild = __assign(__assign({}, inst.children[child]), { renderingTarget: inst.renderingTarget });
-	                    deliverMouseEvent(mountedChild, ev, eventname);
-	                }
+	            if (mousedowntargets) {
+	                mousedowntargets.forEach(function (listener) {
+	                    listener.handler(ev);
+	                });
 	            }
+	            deliverEventToChildren(inst, ev, eventname, inst.renderingTarget);
+	            break;
+	        case "Row":
+	        case "Column":
+	            deliverEventToChildren(inst, ev, eventname, inst.renderingTarget);
 	            break;
 	        case "VertScroll":
 	        case "Text":
-	        case "Row":
-	        case "Column":
 	            console.error("Cannot deliver mousedown event to ".concat(inst.node));
 	            break;
 	        default:
@@ -9090,13 +9096,19 @@
 	}
 	function mount(inst, renderingTarget) {
 	    return new Promise(function (res, rej) {
+	        var mountingAChild = false;
 	        if (typeof renderingTarget === "string") {
 	            renderingTarget = getRenderingTarget(renderingTarget);
+	        }
+	        else {
+	            mountingAChild = true;
 	        }
 	        if (renderingTarget) {
 	            var mountedInst_1 = __assign(__assign({}, inst), { renderingTarget: renderingTarget });
 	            mountedInst_1 = setupMouseArea(mountedInst_1);
-	            renderingTarget.canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
+	            if (!mountingAChild) {
+	                renderingTarget.canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
+	            }
 	            if (isMountedItemInstance(mountedInst_1)) {
 	                wireUpStateListeners(mountedInst_1);
 	                Object.values(mountedInst_1.children).forEach(function (child) {
@@ -9381,7 +9393,7 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: "http://localhost:3000/TypingArea.js",
+	            definition: "http://localhost:3000/ChatBox.js",
 	            props: {},
 	            eventHandlers: {}
 	        };

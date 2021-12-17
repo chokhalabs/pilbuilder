@@ -284,28 +284,35 @@ function paintTextEdit(instance: MountedInstance<TextEditNode>): Promise<void> {
   return Promise.resolve();
 }
 
+function deliverEventToChildren(inst: PilNodeInstance<PilNodeDef>, ev: MouseEvent, eventname: string, renderingTarget: PilRenderingContext) {
+  if (inst.children) {
+    Object.values(inst.children).forEach(child => {
+      deliverMouseEvent({
+        ...child,
+        renderingTarget
+      }, ev, eventname);
+    })
+  }
+}
+
 export function deliverMouseEvent(inst: MountedInstance<PilNodeDef>, ev: MouseEvent, eventname: string) {
   switch (inst.node.type) {
     case "TextEdit":
     case "Item":
       const mousedowntargets = inst.node.mouseArea.listeners[eventname];
-      mousedowntargets.forEach(listener => {
-        listener.handler(ev);
-      });
-      if (inst.children) {
-        for (let child in inst.children) {
-          const mountedChild = {
-            ...inst.children[child],
-            renderingTarget: inst.renderingTarget
-          };
-          deliverMouseEvent(mountedChild, ev, eventname);
-        }
+      if (mousedowntargets) {
+        mousedowntargets.forEach(listener => {
+          listener.handler(ev);
+        });
       }
+      deliverEventToChildren(inst, ev, eventname, inst.renderingTarget);
+      break;
+    case "Row":
+    case "Column":
+      deliverEventToChildren(inst, ev, eventname, inst.renderingTarget);
       break;
     case "VertScroll":
     case "Text":
-    case "Row":
-    case "Column":
       console.error(`Cannot deliver mousedown event to ${inst.node}`);
       break;
     default:
@@ -332,8 +339,11 @@ function getRenderingTarget(canvasid: string): PilRenderingContext {
 
 export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRenderingContext|string): Promise<PaintRequest<PilNodeDef>[]> {
   return new Promise((res, rej) => {
+    let mountingAChild = false;
     if (typeof renderingTarget === "string") {
       renderingTarget = getRenderingTarget(renderingTarget);
+    } else {
+      mountingAChild = true;
     }
     if (renderingTarget) {
       let mountedInst: MountedInstance<PilNodeDef> = {
@@ -342,8 +352,10 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
       }
 
       mountedInst = setupMouseArea(mountedInst);
-      
-      renderingTarget.canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
+    
+      if (!mountingAChild) {
+        renderingTarget.canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
+      }
 
       if (isMountedItemInstance(mountedInst)) {
         wireUpStateListeners(mountedInst);
