@@ -313,39 +313,59 @@ export function deliverMouseEvent(inst: MountedInstance<PilNodeDef>, ev: MouseEv
   }
 }
 
-export function mount(inst: PilNodeInstance<PilNodeDef>, canvasid: string): Promise<PaintRequest<PilNodeDef>[]> {
+function getRenderingTarget(canvasid: string): PilRenderingContext {
+  const canvas: HTMLCanvasElement|null = document.querySelector(canvasid);
+  const context = canvas?.getContext("2d");
+  if (canvas && context) {
+    return {
+      canvas,
+      context,
+      x: 0,
+      y: 0,
+      width: canvas.width,
+      height: canvas.height
+    }
+  } else {
+    throw new Error("Could not get rendering context");
+  }
+}
+
+export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRenderingContext|string): Promise<PaintRequest<PilNodeDef>[]> {
   return new Promise((res, rej) => {
-    const canvas: HTMLCanvasElement|null = document.querySelector(canvasid);
-    if (canvas) {
-      const context = canvas.getContext("2d");
-      if (context) {
-        let mountedInst: MountedInstance<PilNodeDef> = {
-          ...inst,
-          renderingTarget: {
-            canvas,
-            context,
-            x: 0,
-            y: 0,
-            width: canvas.width,
-            height: canvas.height
-          }
-        }
-
-        mountedInst = setupMouseArea(mountedInst);
-        
-        canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
-
-        if (isMountedItemInstance(mountedInst)) {
-          wireUpStateListeners(mountedInst)
-        } else if (isMountedTexteditInstance(mountedInst)) {
-          wireUpStateListeners(mountedInst);
-        }
-
-        let paintRequest = bindProps(mountedInst);
-        res([paintRequest]);
-      } else {
-        rej("Could not obtain context");
+    if (typeof renderingTarget === "string") {
+      renderingTarget = getRenderingTarget(renderingTarget);
+    }
+    if (renderingTarget) {
+      let mountedInst: MountedInstance<PilNodeDef> = {
+        ...inst,
+        renderingTarget
       }
+
+      mountedInst = setupMouseArea(mountedInst);
+      
+      renderingTarget.canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
+
+      if (isMountedItemInstance(mountedInst)) {
+        wireUpStateListeners(mountedInst);
+        Object.values(mountedInst.children).forEach(child => {
+          mount(child, renderingTarget);
+        })
+      } else if (isMountedTexteditInstance(mountedInst)) {
+        wireUpStateListeners(mountedInst);
+      } else if (isMountedRowInstance(mountedInst)) {
+        Object.values(mountedInst.children).forEach(child => {
+          mount(child, renderingTarget);
+        })
+      } else if (isMountedColumnInstance(mountedInst)) {
+        Object.values(mountedInst.children).forEach(child => {
+          mount(child, renderingTarget);
+        })
+      } else {
+        console.error("Cannot recognize node: ", mountedInst);
+      }
+
+      let paintRequest = bindProps(mountedInst);
+      res([paintRequest]);
     } else {
       rej("Could not get canvas");
     }

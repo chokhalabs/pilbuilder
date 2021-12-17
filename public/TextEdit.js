@@ -1,31 +1,65 @@
-function keyDownHandler(ev, node, onNodePropertyUpdate) {
-  ev.preventDefault();
-  let newText = node.currentEditedText;
-  if (ev.key === "Backspace" || ev.key === "Delete") {
-    newText = newText.slice(0, -1); 
-  } else if (ev.key === "Control" || ev.key === "Shift" || ev.key === "Alt") {
-    console.info("Ignoring ", ev.key);
-  } else {
-    newText = node.currentEditedText + ev.key;
+const textEdit = {
+  id: "textedit",
+  state: "inactive",
+  states: [
+    {
+      name: "active",
+      when: "activate",
+      propertyChanges: [],
+      onEnter: [{
+        module: "http://localhost:3000/TextEditDeps.js",
+        callback: "onActive"
+      }]
+    },
+    {
+      name: "inactive",
+      when: "inactivate",
+      propertyChanges: [],
+      onEnter: [{
+        module: "http://localhost:3000/TextEditDeps.js",
+        callback: "onInactive"
+      }]
+    }
+  ],
+  mouseArea: {
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 50,
+    listeners: {},
+    customEvents: {
+      activate: {
+        when: "mousedown",
+        payload: ""
+      },
+      inactivate: {
+        when: "mousedown:outside",
+        payload: ""
+      },
+      change: {
+        when: "mousedown:outside",
+        payload: ""
+      }
+    }
+  },
+  type: "TextEdit",
+  x: 0,
+  y: 0,
+  width: 300,
+  height: 50,
+  draw: false,
+  value: "",
+  currentEditedText: "",
+  cursorPosition: 0,
+  children: {
+    cursor: {
+      definition: "AnimatedLine",
+      props: {
+        x: { value: 0, context: "$parent", def: "$parent.cursorPosition" }
+      },
+      eventHandlers: {}
+    }
   }
+};
 
-  onNodePropertyUpdate("currentEditedText", newText);
-}
-
-const listenersRefs = {};
-
-export function onActive(node, onNodePropertyUpdate) {
-  onNodePropertyUpdate("currentEditedText", node.value);
-  const listener = (ev) => {
-    keyDownHandler(ev, node, onNodePropertyUpdate);
-  };
-  if (listenersRefs[node.id]) {
-    document.removeEventListener("keydown", listenersRefs[node.id]);
-  }
-  listenersRefs[node.id] = listener;
-  document.addEventListener("keydown", listener);
-}
-
-export function onInactive(node) {
-  document.removeEventListener("keydown", listenersRefs[node.id]);
-}
+export default textEdit;

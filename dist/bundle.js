@@ -9071,34 +9071,56 @@
 	            assertNever(inst.node);
 	    }
 	}
-	function mount(inst, canvasid) {
+	function getRenderingTarget(canvasid) {
+	    var canvas = document.querySelector(canvasid);
+	    var context = canvas === null || canvas === void 0 ? void 0 : canvas.getContext("2d");
+	    if (canvas && context) {
+	        return {
+	            canvas: canvas,
+	            context: context,
+	            x: 0,
+	            y: 0,
+	            width: canvas.width,
+	            height: canvas.height
+	        };
+	    }
+	    else {
+	        throw new Error("Could not get rendering context");
+	    }
+	}
+	function mount(inst, renderingTarget) {
 	    return new Promise(function (res, rej) {
-	        var canvas = document.querySelector(canvasid);
-	        if (canvas) {
-	            var context = canvas.getContext("2d");
-	            if (context) {
-	                var mountedInst_1 = __assign(__assign({}, inst), { renderingTarget: {
-	                        canvas: canvas,
-	                        context: context,
-	                        x: 0,
-	                        y: 0,
-	                        width: canvas.width,
-	                        height: canvas.height
-	                    } });
-	                mountedInst_1 = setupMouseArea(mountedInst_1);
-	                canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
-	                if (isMountedItemInstance(mountedInst_1)) {
-	                    wireUpStateListeners(mountedInst_1);
-	                }
-	                else if (isMountedTexteditInstance(mountedInst_1)) {
-	                    wireUpStateListeners(mountedInst_1);
-	                }
-	                var paintRequest = bindProps(mountedInst_1);
-	                res([paintRequest]);
+	        if (typeof renderingTarget === "string") {
+	            renderingTarget = getRenderingTarget(renderingTarget);
+	        }
+	        if (renderingTarget) {
+	            var mountedInst_1 = __assign(__assign({}, inst), { renderingTarget: renderingTarget });
+	            mountedInst_1 = setupMouseArea(mountedInst_1);
+	            renderingTarget.canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
+	            if (isMountedItemInstance(mountedInst_1)) {
+	                wireUpStateListeners(mountedInst_1);
+	                Object.values(mountedInst_1.children).forEach(function (child) {
+	                    mount(child, renderingTarget);
+	                });
+	            }
+	            else if (isMountedTexteditInstance(mountedInst_1)) {
+	                wireUpStateListeners(mountedInst_1);
+	            }
+	            else if (isMountedRowInstance(mountedInst_1)) {
+	                Object.values(mountedInst_1.children).forEach(function (child) {
+	                    mount(child, renderingTarget);
+	                });
+	            }
+	            else if (isMountedColumnInstance(mountedInst_1)) {
+	                Object.values(mountedInst_1.children).forEach(function (child) {
+	                    mount(child, renderingTarget);
+	                });
 	            }
 	            else {
-	                rej("Could not obtain context");
+	                console.error("Cannot recognize node: ", mountedInst_1);
 	            }
+	            var paintRequest = bindProps(mountedInst_1);
+	            res([paintRequest]);
 	        }
 	        else {
 	            rej("Could not get canvas");
@@ -9359,76 +9381,8 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: {
-	                id: "textedit",
-	                state: "inactive",
-	                states: [
-	                    {
-	                        name: "active",
-	                        when: "activate",
-	                        propertyChanges: [],
-	                        onEnter: [{
-	                                module: "http://localhost:3000/TextEdit.js",
-	                                callback: "onActive"
-	                            }]
-	                    },
-	                    {
-	                        name: "inactive",
-	                        when: "inactivate",
-	                        propertyChanges: [],
-	                        onEnter: [{
-	                                module: "http://localhost:3000/TextEdit.js",
-	                                callback: "onInactive"
-	                            }]
-	                    }
-	                ],
-	                mouseArea: {
-	                    x: 0,
-	                    y: 0,
-	                    width: 300,
-	                    height: 50,
-	                    listeners: {},
-	                    customEvents: {
-	                        activate: {
-	                            when: "mousedown",
-	                            payload: ""
-	                        },
-	                        inactivate: {
-	                            when: "mousedown:outside",
-	                            payload: ""
-	                        },
-	                        change: {
-	                            when: "mousedown:outside",
-	                            payload: ""
-	                        }
-	                    }
-	                },
-	                type: "TextEdit",
-	                x: 0,
-	                y: 0,
-	                width: 300,
-	                height: 50,
-	                draw: false,
-	                value: "",
-	                currentEditedText: "",
-	                cursorPosition: 0,
-	                children: {
-	                    cursor: {
-	                        definition: "AnimatedLine",
-	                        props: {
-	                            x: { value: 0, context: "$parent", def: "$parent.cursorPosition" }
-	                        },
-	                        eventHandlers: {}
-	                    }
-	                }
-	            },
-	            props: {
-	                x: { value: 10, context: "", def: "" },
-	                y: { value: 10, context: "", def: "" },
-	                width: { value: 300, context: "", def: "" },
-	                height: { value: 50, context: "", def: "" },
-	                value: { value: "some text", context: "", def: "" }
-	            },
+	            definition: "http://localhost:3000/TypingArea.js",
+	            props: {},
 	            eventHandlers: {}
 	        };
 	        if (canvas.current) {
