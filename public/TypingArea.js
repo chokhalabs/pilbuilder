@@ -24,7 +24,7 @@ const typingarea = {
       }
     },
     "button": {
-      definition: "http://localhost:3000/GenericItem.js",
+      definition: "http://localhost:3000/Button.js",
       props: {
         id: { value: "button", context: "", def: "" },
         x: { value: 0, context: "$parent", def: "$parent.width - 50 + 12" },
