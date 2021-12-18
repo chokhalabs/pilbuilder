@@ -9230,10 +9230,10 @@
 	                {
 	                    handler: function (ev) {
 	                        var mouseAreaRect = {
-	                            x: inst.node.mouseArea.x,
-	                            y: inst.node.mouseArea.y,
-	                            width: inst.node.mouseArea.width,
-	                            height: inst.node.mouseArea.height
+	                            x: inst.node.mouseArea.x + inst.node.x,
+	                            y: inst.node.mouseArea.y + inst.node.y,
+	                            width: inst.node.mouseArea.width + inst.node.width,
+	                            height: inst.node.mouseArea.height + inst.node.height
 	                        };
 	                        // emit event if mouseArea is supposed to emit custom events
 	                        Object.keys(inst.node.mouseArea.customEvents).map(function (event) {
@@ -9248,15 +9248,6 @@
 	                                }
 	                            }
 	                        });
-	                    },
-	                    eventLocationChecker: function (ev) {
-	                        var mouseAreaRect = {
-	                            x: inst.node.mouseArea.x,
-	                            y: inst.node.mouseArea.y,
-	                            width: inst.node.mouseArea.width,
-	                            height: inst.node.mouseArea.height
-	                        };
-	                        return pointIsInRect(ev, mouseAreaRect);
 	                    }
 	                }
 	            ]
@@ -9267,7 +9258,7 @@
 	function pointIsInRect(point, rect) {
 	    return point.x >= rect.x &&
 	        point.y >= rect.y &&
-	        point.x <= rect.x + rect.width,
+	        point.x <= rect.x + rect.width &&
 	        point.y <= rect.y + rect.height;
 	}
 	function setupEventEmitters(inst, parent) {

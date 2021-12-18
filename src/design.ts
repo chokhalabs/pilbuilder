@@ -18,7 +18,6 @@ type MouseArea = {
   height: number;
   listeners: Record<string, Array<{
     handler: (ev: MouseEvent) => void;
-    eventLocationChecker: (ev: MouseEvent) => boolean;
   }>>;
   customEvents: Record<string, {
     when: string; // name of a state
@@ -476,10 +475,10 @@ function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilN
         {
           handler(ev) {
             const mouseAreaRect = { 
-              x: inst.node.mouseArea.x,
-              y: inst.node.mouseArea.y, 
-              width: inst.node.mouseArea.width, 
-              height: inst.node.mouseArea.height 
+              x: inst.node.mouseArea.x + inst.node.x,
+              y: inst.node.mouseArea.y + inst.node.y, 
+              width: inst.node.mouseArea.width + inst.node.width, 
+              height: inst.node.mouseArea.height + inst.node.height 
             };
 
             // emit event if mouseArea is supposed to emit custom events
@@ -494,16 +493,6 @@ function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilN
                 }
               }
             })
-          },
-          eventLocationChecker(ev) {
-            const mouseAreaRect = { 
-              x: inst.node.mouseArea.x,
-              y: inst.node.mouseArea.y, 
-              width: inst.node.mouseArea.width, 
-              height: inst.node.mouseArea.height 
-            };
-
-            return pointIsInRect(ev, mouseAreaRect);
           }
         }
       ]
@@ -516,7 +505,7 @@ function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilN
 function pointIsInRect(point: {x: number; y: number;}, rect: { x: number; y: number; width: number; height: number; }): boolean {
   return point.x >= rect.x &&
     point.y >= rect.y &&
-    point.x <= rect.x + rect.width,
+    point.x <= rect.x + rect.width &&
     point.y <= rect.y + rect.height;
 }
 
