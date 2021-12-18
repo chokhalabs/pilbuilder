@@ -33,14 +33,14 @@ export default function() {
         states: [
           {
             name: "normal",
-            when: "mouseup",
+            when: "release",
             propertyChanges: [
               {
-                target: "normalstate",
+                target: "normalstateimage",
                 visible: true
               },
               {
-                target: "pressedstate",
+                target: "pressedstateimage",
                 visible: false
               }
             ],
@@ -48,14 +48,14 @@ export default function() {
           },
           {
             name: "pressed",
-            when:"mousedown",
+            when:"press",
             propertyChanges: [
               {
-                target: "normalstate",
+                target: "normalstateimage",
                 visible: false
               },
               {
-                target: "pressedstate",
+                target: "pressedstateimage",
                 visible: true
               }
             ],
@@ -69,7 +69,11 @@ export default function() {
           height: 0,
           listeners: {},
           customEvents: {
-            click: {
+            press: {
+              when: "mousedown",
+              payload: ""
+            },
+            release: {
               when: "mouseup",
               payload: ""
             }

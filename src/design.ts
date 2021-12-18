@@ -1,4 +1,4 @@
-import { assertNever } from "./pilBase";
+import { assertNever, IdObj } from "./pilBase";
 
 type Expression<T> = { def: string; context: string; value: T; };
 type ImportableModulePath = string;
@@ -63,17 +63,19 @@ interface ImagedNode {
   }>;
 }
 
+interface NodeState {
+  name: string;
+  when: string;
+  onEnter: Array<{ module: ImportableModulePath; callback: string; }>;
+  propertyChanges: Array<{
+    target: string;
+    [k: string]: string | number | boolean;
+  }>;
+}
+
 interface StatefulNodeDef {
   state: string;
-  states: Array<{
-    name: string;
-    when: string;
-    onEnter: Array<{ module: ImportableModulePath; callback: string; }>;
-    propertyChanges: Array<{
-      target: string;
-      [k: string]: string | number | boolean;
-    }>;
-  }>;
+  states: NodeState[];
 }
 
 interface AnimatedNodeDef {
@@ -374,6 +376,7 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
     
       if (!mountingAChild) {
         renderingTarget.canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
+        renderingTarget.canvas.addEventListener("mouseup", ev => deliverMouseEvent(mountedInst, ev, "mouseup"));
       }
 
       if (isMountedItemInstance(mountedInst)) {
@@ -403,11 +406,12 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
   })
 }
 
-function activateState(inst: MountedInstance<PilNodeDef>, state: string) {
+function activateState(inst: MountedInstance<PilNodeDef>, state: string): PaintRequest<PilNodeDef>[] {
   if (isMountedTexteditInstance(inst) || isMountedItemInstance(inst)) {
     const targetState = inst.node.states.find(st => st.name === state);
     if (targetState) {
       inst.node.state = state;
+      inst = applyPropertyChanges(inst, targetState);
       targetState.onEnter.forEach(handler => {
         import(handler.module).then(mod => {
           const onNodePropertyUpdate = (function (this: MountedInstance<PilNodeDef>, prop: string, value: string | boolean | number) {
@@ -422,14 +426,67 @@ function activateState(inst: MountedInstance<PilNodeDef>, state: string) {
         .catch(err => {
           console.error("Could not execute onEnter for", state, inst, err);
         })
-      })
-      // applyPropertyChanges
+      });
+      return [{
+        inst,
+        timestamp: Date.now()
+      }];
     } else {
       throw new Error(`Cannot activate ${state} on ${inst.node}`);
     }
   } else  {
     console.error("Cannot activate state on ", inst);
+    return [];
   } 
+}
+
+function applyPropertyChanges(inst: MountedInstance<PilNodeDef>, state: NodeState) {
+  state.propertyChanges.forEach(change => {
+    // Find the target
+    const target: any = findTargetById(inst.node, change.target);
+    // Apply changes
+    if (target) {
+      Object.keys(change)
+        .filter(it => it !== "target")
+        .forEach(key => {
+          target[key] = change[key];
+        });
+    } else {
+      console.error("Could not find target to apply");
+    }
+    
+  });
+  return inst;
+}
+
+function findTargetById(cursor: IdObj, id: string): IdObj | null {
+  if (cursor.id === id) {
+    return cursor;
+  } else {
+    const target = null;
+    if (!Array.isArray(cursor) && typeof cursor === "object") {
+      const findings = Object.keys(cursor)
+        .filter(it => typeof cursor[it] === "object")
+        .map(key => {
+          return findTargetById(cursor[key], id);
+        })
+        .filter(it => !!it);
+      if (findings.length > 0) {
+        return findings[0];
+      }
+    } else if (typeof cursor === "object") {
+      const findings = cursor
+        .map(child => {
+          return findTargetById(child, id);
+        })
+        .flat(Infinity)
+        .filter(it => !!it);
+      if (findings.length > 0) {
+        return findings[0];
+      }
+    }
+    return target; 
+  }
 }
 
 function isItemNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ItemNode> {
@@ -515,6 +572,31 @@ function setupMouseArea(inst: MountedInstance<PilNodeDef>): MountedInstance<PilN
             })
           }
         }
+      ],
+      mouseup: [
+        {
+          handler(ev) {
+            const mouseAreaRect = { 
+              x: inst.node.mouseArea.x + inst.node.x,
+              y: inst.node.mouseArea.y + inst.node.y, 
+              width: inst.node.mouseArea.width + inst.node.width, 
+              height: inst.node.mouseArea.height + inst.node.height 
+            };
+
+            // emit event if mouseArea is supposed to emit custom events
+            Object.keys(inst.node.mouseArea.customEvents).map(event => {
+              if (pointIsInRect(ev, mouseAreaRect)) {
+                if (inst.node.mouseArea.customEvents[event].when === "mouseup") {
+                  emit(inst.eventBus, event, inst.node);
+                }
+              } else {
+                if (inst.node.mouseArea.customEvents[event].when === "mouseup:outside") {
+                  emit(inst.eventBus, event, inst.node);
+                }
+              }
+            })
+          }
+        }
       ]
     };
   }
@@ -565,7 +647,8 @@ function wireUpStateListeners<T extends ItemNode|TextEditNode>(inst: MountedInst
     inst.eventBus.listeners[state.when].push(
       () => {
         if (inst.node.state !== state.name) {
-          activateState(inst, state.name);
+          const paintRequests = activateState(inst, state.name);
+          paint(paintRequests);
         }
       }
     )

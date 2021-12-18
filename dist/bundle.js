@@ -9126,6 +9126,7 @@
 	            mountedInst_1 = setupMouseArea(mountedInst_1);
 	            if (!mountingAChild) {
 	                renderingTarget.canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
+	                renderingTarget.canvas.addEventListener("mouseup", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mouseup"); });
 	            }
 	            if (isMountedItemInstance(mountedInst_1)) {
 	                wireUpStateListeners(mountedInst_1);
@@ -9162,6 +9163,7 @@
 	        var targetState = inst.node.states.find(function (st) { return st.name === state; });
 	        if (targetState) {
 	            inst.node.state = state;
+	            inst = applyPropertyChanges(inst, targetState);
 	            targetState.onEnter.forEach(function (handler) {
 	                import(handler.module).then(function (mod) {
 	                    var onNodePropertyUpdate = (function (prop, value) {
@@ -9177,7 +9179,10 @@
 	                    console.error("Could not execute onEnter for", state, inst, err);
 	                });
 	            });
-	            // applyPropertyChanges
+	            return [{
+	                    inst: inst,
+	                    timestamp: Date.now()
+	                }];
 	        }
 	        else {
 	            throw new Error("Cannot activate ".concat(state, " on ").concat(inst.node));
@@ -9185,6 +9190,56 @@
 	    }
 	    else {
 	        console.error("Cannot activate state on ", inst);
+	        return [];
+	    }
+	}
+	function applyPropertyChanges(inst, state) {
+	    state.propertyChanges.forEach(function (change) {
+	        // Find the target
+	        var target = findTargetById(inst.node, change.target);
+	        // Apply changes
+	        if (target) {
+	            Object.keys(change)
+	                .filter(function (it) { return it !== "target"; })
+	                .forEach(function (key) {
+	                target[key] = change[key];
+	            });
+	        }
+	        else {
+	            console.error("Could not find target to apply");
+	        }
+	    });
+	    return inst;
+	}
+	function findTargetById(cursor, id) {
+	    if (cursor.id === id) {
+	        return cursor;
+	    }
+	    else {
+	        var target = null;
+	        if (!Array.isArray(cursor) && typeof cursor === "object") {
+	            var findings = Object.keys(cursor)
+	                .filter(function (it) { return typeof cursor[it] === "object"; })
+	                .map(function (key) {
+	                return findTargetById(cursor[key], id);
+	            })
+	                .filter(function (it) { return !!it; });
+	            if (findings.length > 0) {
+	                return findings[0];
+	            }
+	        }
+	        else if (typeof cursor === "object") {
+	            var findings = cursor
+	                .map(function (child) {
+	                return findTargetById(child, id);
+	            })
+	                .flat(Infinity)
+	                .filter(function (it) { return !!it; });
+	            if (findings.length > 0) {
+	                return findings[0];
+	            }
+	        }
+	        return target;
 	    }
 	}
 	function isItemNodeExpression(expr) {
@@ -9268,6 +9323,31 @@
 	                        });
 	                    }
 	                }
+	            ],
+	            mouseup: [
+	                {
+	                    handler: function (ev) {
+	                        var mouseAreaRect = {
+	                            x: inst.node.mouseArea.x + inst.node.x,
+	                            y: inst.node.mouseArea.y + inst.node.y,
+	                            width: inst.node.mouseArea.width + inst.node.width,
+	                            height: inst.node.mouseArea.height + inst.node.height
+	                        };
+	                        // emit event if mouseArea is supposed to emit custom events
+	                        Object.keys(inst.node.mouseArea.customEvents).map(function (event) {
+	                            if (pointIsInRect(ev, mouseAreaRect)) {
+	                                if (inst.node.mouseArea.customEvents[event].when === "mouseup") {
+	                                    emit(inst.eventBus, event, inst.node);
+	                                }
+	                            }
+	                            else {
+	                                if (inst.node.mouseArea.customEvents[event].when === "mouseup:outside") {
+	                                    emit(inst.eventBus, event, inst.node);
+	                                }
+	                            }
+	                        });
+	                    }
+	                }
 	            ]
 	        };
 	    }
@@ -9313,7 +9393,8 @@
 	        }
 	        inst.eventBus.listeners[state.when].push(function () {
 	            if (inst.node.state !== state.name) {
-	                activateState(inst, state.name);
+	                var paintRequests = activateState(inst, state.name);
+	                paint(paintRequests);
 	            }
 	        });
 	    });
@@ -9459,14 +9540,14 @@
 	                states: [
 	                    {
 	                        name: "normal",
-	                        when: "mouseup",
+	                        when: "release",
 	                        propertyChanges: [
 	                            {
-	                                target: "normalstate",
+	                                target: "normalstateimage",
 	                                visible: true
 	                            },
 	                            {
-	                                target: "pressedstate",
+	                                target: "pressedstateimage",
 	                                visible: false
 	                            }
 	                        ],
@@ -9474,14 +9555,14 @@
 	                    },
 	                    {
 	                        name: "pressed",
-	                        when: "mousedown",
+	                        when: "press",
 	                        propertyChanges: [
 	                            {
-	                                target: "normalstate",
+	                                target: "normalstateimage",
 	                                visible: false
 	                            },
 	                            {
-	                                target: "pressedstate",
+	                                target: "pressedstateimage",
 	                                visible: true
 	                            }
 	                        ],
@@ -9495,7 +9576,11 @@
 	                    height: 0,
 	                    listeners: {},
 	                    customEvents: {
-	                        click: {
+	                        press: {
+	                            when: "mousedown",
+	                            payload: ""
+	                        },
+	                        release: {
 	                            when: "mouseup",
 	                            payload: ""
 	                        }
