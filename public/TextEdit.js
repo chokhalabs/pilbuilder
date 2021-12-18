@@ -24,8 +24,8 @@ const textEdit = {
   mouseArea: {
     x: 0,
     y: 0,
-    width: 300,
-    height: 50,
+    width: 0,
+    height: 0,
     listeners: {},
     customEvents: {
       activate: {

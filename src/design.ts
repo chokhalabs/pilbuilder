@@ -55,7 +55,11 @@ function isContainerNode(node: Partial<PilNodeDef>): node is ContainerNodeDef {
 
 interface ImagedNode {
   images: Array<{
+    id: string;
     source: string;
+    visible: boolean;
+    ref?: HTMLImageElement;
+    downloaded: Promise<any> | null;
   }>;
 }
 
@@ -243,10 +247,26 @@ function paintItem(instance: MountedInstance<ItemNode>): Promise<void> {
   if (node.draw) {
     context.rect(node.x, node.y, node.width, node.height);
   }
-  context.closePath();
-  context.stroke();
-
-  return Promise.resolve();
+  const imagesPainted = node.images.map(image => {
+    if (image.downloaded) {
+      return image.downloaded
+      .then(() => {
+        if (image.ref && image.visible) {
+          context.drawImage(image.ref, 0, 0, image.ref.width, image.ref.height, node.x, node.y, node.width, node.height);
+        } 
+      })
+      .catch(err => {
+        console.error("Image download has failed!", instance.node, err);
+      })
+    } else {
+      console.error("Image has not been downloaded: ", instance.node);
+      throw new Error("Image not downloaded!");
+    }
+  })
+  return Promise.all(imagesPainted).then(() => {
+    context.closePath();
+    context.stroke();
+  });
 }
 
 function paintColumn(instance: MountedInstance<ColumnNode>): Promise<void> {
@@ -586,6 +606,34 @@ function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>, parent?: Moun
   };
 }
 
+function downloadImages(instance: PilNodeInstance<ItemNode>): PilNodeInstance<ItemNode> {
+  instance.node.images = instance.node.images.map(image => {
+    let img = new Image();
+    img.src = image.source;
+    let downloaded = new Promise((resolve, reject) => {
+      img.onload = () => { 
+        console.log("Loaded");
+        resolve({});
+      };
+      img.onerror = () => { 
+        console.log("errored");
+        reject();
+      };
+      img.onabort = () => { 
+        console.log("aborted");
+        reject();
+      };
+    });
+
+    return {
+      ...image,
+      ref: img,
+      downloaded 
+    };
+  });
+  return instance;
+}
+
 export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentInst?: PilNodeInstance<T>): Promise<PilNodeInstance<PilNodeDef>> {
   return resolveExpression(expr).then(resolvedExpr => {
     const children: Record<string, PilNodeInstance<PilNodeDef>> = {};
@@ -602,22 +650,28 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
     
     if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
       if (isItemNodeInstance(instance)) {
-        // const itemNodeInstance = setupMouseArea(instance);
-        let castedInstance: PilNodeInstance<ItemNode>;
         if (parentInst) {
-          castedInstance = setupEventEmitters(instance , parentInst);
-        } else {
-          castedInstance = instance;
+          // Assigning ItemNodeInstance<ItemNode> is converting it back to ItemNodeInstance<PilNodeDef> for some reason I don't understand
+          const i = setupEventEmitters(instance , parentInst);
+          instance = i;
+        } 
+        if (isItemNodeInstance(instance)) {
+          const j = downloadImages(instance);
+          instance = j;
         }
-      
-        for (let child in instance.node.children) {
-          const childExpr = instance.node.children[child];
-          childInstancePromises.push(
-            init(childExpr, instance).then(childInst => {
-              children[child] = childInst;
-            })
-          );
-        }
+
+        // This check is required again because of the assignment above changing the type back to ItemNodeInstance<PilNodeDef>
+        if (isItemNodeInstance(instance)) {
+          for (let child in instance.node.children) {
+            const childExpr = instance.node.children[child];
+            childInstancePromises.push(
+              init(childExpr, instance).then(childInst => {
+                children[child] = childInst;
+              })
+            );
+          }
+        } 
+        
       } else if (isTextEditNodeInstance(instance)) {
         // const textEditNodeInstance = setupMouseArea(instance);
         if (parentInst) {

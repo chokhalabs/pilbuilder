@@ -16,7 +16,12 @@ const typingarea = {
         height: { value: 0, context: "$parent", def: "$parent.height - 2" },
         value: { value: "start typing", context: "", def: "" }
       },
-      eventHandlers: {}
+      eventHandlers: {
+        change: {
+          emitName: "change",
+          payloadTransformer: {}
+        }
+      }
     },
     "button": {
       definition: "http://localhost:3000/GenericItem.js",
@@ -27,7 +32,12 @@ const typingarea = {
         width: { value: 0, context: "$parent", def: "48" },
         height: { value: 0, context: "$parent", def: "$parent.height - 2" }
       },
-      eventHandlers: {}
+      eventHandlers: {
+        click: {
+          emitName: "send",
+          payloadTransformer: {}
+        }
+      }
     }
   },
   draw: true

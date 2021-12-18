@@ -6,12 +6,82 @@ export default function() {
   const canvas = useRef(null); 
 
   useEffect(() => {
-    const expr: PilNodeExpression<TextEditNode> = {
-      definition: "http://localhost:3000/ChatBox.js",
+    const expr: PilNodeExpression<ItemNode> = {
+      definition: {
+        id: "button",
+        type: "Item",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        draw: true,
+        images: [
+          {
+            id: "normalstateimage",
+            source: "http://localhost:3000/normal.png",
+            visible: true,
+            downloaded: null
+          },
+          {
+            id: "pressedstateimage",
+            source: "http://localhost:3000/pressed.png",
+            visible: false,
+            downloaded: null
+          }
+        ],
+        state: "normal",
+        states: [
+          {
+            name: "normal",
+            when: "mouseup",
+            propertyChanges: [
+              {
+                target: "normalstate",
+                visible: true
+              },
+              {
+                target: "pressedstate",
+                visible: false
+              }
+            ],
+            onEnter: []
+          },
+          {
+            name: "pressed",
+            when:"mousedown",
+            propertyChanges: [
+              {
+                target: "normalstate",
+                visible: false
+              },
+              {
+                target: "pressedstate",
+                visible: true
+              }
+            ],
+            onEnter: []
+          }
+        ],
+        mouseArea: {
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          listeners: {},
+          customEvents: {
+            click: {
+              when: "mouseup",
+              payload: ""
+            }
+          }
+        },
+        children: {},
+        animations: []
+      },
       props: {
         
       },
-      eventHandlers: {}
+      eventHandlers: {},
     };
 
     if (canvas.current) {

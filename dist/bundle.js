@@ -9013,9 +9013,27 @@
 	    if (node.draw) {
 	        context.rect(node.x, node.y, node.width, node.height);
 	    }
-	    context.closePath();
-	    context.stroke();
-	    return Promise.resolve();
+	    var imagesPainted = node.images.map(function (image) {
+	        if (image.downloaded) {
+	            return image.downloaded
+	                .then(function () {
+	                if (image.ref && image.visible) {
+	                    context.drawImage(image.ref, 0, 0, image.ref.width, image.ref.height, node.x, node.y, node.width, node.height);
+	                }
+	            })
+	                .catch(function (err) {
+	                console.error("Image download has failed!", instance.node, err);
+	            });
+	        }
+	        else {
+	            console.error("Image has not been downloaded: ", instance.node);
+	            throw new Error("Image not downloaded!");
+	        }
+	    });
+	    return Promise.all(imagesPainted).then(function () {
+	        context.closePath();
+	        context.stroke();
+	    });
 	}
 	function paintColumn(instance) {
 	    var node = instance.node;
@@ -9325,6 +9343,28 @@
 	        timestamp: Date.now()
 	    };
 	}
+	function downloadImages(instance) {
+	    instance.node.images = instance.node.images.map(function (image) {
+	        var img = new Image();
+	        img.src = image.source;
+	        var downloaded = new Promise(function (resolve, reject) {
+	            img.onload = function () {
+	                console.log("Loaded");
+	                resolve({});
+	            };
+	            img.onerror = function () {
+	                console.log("errored");
+	                reject();
+	            };
+	            img.onabort = function () {
+	                console.log("aborted");
+	                reject();
+	            };
+	        });
+	        return __assign(__assign({}, image), { ref: img, downloaded: downloaded });
+	    });
+	    return instance;
+	}
 	function init(expr, parentInst) {
 	    return resolveExpression(expr).then(function (resolvedExpr) {
 	        var children = {};
@@ -9340,16 +9380,25 @@
 	        if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
 	            if (isItemNodeInstance(instance)) {
 	                if (parentInst) {
-	                    setupEventEmitters(instance, parentInst);
+	                    // Assigning ItemNodeInstance<ItemNode> is converting it back to ItemNodeInstance<PilNodeDef> for some reason I don't understand
+	                    var i = setupEventEmitters(instance, parentInst);
+	                    instance = i;
 	                }
-	                var _loop_2 = function (child) {
-	                    var childExpr = instance.node.children[child];
-	                    childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
-	                        children[child] = childInst;
-	                    }));
-	                };
-	                for (var child in instance.node.children) {
-	                    _loop_2(child);
+	                if (isItemNodeInstance(instance)) {
+	                    var j = downloadImages(instance);
+	                    instance = j;
+	                }
+	                // This check is required again because of the assignment above changing the type back to ItemNodeInstance<PilNodeDef>
+	                if (isItemNodeInstance(instance)) {
+	                    var _loop_2 = function (child) {
+	                        var childExpr = instance.node.children[child];
+	                        childInstancePromises.push(init(childExpr, instance).then(function (childInst) {
+	                            children[child] = childInst;
+	                        }));
+	                    };
+	                    for (var child in instance.node.children) {
+	                        _loop_2(child);
+	                    }
 	                }
 	            }
 	            else if (isTextEditNodeInstance(instance)) {
@@ -9384,9 +9433,79 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: "http://localhost:3000/ChatBox.js",
+	            definition: {
+	                id: "button",
+	                type: "Item",
+	                x: 10,
+	                y: 10,
+	                width: 50,
+	                height: 50,
+	                draw: true,
+	                images: [
+	                    {
+	                        id: "normalstateimage",
+	                        source: "http://localhost:3000/normal.png",
+	                        visible: true,
+	                        downloaded: null
+	                    },
+	                    {
+	                        id: "pressedstateimage",
+	                        source: "http://localhost:3000/pressed.png",
+	                        visible: false,
+	                        downloaded: null
+	                    }
+	                ],
+	                state: "normal",
+	                states: [
+	                    {
+	                        name: "normal",
+	                        when: "mouseup",
+	                        propertyChanges: [
+	                            {
+	                                target: "normalstate",
+	                                visible: true
+	                            },
+	                            {
+	                                target: "pressedstate",
+	                                visible: false
+	                            }
+	                        ],
+	                        onEnter: []
+	                    },
+	                    {
+	                        name: "pressed",
+	                        when: "mousedown",
+	                        propertyChanges: [
+	                            {
+	                                target: "normalstate",
+	                                visible: false
+	                            },
+	                            {
+	                                target: "pressedstate",
+	                                visible: true
+	                            }
+	                        ],
+	                        onEnter: []
+	                    }
+	                ],
+	                mouseArea: {
+	                    x: 0,
+	                    y: 0,
+	                    width: 0,
+	                    height: 0,
+	                    listeners: {},
+	                    customEvents: {
+	                        click: {
+	                            when: "mouseup",
+	                            payload: ""
+	                        }
+	                    }
+	                },
+	                children: {},
+	                animations: []
+	            },
 	            props: {},
-	            eventHandlers: {}
+	            eventHandlers: {},
 	        };
 	        if (canvas.current) {
 	            init(expr).then(function (instance) {

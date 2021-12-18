@@ -29,7 +29,16 @@ const Chatbox = {
         height: { value: 50,  context: "", def: "30" },
         draw: { value: true, context: "", def: "" }
       },
-      eventHandlers: {}
+      eventHandlers: {
+        change: {
+          emitName: "message",
+          payloadTransformer: {}
+        },
+        send: {
+          emitName: "send",
+          payloadTransformer: {}
+        }
+      }
     }
   },
 };
