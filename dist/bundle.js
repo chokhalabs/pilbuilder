@@ -8959,6 +8959,9 @@
 	function isMountedTexteditInstance(inst) {
 	    return inst.node.type === "TextEdit";
 	}
+	function isMountedTextInstance(inst) {
+	    return inst.node.type === "Text";
+	}
 	function isMountedRowInstance(inst) {
 	    return inst.node.type === "Row";
 	}
@@ -8993,7 +8996,12 @@
 	                }
 	                break;
 	            case "Text":
+	                if (isMountedTextInstance(instance)) {
+	                    paintText(instance);
+	                }
+	                break;
 	            case "VertScroll":
+	            case "List":
 	                console.error("Don't know how to paint: ", instance.node.type);
 	                break;
 	            default:
@@ -9004,6 +9012,18 @@
 	        var req = reqs_1[_i];
 	        _loop_1(req);
 	    }
+	    return Promise.resolve();
+	}
+	function paintText(instance) {
+	    var node = instance.node;
+	    var context = instance.renderingTarget.context;
+	    context.beginPath();
+	    context.font = node.font;
+	    context.fillStyle = node.color;
+	    context.fillText(node.text, node.x, node.y + (node.fontsize * 0.5));
+	    context.closePath();
+	    context.stroke();
+	    context.fillStyle = "black";
 	    return Promise.resolve();
 	}
 	function paintItem(instance) {
@@ -9089,6 +9109,7 @@
 	            break;
 	        case "VertScroll":
 	        case "Text":
+	        case "List":
 	            console.error("Cannot deliver mousedown event to ".concat(inst.node));
 	            break;
 	        default:
@@ -9147,6 +9168,7 @@
 	                    mount(child, renderingTarget);
 	                });
 	            }
+	            else if (isMountedTextInstance(mountedInst_1)) ;
 	            else {
 	                console.error("Cannot recognize node: ", mountedInst_1);
 	            }
@@ -9258,6 +9280,14 @@
 	        return expr.definition.type === "TextEdit";
 	    }
 	}
+	function isTextNodeExpression(expr) {
+	    if (typeof expr.definition === "string") {
+	        return false;
+	    }
+	    else {
+	        return expr.definition.type === "Text";
+	    }
+	}
 	function isColumnNodeExpression(expr) {
 	    if (typeof expr.definition === "string") {
 	        return false;
@@ -9284,6 +9314,9 @@
 	}
 	function isTextEditNodeInstance(inst) {
 	    return inst.node.type === "TextEdit";
+	}
+	function isTextNodeInstance(inst) {
+	    return inst.node.type === "Text";
 	}
 	function isColumnNodeInstance(inst) {
 	    if (inst.node.type === "Column") {
@@ -9378,6 +9411,7 @@
 	        case "Column":
 	        case "Row":
 	        case "VertScroll":
+	        case "List":
 	            console.error("Not able to setup emitters for parent ".concat(parent));
 	            break;
 	        default:
@@ -9458,7 +9492,7 @@
 	            children: children
 	        };
 	        var childInstancePromises = [];
-	        if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
+	        if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr) || isTextNodeExpression(resolvedExpr)) {
 	            if (isItemNodeInstance(instance)) {
 	                if (parentInst) {
 	                    // Assigning ItemNodeInstance<ItemNode> is converting it back to ItemNodeInstance<PilNodeDef> for some reason I don't understand
@@ -9484,6 +9518,11 @@
 	            }
 	            else if (isTextEditNodeInstance(instance)) {
 	                // const textEditNodeInstance = setupMouseArea(instance);
+	                if (parentInst) {
+	                    instance = setupEventEmitters(instance, parentInst);
+	                }
+	            }
+	            else if (isTextNodeInstance(instance)) {
 	                if (parentInst) {
 	                    instance = setupEventEmitters(instance, parentInst);
 	                }
@@ -9514,7 +9553,17 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: "http://localhost:3000/ChatBox.js",
+	            definition: {
+	                id: "text",
+	                type: "Text",
+	                x: 10,
+	                y: 10,
+	                fontsize: 10,
+	                color: "black",
+	                font: "Cambria",
+	                text: "Some text to be painted",
+	                draw: false
+	            },
 	            props: {},
 	            eventHandlers: {},
 	        };

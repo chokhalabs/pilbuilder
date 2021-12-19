@@ -29,12 +29,15 @@ interface BaseNodeDef {
   id: string;
 }
 
-interface PositionedNodeDef {
+interface UnsizedNodeDef {
   x: number;
   y: number;
+  draw: boolean;
+}
+
+interface PositionedNodeDef extends UnsizedNodeDef {
   width: number;
   height: number;
-  draw: boolean;
 }
 
 interface MouseEnabledNodeDef {
@@ -91,13 +94,14 @@ interface Animation {
 }
 
 export type ItemNode = { type: "Item" } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & ContainerNodeDef & StatefulNodeDef & ImagedNode & AnimatedNodeDef;
-export type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef;
+export type TextNode = { type: "Text", text: string; color: string; font: string; fontsize: number; } & BaseNodeDef & UnsizedNodeDef;
 export type TextEditNode = { type: "TextEdit"; value: string; currentEditedText: string; cursorPosition: number; } & BaseNodeDef & PositionedNodeDef & MouseEnabledNodeDef & StatefulNodeDef & ContainerNodeDef;
 export type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
+export type ListNode = { type: "List"; childModel: any[]; childComponent: PilNodeDef; } & BaseNodeDef & UnsizedNodeDef;
 
-export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode;
+export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode | ListNode;
 
 // Used when making new PilNodeDefs
 export interface PilNodeExpression<T extends PilNodeDef> {
@@ -193,6 +197,11 @@ function isMountedTexteditInstance(inst: MountedInstance<PilNodeDef>): inst is M
   return inst.node.type === "TextEdit";
 }
 
+function isMountedTextInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<TextNode> {
+  return inst.node.type === "Text";
+}
+
+
 function isMountedRowInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ColumnNode> {
   return inst.node.type === "Row";
 }
@@ -231,13 +240,32 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
         }
         break;
       case "Text":
+        if (isMountedTextInstance(instance)) {
+          paintText(instance);
+        }
+        break;
       case "VertScroll":
+      case "List":
         console.error("Don't know how to paint: ", instance.node.type);
         break;
       default:
         assertNever(instance.node);
     }
   }
+  return Promise.resolve();
+}
+
+function paintText(instance: MountedInstance<TextNode>): Promise<void> {
+  const node = instance.node;
+  const { context }  = instance.renderingTarget;
+  context.beginPath();
+  context.font = node.font;
+  context.fillStyle = node.color;
+  context.fillText(node.text, node.x, node.y + (node.fontsize * 0.5));
+  context.closePath();
+  context.stroke();
+  context.fillStyle = "black";
+
   return Promise.resolve();
 }
 
@@ -334,6 +362,7 @@ export function deliverMouseEvent(inst: MountedInstance<PilNodeDef>, ev: MouseEv
       break;
     case "VertScroll":
     case "Text":
+    case "List":
       console.error(`Cannot deliver mousedown event to ${inst.node}`);
       break;
     default:
@@ -394,6 +423,8 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
         Object.values(mountedInst.children).forEach(child => {
           mount(child, renderingTarget);
         })
+      } else if (isMountedTextInstance(mountedInst)) {
+        // Nothing to do
       } else {
         console.error("Cannot recognize node: ", mountedInst);
       }
@@ -505,6 +536,14 @@ function isTextEditNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is 
   }
 }
 
+function isTextNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<TextNode> {
+  if (typeof expr.definition === "string") {
+    return false;
+  } else {
+    return expr.definition.type === "Text";
+  }
+}
+
 function isColumnNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ColumnNode> {
   if (typeof expr.definition === "string") {
     return false;
@@ -531,6 +570,10 @@ function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeI
 
 function isTextEditNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<TextEditNode> {
   return inst.node.type === "TextEdit";
+}
+
+function isTextNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<TextNode> {
+  return inst.node.type === "Text";
 }
 
 function isColumnNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ColumnNode> {
@@ -611,7 +654,7 @@ function pointIsInRect(point: {x: number; y: number;}, rect: { x: number; y: num
     point.y <= rect.y + rect.height;
 }
 
-function setupEventEmitters<T extends ItemNode|TextEditNode>(inst: PilNodeInstance<T>, parent: PilNodeInstance<PilNodeDef>): PilNodeInstance<T> {
+function setupEventEmitters<T extends PilNodeDef>(inst: PilNodeInstance<T>, parent: PilNodeInstance<PilNodeDef>): PilNodeInstance<T> {
   // Wire the eventbus of the instance to deliver the event to its parent's bus
   switch (parent.node.type) {
     case "TextEdit":
@@ -629,6 +672,7 @@ function setupEventEmitters<T extends ItemNode|TextEditNode>(inst: PilNodeInstan
     case "Column":
     case "Row":
     case "VertScroll":
+    case "List":
       console.error(`Not able to setup emitters for parent ${parent}`);
       break;
     default:
@@ -731,7 +775,7 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
     
     const childInstancePromises = [];
     
-    if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr)) {
+    if (isItemNodeExpression(resolvedExpr) || isTextEditNodeExpression(resolvedExpr) || isTextNodeExpression(resolvedExpr)) {
       if (isItemNodeInstance(instance)) {
         if (parentInst) {
           // Assigning ItemNodeInstance<ItemNode> is converting it back to ItemNodeInstance<PilNodeDef> for some reason I don't understand
@@ -757,6 +801,10 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
         
       } else if (isTextEditNodeInstance(instance)) {
         // const textEditNodeInstance = setupMouseArea(instance);
+        if (parentInst) {
+          instance = setupEventEmitters(instance, parentInst);
+        }
+      } else if (isTextNodeInstance(instance)) {
         if (parentInst) {
           instance = setupEventEmitters(instance, parentInst);
         }

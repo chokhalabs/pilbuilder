@@ -1,13 +1,23 @@
 import { useRef, useEffect } from "react";
 
-import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode, RowNode, TextEditNode } from "./design";
+import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode, RowNode, TextEditNode, TextNode } from "./design";
 
 export default function() {
   const canvas = useRef(null); 
 
   useEffect(() => {
-    const expr: PilNodeExpression<ItemNode> = {
-      definition: "http://localhost:3000/ChatBox.js",
+    const expr: PilNodeExpression<TextNode> = {
+      definition: {
+        id: "text",
+        type: "Text",
+        x: 10,
+        y: 10,
+        fontsize: 10,
+        color: "black",
+        font: "Cambria",
+        text: "Some text to be painted",
+        draw: false
+      },
       props: {},
       eventHandlers: {},
     };
