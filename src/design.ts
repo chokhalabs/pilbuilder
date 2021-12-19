@@ -215,7 +215,16 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
         // Required for safely narrowing instance type
         if (isMountedItemInstance(instance)) {
           paintItem(instance);
-          // Paint children
+          const childPaintReqs: PaintRequest<PilNodeDef>[] = Object.values(instance.children).map(inst => {
+            return {
+              inst: {
+                ...inst,
+                renderingTarget: instance.renderingTarget
+              },
+              timestamp: Date.now() 
+            }
+          })
+          paint(childPaintReqs);
         }
         break;
       case "Row":
