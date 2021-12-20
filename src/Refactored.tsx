@@ -8,7 +8,11 @@ export default function() {
   useEffect(() => {
     const expr: PilNodeExpression<ItemNode> = {
       definition: "http://localhost:3000/Message.js",
-      props: {},
+      props: {
+        userImage: { value: "G.g", def: "", context: "" },
+        userName: { value: "Gaurav Gautam", def: "", context: "" },
+        message: { value: "Hello there mr. cheddar", def: "", context: "" }
+      },
       eventHandlers: {},
     };
 

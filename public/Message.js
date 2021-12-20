@@ -14,7 +14,7 @@ const msg = {
         y: { value: 10, context: "$parent", def: "$parent.y + 10" },
         fontsize: { value: 50, context: "", def: "" },
         font: { value: "25px Cambria sans", context:  "", def: "" },
-        text: { value: "G.G", context: "", def: "" },
+        text: { value: "G.G", context: "$parent", def: "$props.userImage" },
       },
       eventHandlers: {}
     },
@@ -25,7 +25,7 @@ const msg = {
         y: { value: 10, context: "$parent", def: "$parent.y + 10" },
         fontsize: { value: 10, context: "", def: "" },
         font: { value: "10px Cambria sans", context:  "", def: "" },
-        text: { value: "Gaurav Gautam", context: "", def: "" }
+        text: { value: "Gaurav Gautam", context: "$parent", def: "$props.userName" }
       },
       eventHandlers: {}
     },
@@ -36,7 +36,7 @@ const msg = {
         y: { value: 10, context: "$parent", def: "$parent.y + 30" },
         fontsize: { value: 10, context: "", def: "" },
         font: { value: "10px Cambria sans", context:  "", def: "" },
-        text: { value: "Here is a message that I want  to send to someone.", context: "", def: "" }
+        text: { value: "Here is a message that I want  to send to someone.", context: "$parent", def: "$props.message" }
       },
       eventHandlers: {}
     }

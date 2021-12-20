@@ -9146,6 +9146,7 @@
 	            renderingTarget = getRenderingTarget(renderingTarget);
 	        }
 	        else {
+	            // Since canvas reference is obtained only when rendering the root mounted node, if its not a string then it must be a child
 	            mountingAChild = true;
 	        }
 	        if (renderingTarget) {
@@ -9155,6 +9156,7 @@
 	                renderingTarget.canvas.addEventListener("mousedown", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mousedown"); });
 	                renderingTarget.canvas.addEventListener("mouseup", function (ev) { return deliverMouseEvent(mountedInst_1, ev, "mouseup"); });
 	            }
+	            var paintRequest = bindProps(mountedInst_1);
 	            if (isMountedItemInstance(mountedInst_1)) {
 	                wireUpStateListeners(mountedInst_1);
 	                Object.values(mountedInst_1.children).forEach(function (child) {
@@ -9178,7 +9180,6 @@
 	            else {
 	                console.error("Cannot recognize node: ", mountedInst_1);
 	            }
-	            var paintRequest = bindProps(mountedInst_1);
 	            res([paintRequest]);
 	        }
 	        else {
@@ -9444,9 +9445,17 @@
 	    Object.keys(inst.expr.props).forEach(function (prop) {
 	        var expr = inst.expr.props[prop];
 	        if (expr.context === "$parent" && parent) {
+	            var $props_1 = {};
+	            Object.keys(parent.expr.props).forEach(function (prop) {
+	                $props_1[prop] = parent.expr.props[prop].value;
+	            });
 	            window.$parent = parent.node;
-	            inst.node[prop] = eval(expr.def);
+	            window.$props = $props_1;
+	            var calculatedProp = eval(expr.def);
+	            inst.node[prop] = calculatedProp;
+	            inst.expr.props[prop].value = calculatedProp;
 	            window.$parent = null;
+	            window.$props = null;
 	        }
 	        else {
 	            inst.node[prop] = expr.value;
@@ -9560,7 +9569,11 @@
 	    react.exports.useEffect(function () {
 	        var expr = {
 	            definition: "http://localhost:3000/Message.js",
-	            props: {},
+	            props: {
+	                userImage: { value: "G.g", def: "", context: "" },
+	                userName: { value: "Gaurav Gautam", def: "", context: "" },
+	                message: { value: "Hello there mr. cheddar", def: "", context: "" }
+	            },
 	            eventHandlers: {},
 	        };
 	        if (canvas.current) {

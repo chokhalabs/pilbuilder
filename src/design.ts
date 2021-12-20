@@ -8,6 +8,7 @@ type evaluate<T> = (ex: Expression<T>) => T;
 declare global {
   interface Window {
     $parent: null | PilNodeDef;
+    $props: null | Record<string, any>;
   }
 }
 
@@ -402,6 +403,7 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
     if (typeof renderingTarget === "string") {
       renderingTarget = getRenderingTarget(renderingTarget);
     } else {
+      // Since canvas reference is obtained only when rendering the root mounted node, if its not a string then it must be a child
       mountingAChild = true;
     }
     if (renderingTarget) {
@@ -416,6 +418,8 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
         renderingTarget.canvas.addEventListener("mousedown", ev => deliverMouseEvent(mountedInst, ev, "mousedown"));
         renderingTarget.canvas.addEventListener("mouseup", ev => deliverMouseEvent(mountedInst, ev, "mouseup"));
       }
+
+      let paintRequest = bindProps(mountedInst);
 
       if (isMountedItemInstance(mountedInst)) {
         wireUpStateListeners(mountedInst);
@@ -438,7 +442,6 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
         console.error("Cannot recognize node: ", mountedInst);
       }
 
-      let paintRequest = bindProps(mountedInst);
       res([paintRequest]);
     } else {
       rej("Could not get canvas");
@@ -710,13 +713,23 @@ function wireUpStateListeners<T extends ItemNode|TextEditNode>(inst: MountedInst
 }
 
 function bindProps<T extends PilNodeDef>(inst: MountedInstance<T>, parent?: MountedInstance<T>): PaintRequest<T> {
+  
+
   Object.keys(inst.expr.props).forEach(prop => {
     const expr = inst.expr.props[prop];
 
     if (expr.context === "$parent" &&  parent) {
+      const $props: Record<string, any> = {};
+      Object.keys(parent.expr.props).forEach(prop => {
+        $props[prop] = parent.expr.props[prop].value;
+      });
       window.$parent = parent.node;
-      (inst.node as any)[prop] = eval(expr.def);
+      window.$props = $props;
+      const calculatedProp = eval(expr.def);
+      (inst.node as any)[prop] = calculatedProp; 
+      inst.expr.props[prop].value = calculatedProp;
       window.$parent = null;
+      window.$props = null;
     } else {
       (inst.node as any)[prop] = expr.value;
     }
