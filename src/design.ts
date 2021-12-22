@@ -100,7 +100,7 @@ export type TextEditNode = { type: "TextEdit"; value: string; currentEditedText:
 export type ColumnNode = { type: "Column" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type RowNode = { type: "Row" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
 export type VertScrollNode = { type: "VertScroll" } & BaseNodeDef & ContainerNodeDef & PositionedNodeDef;
-export type ListNode = { type: "List"; childModel: any[]; childComponent: PilNodeDef; } & BaseNodeDef & UnsizedNodeDef;
+export type ListNode = { type: "List"; childModel: Expression<any[]>; childComponent: PilNodeDef|string; } & BaseNodeDef & UnsizedNodeDef;
 
 export type PilNodeDef = ItemNode | TextNode | TextEditNode | ColumnNode | VertScrollNode | RowNode | ListNode;
 
@@ -123,14 +123,33 @@ export interface ResolvedPilNodeExpression<T extends PilNodeDef> extends PilNode
 
 function resolveExpression(expr: PilNodeExpression<PilNodeDef>): Promise<ResolvedPilNodeExpression<PilNodeDef>> {
   if (typeof expr.definition === "string") { 
-    return import(expr.definition).then(({default: def}) => {
-      // TODO: Add better validation for the imported def
-      expr.definition = def;
-      return expr as ResolvedPilNodeExpression<PilNodeDef>;
-    });
+    return import(expr.definition)
+      .then(({default: def}) => {
+        // TODO: Add better validation for the imported def
+        expr.definition = def;
+        let childResolved = Promise.resolve();
+        if (def.type === "List" && typeof def.childComponent === "string") {
+          childResolved = import(def.childComponent)
+            .then(({default: childDef}) => {
+              def.childComponent = childDef;
+            });
+        }
+        return childResolved.then(() => {
+          return expr as ResolvedPilNodeExpression<PilNodeDef>;
+        })
+      });
   } else {
     const def = expr.definition;
-    return Promise.resolve({ ...expr, definition: def });
+    let childResolved = Promise.resolve();
+    if (def.type === "List" && typeof def.childComponent === "string") {
+      childResolved = import(def.childComponent)
+        .then(({default: childDef}) => {
+          def.childComponent = childDef;
+        });
+    }
+    return childResolved.then(() => {
+      return { ...expr, definition: def } as ResolvedPilNodeExpression<PilNodeDef>;
+    })
   }
 }
 
@@ -148,12 +167,15 @@ export function emit(bus: EventBus, eventname: string, payload: any) {
   }
 }
 
+type T = ListNode["childComponent"]
+
 interface PilNodeInstance<T extends PilNodeDef> {
   node: T;
   expr: PilNodeExpression<T>;
   eventBus: EventBus;
   children: T extends ItemNode ? Record<string, PilNodeInstance<PilNodeDef>> : 
             T extends ColumnNode ? Record<string, PilNodeInstance<PilNodeDef>> :
+            T extends ListNode ? Record<string, PilNodeInstance<PilNodeDef>> :
             null;
 }
 
@@ -202,9 +224,12 @@ function isMountedTextInstance(inst: MountedInstance<PilNodeDef>): inst is Mount
   return inst.node.type === "Text";
 }
 
-
 function isMountedRowInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ColumnNode> {
   return inst.node.type === "Row";
+}
+
+function isMountedListInstance(inst: MountedInstance<PilNodeDef>): inst is MountedInstance<ListNode> {
+  return inst.node.type === "List";
 }
 
 export function paint(reqs: PaintRequest<PilNodeDef>[]) {
@@ -254,8 +279,13 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
           paintText(instance);
         }
         break;
-      case "VertScroll":
       case "List":
+        if (isMountedListInstance(instance)) {
+          const node = instance.node;
+          paintList(instance);
+        }
+        break;
+      case "VertScroll":
         console.error("Don't know how to paint: ", instance.node.type);
         break;
       default:
@@ -263,6 +293,19 @@ export function paint(reqs: PaintRequest<PilNodeDef>[]) {
     }
   }
   return Promise.resolve();
+}
+
+function paintList(instance: MountedInstance<ListNode>): Promise<void> {
+  const childPaintRequests: PaintRequest<PilNodeDef>[] = Object.values(instance.children).map(child => {
+    return {
+      inst: {
+        ...child,
+        renderingTarget: instance.renderingTarget
+      },
+      timestamp: Date.now()
+    }
+  });
+  return paint(childPaintRequests);
 }
 
 function paintText(instance: MountedInstance<TextNode>): Promise<void> {
@@ -436,6 +479,11 @@ export function mount(inst: PilNodeInstance<PilNodeDef>, renderingTarget: PilRen
         Object.values(mountedInst.children).forEach(child => {
           mount(child, renderingTarget);
         })
+      } else if (isMountedListInstance(mountedInst)) {
+        const children = mountedInst.children;
+        Object.values(mountedInst.children).forEach(child => {
+          mount(child, renderingTarget);
+        })
       } else if (isMountedTextInstance(mountedInst)) {
         // Nothing to do
       } else {
@@ -570,6 +618,18 @@ function isRowNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNo
   } else {
     return expr.definition.type === "Row";
   }
+}
+
+function isListNodeExpression(expr: PilNodeExpression<PilNodeDef>): expr is PilNodeExpression<ListNode> {
+  if (typeof expr.definition === "string" || typeof (expr.definition as ListNode).childComponent === "string" ) {
+    return false;
+  } else{
+    return expr.definition.type === "List";
+  }
+}
+
+function isListNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ListNode> {
+  return inst.node.type === "List";
 }
 
 function isItemNodeInstance(inst: PilNodeInstance<PilNodeDef>): inst is PilNodeInstance<ItemNode> {
@@ -845,6 +905,39 @@ export function init<T extends PilNodeDef>(expr: PilNodeExpression<T>, parentIns
         }
       }
       return Promise.all(childInstancePromises).then(() => instance);
+    } else if (isListNodeExpression(expr)) {
+      const childInitializations = [];
+      if (isListNodeInstance(instance)) {
+        for (let i = 0; i < instance.node.childModel.value.length; i++) {
+          const listItem = instance.node.childModel.value[i]; 
+          const props: Record<string, Expression<any>> = Object.keys(listItem).map(prop => {
+            return {
+              key: prop,
+              prop: { value: listItem[prop], context: "", def: "" } 
+            };
+          })
+          .reduce((accum: Record<string, Expression<any>>, item) => {
+            accum[item.key] = item.prop;
+            return accum;
+          }, {});
+          props.y = { value: i * 100, context: "", def: "" };
+          const node = JSON.parse(JSON.stringify(instance.node.childComponent));
+          const child_p = init({
+            definition: node,
+            props,
+            eventHandlers: {}
+          }, instance)
+          .then(inst => {
+            children[i] = inst;
+          })
+          .catch(err => {
+            console.error("Failed to initialize a list child:", err);
+          });
+
+          childInitializations.push(child_p);
+        }
+      }
+      return Promise.all(childInitializations).then(() => instance);
     } else {
       return Promise.reject("Cannot instantiate expression because node not recognized: " + JSON.stringify(expr, null, 4)); 
     }

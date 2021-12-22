@@ -8918,16 +8918,37 @@
 
 	function resolveExpression(expr) {
 	    if (typeof expr.definition === "string") {
-	        return import(expr.definition).then(function (_a) {
+	        return import(expr.definition)
+	            .then(function (_a) {
 	            var def = _a.default;
 	            // TODO: Add better validation for the imported def
 	            expr.definition = def;
-	            return expr;
+	            var childResolved = Promise.resolve();
+	            if (def.type === "List" && typeof def.childComponent === "string") {
+	                childResolved = import(def.childComponent)
+	                    .then(function (_a) {
+	                    var childDef = _a.default;
+	                    def.childComponent = childDef;
+	                });
+	            }
+	            return childResolved.then(function () {
+	                return expr;
+	            });
 	        });
 	    }
 	    else {
-	        var def = expr.definition;
-	        return Promise.resolve(__assign(__assign({}, expr), { definition: def }));
+	        var def_1 = expr.definition;
+	        var childResolved = Promise.resolve();
+	        if (def_1.type === "List" && typeof def_1.childComponent === "string") {
+	            childResolved = import(def_1.childComponent)
+	                .then(function (_a) {
+	                var childDef = _a.default;
+	                def_1.childComponent = childDef;
+	            });
+	        }
+	        return childResolved.then(function () {
+	            return __assign(__assign({}, expr), { definition: def_1 });
+	        });
 	    }
 	}
 	function emit(bus, eventname, payload) {
@@ -8964,6 +8985,9 @@
 	}
 	function isMountedRowInstance(inst) {
 	    return inst.node.type === "Row";
+	}
+	function isMountedListInstance(inst) {
+	    return inst.node.type === "List";
 	}
 	function paint(reqs) {
 	    var _loop_1 = function (req) {
@@ -9006,8 +9030,13 @@
 	                    paintText(instance);
 	                }
 	                break;
-	            case "VertScroll":
 	            case "List":
+	                if (isMountedListInstance(instance)) {
+	                    instance.node;
+	                    paintList(instance);
+	                }
+	                break;
+	            case "VertScroll":
 	                console.error("Don't know how to paint: ", instance.node.type);
 	                break;
 	            default:
@@ -9019,6 +9048,15 @@
 	        _loop_1(req);
 	    }
 	    return Promise.resolve();
+	}
+	function paintList(instance) {
+	    var childPaintRequests = Object.values(instance.children).map(function (child) {
+	        return {
+	            inst: __assign(__assign({}, child), { renderingTarget: instance.renderingTarget }),
+	            timestamp: Date.now()
+	        };
+	    });
+	    return paint(childPaintRequests);
 	}
 	function paintText(instance) {
 	    var node = instance.node;
@@ -9176,6 +9214,12 @@
 	                    mount(child, renderingTarget);
 	                });
 	            }
+	            else if (isMountedListInstance(mountedInst_1)) {
+	                mountedInst_1.children;
+	                Object.values(mountedInst_1.children).forEach(function (child) {
+	                    mount(child, renderingTarget);
+	                });
+	            }
 	            else if (isMountedTextInstance(mountedInst_1)) ;
 	            else {
 	                console.error("Cannot recognize node: ", mountedInst_1);
@@ -9310,6 +9354,17 @@
 	    else {
 	        return expr.definition.type === "Row";
 	    }
+	}
+	function isListNodeExpression(expr) {
+	    if (typeof expr.definition === "string" || typeof expr.definition.childComponent === "string") {
+	        return false;
+	    }
+	    else {
+	        return expr.definition.type === "List";
+	    }
+	}
+	function isListNodeInstance(inst) {
+	    return inst.node.type === "List";
 	}
 	function isItemNodeInstance(inst) {
 	    if (inst.node.type === "Item") {
@@ -9558,6 +9613,42 @@
 	            }
 	            return Promise.all(childInstancePromises).then(function () { return instance; });
 	        }
+	        else if (isListNodeExpression(expr)) {
+	            var childInitializations = [];
+	            if (isListNodeInstance(instance)) {
+	                var _loop_4 = function (i) {
+	                    var listItem = instance.node.childModel.value[i];
+	                    var props = Object.keys(listItem).map(function (prop) {
+	                        return {
+	                            key: prop,
+	                            prop: { value: listItem[prop], context: "", def: "" }
+	                        };
+	                    })
+	                        .reduce(function (accum, item) {
+	                        accum[item.key] = item.prop;
+	                        return accum;
+	                    }, {});
+	                    props.y = { value: i * 100, context: "", def: "" };
+	                    var node = JSON.parse(JSON.stringify(instance.node.childComponent));
+	                    var child_p = init({
+	                        definition: node,
+	                        props: props,
+	                        eventHandlers: {}
+	                    }, instance)
+	                        .then(function (inst) {
+	                        children[i] = inst;
+	                    })
+	                        .catch(function (err) {
+	                        console.error("Failed to initialize a list child:", err);
+	                    });
+	                    childInitializations.push(child_p);
+	                };
+	                for (var i = 0; i < instance.node.childModel.value.length; i++) {
+	                    _loop_4(i);
+	                }
+	            }
+	            return Promise.all(childInitializations).then(function () { return instance; });
+	        }
 	        else {
 	            return Promise.reject("Cannot instantiate expression because node not recognized: " + JSON.stringify(expr, null, 4));
 	        }
@@ -9568,11 +9659,28 @@
 	    var canvas = react.exports.useRef(null);
 	    react.exports.useEffect(function () {
 	        var expr = {
-	            definition: "http://localhost:3000/Message.js",
+	            definition: {
+	                id: "messagelist",
+	                childModel: { value: [], def: "$parent", context: "$props.listData" },
+	                childComponent: "http://localhost:3000/Message.js",
+	                x: 10,
+	                y: 10,
+	                type: "List",
+	                draw: false
+	            },
 	            props: {
-	                userImage: { value: "G.g", def: "", context: "" },
-	                userName: { value: "Gaurav Gautam", def: "", context: "" },
-	                message: { value: "Hello there mr. cheddar", def: "", context: "" }
+	                listData: { def: "", context: "", value: [
+	                        {
+	                            userName: "Gaurav Gautam",
+	                            userImage: "G.G",
+	                            message: "First message is this one"
+	                        },
+	                        {
+	                            userName: "Gaurav Gautam",
+	                            userIamge: "G.G",
+	                            message: "Second message is this one"
+	                        }
+	                    ] }
 	            },
 	            eventHandlers: {},
 	        };

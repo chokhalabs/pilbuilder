@@ -1,17 +1,34 @@
 import { useRef, useEffect } from "react";
 
-import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode, RowNode, TextEditNode, TextNode } from "./design";
+import { mount, init, ItemNode, PilNodeExpression, paint, ColumnNode, RowNode, TextEditNode, TextNode, ListNode } from "./design";
 
 export default function() {
   const canvas = useRef(null); 
 
   useEffect(() => {
-    const expr: PilNodeExpression<ItemNode> = {
-      definition: "http://localhost:3000/Message.js",
+    const expr: PilNodeExpression<ListNode> = {
+      definition: {
+        id: "messagelist",
+        childModel: { value: [], def: "$parent", context: "$props.listData" },
+        childComponent: "http://localhost:3000/Message.js",
+        x: 10,
+        y: 10,
+        type: "List",
+        draw: false
+      },
       props: {
-        userImage: { value: "G.g", def: "", context: "" },
-        userName: { value: "Gaurav Gautam", def: "", context: "" },
-        message: { value: "Hello there mr. cheddar", def: "", context: "" }
+        listData: { def: "", context: "", value: [
+          {
+            userName: "Gaurav Gautam",
+            userImage: "G.G",
+            message: "First message is this one"
+          },
+          {
+            userName: "Gaurav Gautam",
+            userIamge:  "G.G",
+            message: "Second message is this one"
+          }
+        ]}
       },
       eventHandlers: {},
     };
