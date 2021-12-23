@@ -1,12 +1,14 @@
 import { Stage, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { createElement as h } from 'react';
+import "./App.css";
 export default function() {
   return (
     h(Stage, 
       {
         width: window.innerWidth,
-        height: innerHeight
+        height: window.innerHeight,
+        className: "konvaroot"
       },
       [
         h(Layer,

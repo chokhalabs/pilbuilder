@@ -6,6 +6,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
 import alias from '@rollup/plugin-alias';
 import typescript from 'rollup-plugin-typescript';
+import css from "rollup-plugin-import-css";
 export default {
   input: "src/index.js",
   output: {
@@ -14,9 +15,11 @@ export default {
     sourcemap: true,
   },
   plugins: [
+    css(),
     alias({
       entries: [
-        { find: 'konva', replacement: 'konva/lib/index.js' }
+        { find: /konva\/(.*)/, replacement: './node_modules/konva/$1.js' },
+        { find: "konva", replacement: './node_modules/konva/lib/index.js' }
       ]
     }),
     nodeResolve({
