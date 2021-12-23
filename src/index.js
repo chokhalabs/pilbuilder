@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 // import './index.css';
 // import App from './App.tsx';
-import App from './Refactored.tsx';
+// import App from './Refactored.tsx';
+import App from './KonvaBuilder.js';
 // import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(

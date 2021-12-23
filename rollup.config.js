@@ -4,6 +4,7 @@ import babel from '@rollup/plugin-babel';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
+import alias from '@rollup/plugin-alias';
 import typescript from 'rollup-plugin-typescript';
 export default {
   input: "src/index.js",
@@ -13,6 +14,11 @@ export default {
     sourcemap: true,
   },
   plugins: [
+    alias({
+      entries: [
+        { find: 'konva', replacement: 'konva/lib/index.js' }
+      ]
+    }),
     nodeResolve({
       extensions: [".js", ".ts", ".jsx", ".tsx"],
     }),
