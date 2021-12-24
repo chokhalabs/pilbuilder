@@ -3,7 +3,7 @@ import { createElement as h } from 'react';
 
 type PropExprs = Record<string, number|boolean|string|{ expr: string }>;
 
-interface Config {
+export interface Config {
   type: "Group" | "Rect" | "Text";
   props: PropExprs|null; 
   children: Config[];

@@ -1,12 +1,3 @@
-+ Fix bug with placement edit controls that paints wrongly
-+ Check if the paint function is clearing the canvas too much
-
-+ Add a list of all generated projects on the server
-+ Add ability to use existing project
-+ Update x, y, width and height with arrow keys 
-+ split builder components
-+ Add fonts to text renderer
-+ Add custom event emitter
-+ Add image component
-+ Make chat component
-+ Allow editing on canvas without using the sidebar
++ Add tree in sidebar
++ Allow saving a component and using it directly from tools
++ Allow downloading an app with a component

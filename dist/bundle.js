@@ -22944,6 +22944,15 @@
 
 	  return __assign.apply(this, arguments);
 	};
+	function __spreadArray(to, from, pack) {
+	  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+	    if (ar || !(i in from)) {
+	      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+	      ar[i] = from[i];
+	    }
+	  }
+	  return to.concat(ar || Array.prototype.slice.call(from));
+	}
 
 	function evaluateProps($props, propsExprs) {
 	    var evaluated = __assign({}, propsExprs);
@@ -22966,15 +22975,42 @@
 	    };
 	}
 
+	function makeVDom(config, step) {
+	    if (config && config.children) {
+	        var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
+	        return react.exports.createElement("div", {
+	            style: {
+	                paddingLeft: step * 10
+	            },
+	            className: "sidebar-tree-item"
+	        }, __spreadArray([
+	            config.type
+	        ], children, true));
+	    }
+	    else {
+	        return react.exports.createElement("div", null, "Nothing loaded yet!");
+	    }
+	}
+	function Tree (config) {
+	    return makeVDom(config, 0);
+	}
+
 	function App () {
 	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
+	    var _b = react.exports.useState(250), leftsidebarWidth = _b[0]; _b[1];
 	    react.exports.useEffect(function () {
 	        if (!conf) {
 	            // @ts-ignore
 	            import('http://localhost:3000/button.js')
 	                .then(function (_a) {
 	                var config = _a.default;
-	                setConf(config);
+	                // TODO: Add better validation
+	                if (config && config.type && config.children) {
+	                    setConf(config);
+	                }
+	                else {
+	                    console.error("Invalid config");
+	                }
 	            })
 	                .catch(function (err) {
 	                console.error("error when downloading button: ", err);
@@ -22985,14 +23021,25 @@
 	    if (conf) {
 	        content = react.exports.createElement(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
 	    }
-	    return (react.exports.createElement(Stage, {
-	        width: window.innerWidth,
+	    var tree = react.exports.createElement("div", {
+	        className: "tree",
+	        style: { width: leftsidebarWidth, height: window.innerHeight }
+	    }, react.exports.createElement(Tree, conf));
+	    var stage = react.exports.createElement(Stage, {
+	        width: window.innerWidth - leftsidebarWidth,
 	        height: window.innerHeight,
-	        className: "konvaroot"
+	        className: "stage",
+	        key: "stage"
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
 	        }, content)
+	    ]);
+	    return (react.exports.createElement("div", {
+	        className: "konvaroot"
+	    }, [
+	        tree,
+	        stage
 	    ]));
 	}
 

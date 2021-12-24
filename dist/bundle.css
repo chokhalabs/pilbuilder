@@ -1,6 +1,12 @@
 .konvaroot {
   background: #ccc;
+  display: flex;
 }
-.konvaroot {
-  background: #ccc;
+
+.konvaroot .tree {
+  background: white;
+}
+
+.sidebar-tree-item {
+  cursor: pointer;
 }
