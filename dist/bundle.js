@@ -22976,30 +22976,49 @@
 	}
 
 	function makeVDom(config, step) {
-	    var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
-	    return react.exports.createElement("div", {
-	        style: {
-	            paddingLeft: step * 10
-	        },
-	        className: "sidebar-tree-item"
-	    }, __spreadArray([
-	        config.type
-	    ], children, true));
-	}
-	function Tree (config) {
-	    // Check for null passed as props. React passes null props as an empty object.
-	    var isPropsNull = Object.keys(config).length === 0;
-	    if (isPropsNull) {
-	        return react.exports.createElement("div", null, "Nothing loaded yet!");
+	    if (config) {
+	        var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
+	        return react.exports.createElement("div", {
+	            style: {
+	                paddingLeft: step * 10
+	            },
+	            className: "sidebar-tree-item"
+	        }, __spreadArray([
+	            config.type
+	        ], children, true));
 	    }
 	    else {
-	        return makeVDom(config, 0);
+	        return react.exports.createElement("div", null, "Nothing loaded yet!");
 	    }
+	}
+	function Tabs(props) {
+	    return react.exports.createElement("div", {
+	        className: "tabs"
+	    }, props.tabs.map(function (tab) { return react.exports.createElement("div", {
+	        className: props.selectedTab === tab ? "selected tab" : "tab",
+	        onClick: function () { return props.onSelect(tab); }
+	    }, tab); }));
+	}
+	function Sidebar (props) {
+	    var _a = react.exports.useState(["Layers", "Assets"]), tabs = _a[0]; _a[1];
+	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
+	    var tabBody = react.exports.createElement("div", null, "No assets here yet!");
+	    if (selectedTab === "Layers") {
+	        tabBody = makeVDom(props.tree, 1);
+	    }
+	    return react.exports.createElement("div", {
+	        className: "sidebar",
+	        style: { width: props.width, height: props.height }
+	    }, [
+	        react.exports.createElement(Tabs, { tabs: tabs, selectedTab: selectedTab, onSelect: function (tab) { return setSelectedTab(tab); } }),
+	        tabBody
+	    ]);
 	}
 
 	function App () {
 	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
 	    var _b = react.exports.useState(250), leftsidebarWidth = _b[0]; _b[1];
+	    var _c = react.exports.useState(50), menubarHeight = _c[0]; _c[1];
 	    react.exports.useEffect(function () {
 	        if (!conf) {
 	            // @ts-ignore
@@ -23023,13 +23042,14 @@
 	    if (conf) {
 	        content = react.exports.createElement(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
 	    }
-	    var tree = react.exports.createElement("div", {
-	        className: "tree",
-	        style: { width: leftsidebarWidth, height: window.innerHeight - 50 }
-	    }, react.exports.createElement(Tree, conf));
+	    var sidebar = react.exports.createElement(Sidebar, {
+	        tree: conf,
+	        width: leftsidebarWidth,
+	        height: window.innerHeight - menubarHeight
+	    });
 	    var stage = react.exports.createElement(Stage, {
 	        width: window.innerWidth - leftsidebarWidth,
-	        height: window.innerHeight - 50,
+	        height: window.innerHeight - menubarHeight,
 	        className: "stage",
 	        key: "stage"
 	    }, [
@@ -23042,7 +23062,7 @@
 	        className: "konvaroot"
 	    }, [
 	        menubar,
-	        tree,
+	        sidebar,
 	        stage
 	    ]));
 	}

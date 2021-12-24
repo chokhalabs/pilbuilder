@@ -3,12 +3,13 @@ import { createElement as h, useEffect, useState } from 'react';
 
 import "./KonvaBuilder.css";
 import { Config, tranformToVDOM } from "./utils";
-import Tree from "./Tree";
+import Sidebar from "./Sidebar";
 
 
 export default function() {
   const [ conf, setConf ] = useState(null as Config | null);
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
+  const [ menubarHeight, setMuenubarHeight ] = useState(50);
 
   useEffect(() => {
     if (!conf) {
@@ -34,21 +35,19 @@ export default function() {
     content = h(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
   }
 
-  const tree = h(
-    "div", 
+  const sidebar = h(
+    Sidebar,
     { 
-      className: "tree", 
-      style: { width: leftsidebarWidth, height: window.innerHeight - 50 } 
-    },
-    h(
-      Tree,
-      conf
-    )
+      tree: conf,
+      width: leftsidebarWidth,
+      height: window.innerHeight - menubarHeight
+    } 
   );
+
   const stage = h(Stage, 
     {
       width: window.innerWidth - leftsidebarWidth,
-      height: window.innerHeight - 50,
+      height: window.innerHeight - menubarHeight,
       className: "stage",
       key: "stage"
     },
@@ -72,7 +71,7 @@ export default function() {
       }, 
       [
         menubar,
-        tree,
+        sidebar,
         stage
       ]
     )

@@ -11,15 +11,34 @@
   background: #2c2c2c;
 }
 
-.konvaroot .tree {
+.konvaroot .sidebar {
   background: white;
   grid-row: 2/3;
+}
+
+.konvaroot .sidebar .tabs {
+  display: flex;
+}
+
+.sidebar .tabs .tab {
+  padding: 10px 10px;
+  cursor: pointer;
+}
+
+.sidebar .tabs .tab:hover {
+  background: #ccc;
+}
+
+.sidebar .tabs .tab.selected {
+  font-weight: bold;
+}
+
+.konvaroot .sidebar .sidebar-tree-item {
+  cursor: pointer;
 }
 
 .konvaroot .stage {
   grid-row: 2/3;
 }
 
-.sidebar-tree-item {
-  cursor: pointer;
-}
+
