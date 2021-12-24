@@ -22944,15 +22944,6 @@
 
 	  return __assign.apply(this, arguments);
 	};
-	function __spreadArray(to, from, pack) {
-	  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-	    if (ar || !(i in from)) {
-	      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-	      ar[i] = from[i];
-	    }
-	  }
-	  return to.concat(ar || Array.prototype.slice.call(from));
-	}
 
 	function evaluateProps($props, propsExprs) {
 	    var evaluated = __assign({}, propsExprs);
@@ -22975,17 +22966,40 @@
 	    };
 	}
 
-	function makeVDom(config, step) {
+	function traversePreOrder(config, selectedNode) {
+	    var traversal = [];
+	    var stack = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
+	    while (stack.length > 0) {
+	        // Pop item out
+	        var node = stack.pop();
+	        if (!node) {
+	            throw new Error("No idea what happened!");
+	        }
+	        // Put it in traversal
+	        traversal.push(node);
+	        // Push right child and then left child
+	        for (var i = node.children.length - 1; i >= 0; i--) {
+	            stack.push({
+	                step: node.step + 1,
+	                label: node.children[i].type,
+	                children: node.children[i].children,
+	                id: node.children[i].id,
+	                selected: node.children[i].id === selectedNode
+	            });
+	        }
+	    }
+	    return traversal;
+	}
+	function makeVDom(config, selectedNode, onNodeSelect) {
 	    if (config) {
-	        var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
-	        return react.exports.createElement("div", {
-	            style: {
-	                paddingLeft: step * 10
-	            },
-	            className: "sidebar-tree-item"
-	        }, __spreadArray([
-	            config.type
-	        ], children, true));
+	        var nodes = traversePreOrder(config, selectedNode);
+	        return react.exports.createElement("div", null, nodes.map(function (node) {
+	            return react.exports.createElement("div", {
+	                className: node.selected ? "sidebar-tree-item selected" : "sidebar-tree-item",
+	                style: { paddingLeft: node.step * 10 },
+	                onClick: function () { return onNodeSelect(node.id); }
+	            }, node.label);
+	        }));
 	    }
 	    else {
 	        return react.exports.createElement("div", null, "Nothing loaded yet!");
@@ -23004,7 +23018,7 @@
 	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
 	    var tabBody = react.exports.createElement("div", null, "No assets here yet!");
 	    if (selectedTab === "Layers") {
-	        tabBody = makeVDom(props.tree, 1);
+	        tabBody = makeVDom(props.tree, props.selectedNode, props.onNodeSelect);
 	    }
 	    return react.exports.createElement("div", {
 	        className: "sidebar",
@@ -23017,8 +23031,9 @@
 
 	function App () {
 	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
-	    var _b = react.exports.useState(250), leftsidebarWidth = _b[0]; _b[1];
-	    var _c = react.exports.useState(50), menubarHeight = _c[0]; _c[1];
+	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
+	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
+	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
 	    react.exports.useEffect(function () {
 	        if (!conf) {
 	            // @ts-ignore
@@ -23026,8 +23041,9 @@
 	                .then(function (_a) {
 	                var config = _a.default;
 	                // TODO: Add better validation
-	                if (config && config.type && config.children) {
+	                if (config && config.type && config.children && config.id) {
 	                    setConf(config);
+	                    setSelectedConf(config.id);
 	                }
 	                else {
 	                    console.error("Invalid config");
@@ -23044,6 +23060,8 @@
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
 	        tree: conf,
+	        selectedNode: selectedConf,
+	        onNodeSelect: function (nodeid) { return setSelectedConf(nodeid); },
 	        width: leftsidebarWidth,
 	        height: window.innerHeight - menubarHeight
 	    });

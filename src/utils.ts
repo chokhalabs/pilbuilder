@@ -4,6 +4,7 @@ import { createElement as h } from 'react';
 type PropExprs = Record<string, number|boolean|string|{ expr: string }>;
 
 export interface Config {
+  id: string;
   type: "Group" | "Rect" | "Text";
   props: PropExprs|null; 
   children: Config[];

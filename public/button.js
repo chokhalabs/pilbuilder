@@ -1,9 +1,11 @@
 const config = {
   type: "Group",
+  id: "id1",
   props: null,
   children: [
     {
       type: "Rect",
+      id: "id2",
       props: {
         x: 0,
         y: 0,
@@ -15,6 +17,7 @@ const config = {
     },
     {
       type: "Text",
+      id: "id3",
       props: {
         x: 20,
         y: 15,

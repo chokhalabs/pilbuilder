@@ -37,6 +37,14 @@
   cursor: pointer;
 }
 
+.konvaroot .sidebar .sidebar-tree-item:hover {
+  background: #ccc;
+}
+
+.konvaroot .sidebar .sidebar-tree-item.selected {
+  font-weight: bold;
+}
+
 .konvaroot .stage {
   grid-row: 2/3;
 }

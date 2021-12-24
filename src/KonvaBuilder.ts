@@ -8,6 +8,7 @@ import Sidebar from "./Sidebar";
 
 export default function() {
   const [ conf, setConf ] = useState(null as Config | null);
+  const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
 
@@ -17,8 +18,9 @@ export default function() {
       import("http://localhost:3000/button.js")
         .then(({ default: config }) => {
             // TODO: Add better validation
-            if (config && config.type && config.children) {
+            if (config && config.type && config.children && config.id) {
               setConf(config);
+              setSelectedConf(config.id);
             } else {
               console.error("Invalid config");
             }
@@ -39,6 +41,8 @@ export default function() {
     Sidebar,
     { 
       tree: conf,
+      selectedNode: selectedConf,
+      onNodeSelect: (nodeid: string) => setSelectedConf(nodeid),
       width: leftsidebarWidth,
       height: window.innerHeight - menubarHeight
     } 
