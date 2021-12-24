@@ -22917,6 +22917,34 @@
 	  }));
 	});
 
+	/*! *****************************************************************************
+	Copyright (c) Microsoft Corporation.
+
+	Permission to use, copy, modify, and/or distribute this software for any
+	purpose with or without fee is hereby granted.
+
+	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+	PERFORMANCE OF THIS SOFTWARE.
+	***************************************************************************** */
+	var __assign = function () {
+	  __assign = Object.assign || function __assign(t) {
+	    for (var s, i = 1, n = arguments.length; i < n; i++) {
+	      s = arguments[i];
+
+	      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+	    }
+
+	    return t;
+	  };
+
+	  return __assign.apply(this, arguments);
+	};
+
 	var config = {
 	    type: "Group",
 	    props: null,
@@ -22945,35 +22973,28 @@
 	        }
 	    ]
 	};
+	function evaluateProps($props, propsExprs) {
+	    var evaluated = __assign({}, propsExprs);
+	    Object.keys(propsExprs).forEach(function (key) {
+	        var propval = propsExprs[key];
+	        if (typeof propval === "object") {
+	            evaluated[key] = eval(propval.expr);
+	        }
+	    });
+	    return evaluated;
+	}
 	function tranformToVDOM(config, $props) {
-	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child)); });
-	    return function ($props) {
-	        return react.exports.createElement(config.type, config.props, children);
+	    var props = null;
+	    if (config.props) {
+	        props = evaluateProps($props, config.props);
+	    }
+	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props)); });
+	    return function () {
+	        return react.exports.createElement(config.type, props, children);
 	    };
 	}
-	function Button (props) {
-	    var background = react.exports.createElement("Rect", {
-	        x: 0,
-	        y: 0,
-	        width: 150,
-	        height: 50,
-	        fill: "cornflowerblue"
-	    });
-	    var text = react.exports.createElement("Text", {
-	        x: 20,
-	        y: 15,
-	        text: props.title
-	    });
-	    return react.exports.createElement("Group", null, [
-	        background,
-	        text
-	    ]);
-	}
 
-	var BTn = react.exports.createElement(Button, { title: "Click here", size: "regular" });
-	console.log("Button: ", BTn);
-	var Btn = react.exports.createElement(tranformToVDOM(config));
-	console.log("Btn: ", Btn);
+	var Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
 	function App () {
 	    return (react.exports.createElement(Stage, {
 	        width: window.innerWidth,
@@ -22982,7 +23003,7 @@
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
-	        }, Btn)
+	        }, react.exports.createElement(Button))
 	    ]));
 	}
 

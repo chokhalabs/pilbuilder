@@ -49,32 +49,22 @@ function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   return evaluated;
 }
 
-function transformToRenderFcn(config: Config) {
-  return function($props: Record<string, any>) {
-    let props: PropExprs|null = null;
-    if (config.props) {
-      props = evaluateProps($props, config.props);
-    }
-    return h(
-      config.type, 
-      props,
-      []
-    );
-  }
-}
-
 export function tranformToVDOM(config: Config, $props: PropExprs): any {
+  let props: PropExprs|null = null;
+  if (config.props) {
+    props = evaluateProps($props, config.props);
+  }
   const children = config.children.map(child => h(tranformToVDOM(child, $props)));
-  return function($props: any) {
+  return function() {
     return h(
       config.type,
-      config.props, 
+      props, 
       children
     );
   }
 }
 
-export default function (props: { title: string; size: string; }) {
+function Button(props: { title: string; size: string; }) {
   const background = h(
     "Rect", 
     {
