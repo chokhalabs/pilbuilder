@@ -22976,23 +22976,25 @@
 	}
 
 	function makeVDom(config, step) {
-	    if (config && config.children) {
-	        var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
-	        return react.exports.createElement("div", {
-	            style: {
-	                paddingLeft: step * 10
-	            },
-	            className: "sidebar-tree-item"
-	        }, __spreadArray([
-	            config.type
-	        ], children, true));
-	    }
-	    else {
-	        return react.exports.createElement("div", null, "Nothing loaded yet!");
-	    }
+	    var children = config.children.map(function (child) { return makeVDom(child, step + 1); });
+	    return react.exports.createElement("div", {
+	        style: {
+	            paddingLeft: step * 10
+	        },
+	        className: "sidebar-tree-item"
+	    }, __spreadArray([
+	        config.type
+	    ], children, true));
 	}
 	function Tree (config) {
-	    return makeVDom(config, 0);
+	    // Check for null passed as props. React passes null props as an empty object.
+	    var isPropsNull = Object.keys(config).length === 0;
+	    if (isPropsNull) {
+	        return react.exports.createElement("div", null, "Nothing loaded yet!");
+	    }
+	    else {
+	        return makeVDom(config, 0);
+	    }
 	}
 
 	function App () {
