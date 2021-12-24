@@ -7684,7 +7684,7 @@
 	}
 
 	const glob$1 = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof WorkerGlobalScope !== 'undefined' ? self : {};
-	const Konva$3 = {
+	const Konva$2 = {
 	  _global: glob$1,
 	  version: '8.3.1',
 	  isBrowser: detectBrowser$1(),
@@ -7692,7 +7692,7 @@
 	  dblClickWindow: 400,
 
 	  getAngle(angle) {
-	    return Konva$3.angleDeg ? angle * PI_OVER_180$1 : angle;
+	    return Konva$2.angleDeg ? angle * PI_OVER_180$1 : angle;
 	  },
 
 	  enableTrace: false,
@@ -7716,11 +7716,11 @@
 	  dragButtons: [0, 1],
 
 	  isDragging() {
-	    return Konva$3['DD'].isDragging;
+	    return Konva$2['DD'].isDragging;
 	  },
 
 	  isDragReady() {
-	    return !!Konva$3['DD'].node;
+	    return !!Konva$2['DD'].node;
 	  },
 
 	  document: glob$1.document,
@@ -7731,10 +7731,10 @@
 
 	};
 	const _registerNode = NodeClass => {
-	  Konva$3[NodeClass.prototype.getClassName()] = NodeClass;
+	  Konva$2[NodeClass.prototype.getClassName()] = NodeClass;
 	};
 
-	Konva$3._injectGlobal(Konva$3);
+	Konva$2._injectGlobal(Konva$2);
 
 	class Transform {
 	  constructor(m = [1, 0, 0, 1, 0, 0]) {
@@ -8404,7 +8404,7 @@
 	  },
 
 	  _getRotation(radians) {
-	    return Konva$3.angleDeg ? Util.radToDeg(radians) : radians;
+	    return Konva$2.angleDeg ? Util.radToDeg(radians) : radians;
 	  },
 
 	  _capitalize(str) {
@@ -8420,7 +8420,7 @@
 	  },
 
 	  warn(str) {
-	    if (!Konva$3.showWarnings) {
+	    if (!Konva$2.showWarnings) {
 	      return;
 	    }
 
@@ -8600,7 +8600,7 @@
 	  return Math.round(val);
 	}
 	function getNumberValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      if (!Util._isNumber(val)) {
 	        Util.warn(_formatValue(val) + ' is a not valid value for "' + attr + '" attribute. The value should be a number.');
@@ -8611,7 +8611,7 @@
 	  }
 	}
 	function getNumberOrArrayOfNumbersValidator(noOfElements) {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      let isNumber = Util._isNumber(val);
 
@@ -8626,7 +8626,7 @@
 	  }
 	}
 	function getNumberOrAutoValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      var isNumber = Util._isNumber(val);
 
@@ -8641,7 +8641,7 @@
 	  }
 	}
 	function getStringValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      if (!Util._isString(val)) {
 	        Util.warn(_formatValue(val) + ' is a not valid value for "' + attr + '" attribute. The value should be a string.');
@@ -8652,7 +8652,7 @@
 	  }
 	}
 	function getStringOrGradientValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      const isString = Util._isString(val);
 
@@ -8667,7 +8667,7 @@
 	  }
 	}
 	function getNumberArrayValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      if (!Util._isArray(val)) {
 	        Util.warn(_formatValue(val) + ' is a not valid value for "' + attr + '" attribute. The value should be a array of numbers.');
@@ -8684,7 +8684,7 @@
 	  }
 	}
 	function getBooleanValidator() {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      var isBool = val === true || val === false;
 
@@ -8697,7 +8697,7 @@
 	  }
 	}
 	function getComponentValidator(components) {
-	  if (Konva$3.isUnminified) {
+	  if (Konva$2.isUnminified) {
 	    return function (val, attr) {
 	      if (!Util.isObject(val)) {
 	        Util.warn(_formatValue(val) + ' is a not valid value for "' + attr + '" attribute. The value should be an object with properties ' + components);
@@ -8902,7 +8902,7 @@
 	    this.canvas = canvas;
 	    this._context = canvas._canvas.getContext('2d');
 
-	    if (Konva$3.enableTrace) {
+	    if (Konva$2.enableTrace) {
 	      this.traceArr = [];
 
 	      this._enableTrace();
@@ -9492,7 +9492,7 @@
 	  var context = canvas.getContext('2d');
 
 	  _pixelRatio = function () {
-	    var devicePixelRatio = Konva$3._global.devicePixelRatio || 1,
+	    var devicePixelRatio = Konva$2._global.devicePixelRatio || 1,
 	        backingStoreRatio = context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
 	    return devicePixelRatio / backingStoreRatio;
 	  }();
@@ -9507,7 +9507,7 @@
 	    this.height = 0;
 	    this.isCache = false;
 	    var conf = config || {};
-	    var pixelRatio = conf.pixelRatio || Konva$3.pixelRatio || getDevicePixelRatio();
+	    var pixelRatio = conf.pixelRatio || Konva$2.pixelRatio || getDevicePixelRatio();
 	    this.pixelRatio = pixelRatio;
 	    this._canvas = Util.createCanvasElement();
 	    this._canvas.style.padding = '0';
@@ -9702,13 +9702,13 @@
 
 	      if (elem.dragStatus === 'dragging' || elem.dragStatus === 'stopped') {
 	        DD.justDragged = true;
-	        Konva$3._mouseListenClick = false;
-	        Konva$3._touchListenClick = false;
-	        Konva$3._pointerListenClick = false;
+	        Konva$2._mouseListenClick = false;
+	        Konva$2._touchListenClick = false;
+	        Konva$2._pointerListenClick = false;
 	        elem.dragStatus = 'stopped';
 	      }
 
-	      const drawNode = elem.node.getLayer() || elem.node instanceof Konva$3['Stage'] && elem.node;
+	      const drawNode = elem.node.getLayer() || elem.node instanceof Konva$2['Stage'] && elem.node;
 
 	      if (drawNode) {
 	        drawNode.batchDraw();
@@ -9734,7 +9734,7 @@
 
 	};
 
-	if (Konva$3.isBrowser) {
+	if (Konva$2.isBrowser) {
 	  window.addEventListener('mouseup', DD._endDragBefore, true);
 	  window.addEventListener('touchend', DD._endDragBefore, true);
 	  window.addEventListener('mousemove', DD._drag);
@@ -10326,7 +10326,7 @@
 	      }
 	    });
 
-	    var dragSkip = !skipDragCheck && !Konva$3.hitOnDragEnabled && layerUnderDrag;
+	    var dragSkip = !skipDragCheck && !Konva$2.hitOnDragEnabled && layerUnderDrag;
 	    return this.isListening() && this.isVisible() && !dragSkip;
 	  }
 
@@ -10933,7 +10933,7 @@
 	    m.reset();
 	    var x = this.x(),
 	        y = this.y(),
-	        rotation = Konva$3.getAngle(this.rotation()),
+	        rotation = Konva$2.getAngle(this.rotation()),
 	        scaleX = (_a = this.attrs.scaleX) !== null && _a !== void 0 ? _a : 1,
 	        scaleY = (_b = this.attrs.scaleY) !== null && _b !== void 0 ? _b : 1,
 	        skewX = this.attrs.skewX || 0,
@@ -11081,7 +11081,7 @@
 	    } else if (this.parent) {
 	      return this.parent.getDragDistance();
 	    } else {
-	      return Konva$3.dragDistance;
+	      return Konva$2.dragDistance;
 	    }
 	  }
 
@@ -11165,7 +11165,7 @@
 	  }
 
 	  _requestDraw() {
-	    if (Konva$3.autoDrawEnabled) {
+	    if (Konva$2.autoDrawEnabled) {
 	      const drawNode = this.getLayer() || this.getStage();
 	      drawNode === null || drawNode === void 0 ? void 0 : drawNode.batchDraw();
 	    }
@@ -11379,7 +11379,7 @@
 
 	    this.on('mousedown.konva touchstart.konva', function (evt) {
 	      var shouldCheckButton = evt.evt['button'] !== undefined;
-	      var canDrag = !shouldCheckButton || Konva$3.dragButtons.indexOf(evt.evt['button']) >= 0;
+	      var canDrag = !shouldCheckButton || Konva$2.dragButtons.indexOf(evt.evt['button']) >= 0;
 
 	      if (!canDrag) {
 	        return;
@@ -11471,12 +11471,12 @@
 	      obj.attrs.container = container;
 	    }
 
-	    if (!Konva$3[className]) {
+	    if (!Konva$2[className]) {
 	      Util.warn('Can not find a node with class name "' + className + '". Fallback to "Shape".');
 	      className = 'Shape';
 	    }
 
-	    const Class = Konva$3[className];
+	    const Class = Konva$2[className];
 	    no = new Class(obj.attrs);
 
 	    if (children) {
@@ -11957,7 +11957,7 @@
 	Factory.addGetterSetter(Container, 'clipFunc');
 
 	const Captures = new Map();
-	const SUPPORT_POINTER_EVENTS = Konva$3._global['PointerEvent'] !== undefined;
+	const SUPPORT_POINTER_EVENTS = Konva$2._global['PointerEvent'] !== undefined;
 	function getCapturedShape(pointerId) {
 	  return Captures.get(pointerId);
 	}
@@ -12076,7 +12076,7 @@
 	  const type = getEventType(eventType);
 
 	  if (type === 'pointer') {
-	    return Konva$3.pointerEventsEnabled && EVENTS_MAP.pointer;
+	    return Konva$2.pointerEventsEnabled && EVENTS_MAP.pointer;
 	  }
 
 	  if (type === 'touch') {
@@ -12339,7 +12339,7 @@
 	    });
 	    layer.draw();
 
-	    if (Konva$3.isBrowser) {
+	    if (Konva$2.isBrowser) {
 	      this.content.appendChild(layer.canvas._canvas);
 	    }
 
@@ -12371,7 +12371,7 @@
 	  }
 
 	  _bindContentEvents() {
-	    if (!Konva$3.isBrowser) {
+	    if (!Konva$2.isBrowser) {
 	      return;
 	    }
 
@@ -12426,7 +12426,7 @@
 
 	    var targetShape = this._getTargetShape(eventType);
 
-	    var eventsEnabled = !DD.isDragging || Konva$3.hitOnDragEnabled;
+	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
 
 	    if (targetShape && eventsEnabled) {
 	      targetShape._fireAndBubble(events.pointerout, {
@@ -12476,14 +12476,14 @@
 	    this._changedPointerPositions.forEach(pos => {
 	      var shape = this.getIntersection(pos);
 	      DD.justDragged = false;
-	      Konva$3['_' + eventType + 'ListenClick'] = true;
+	      Konva$2['_' + eventType + 'ListenClick'] = true;
 	      const hasShape = shape && shape.isListening();
 
 	      if (!hasShape) {
 	        return;
 	      }
 
-	      if (Konva$3.capturePointerEventsEnabled) {
+	      if (Konva$2.capturePointerEventsEnabled) {
 	        shape.setPointerCapture(pos.id);
 	      }
 
@@ -12525,7 +12525,7 @@
 	    }
 
 	    this.setPointersPositions(evt);
-	    var eventsEnabled = !DD.isDragging || Konva$3.hitOnDragEnabled;
+	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
 
 	    if (!eventsEnabled) {
 	      return;
@@ -12629,17 +12629,17 @@
 	      };
 	      let fireDblClick = false;
 
-	      if (Konva$3['_' + eventType + 'InDblClickWindow']) {
+	      if (Konva$2['_' + eventType + 'InDblClickWindow']) {
 	        fireDblClick = true;
 	        clearTimeout(this[eventType + 'DblTimeout']);
 	      } else if (!DD.justDragged) {
-	        Konva$3['_' + eventType + 'InDblClickWindow'] = true;
+	        Konva$2['_' + eventType + 'InDblClickWindow'] = true;
 	        clearTimeout(this[eventType + 'DblTimeout']);
 	      }
 
 	      this[eventType + 'DblTimeout'] = setTimeout(function () {
-	        Konva$3['_' + eventType + 'InDblClickWindow'] = false;
-	      }, Konva$3.dblClickWindow);
+	        Konva$2['_' + eventType + 'InDblClickWindow'] = false;
+	      }, Konva$2.dblClickWindow);
 
 	      if (shape && shape.isListening()) {
 	        triggeredOnShape = true;
@@ -12647,7 +12647,7 @@
 
 	        shape._fireAndBubble(events.pointerup, Object.assign({}, event));
 
-	        if (Konva$3['_' + eventType + 'ListenClick'] && clickStartShape && clickStartShape === shape) {
+	        if (Konva$2['_' + eventType + 'ListenClick'] && clickStartShape && clickStartShape === shape) {
 	          shape._fireAndBubble(events.pointerclick, Object.assign({}, event));
 
 	          if (fireDblClick && clickEndShape && clickEndShape === shape) {
@@ -12657,7 +12657,7 @@
 	      } else {
 	        this[eventType + 'ClickEndShape'] = null;
 
-	        if (Konva$3['_' + eventType + 'ListenClick']) {
+	        if (Konva$2['_' + eventType + 'ListenClick']) {
 	          this._fire(events.pointerclick, {
 	            evt: evt,
 	            target: this,
@@ -12686,7 +12686,7 @@
 	      });
 	    }
 
-	    Konva$3['_' + eventType + 'ListenClick'] = false;
+	    Konva$2['_' + eventType + 'ListenClick'] = false;
 
 	    if (evt.cancelable) {
 	      evt.preventDefault();
@@ -12821,7 +12821,7 @@
 	      height: this.height()
 	    });
 
-	    if (!Konva$3.isBrowser) {
+	    if (!Konva$2.isBrowser) {
 	      return;
 	    }
 
@@ -12974,7 +12974,7 @@
 	      if (pattern && pattern.setTransform) {
 	        const tr = new Transform();
 	        tr.translate(this.fillPatternX(), this.fillPatternY());
-	        tr.rotate(Konva$3.getAngle(this.fillPatternRotation()));
+	        tr.rotate(Konva$2.getAngle(this.fillPatternRotation()));
 	        tr.scale(this.fillPatternScaleX(), this.fillPatternScaleY());
 	        tr.translate(-1 * this.fillPatternOffsetX(), -1 * this.fillPatternOffsetY());
 	        const m = tr.getMatrix();
@@ -13857,7 +13857,7 @@
 
 	_registerNode(FastLayer);
 
-	class Group extends Container {
+	class Group$1 extends Container {
 	  _validateAdd(child) {
 	    var type = child.getType();
 
@@ -13867,9 +13867,9 @@
 	  }
 
 	}
-	Group.prototype.nodeType = 'Group';
+	Group$1.prototype.nodeType = 'Group';
 
-	_registerNode(Group);
+	_registerNode(Group$1);
 
 	var now = function () {
 	  if (glob$1.performance && glob$1.performance.now) {
@@ -14223,7 +14223,7 @@
 
 	    this.node = node;
 	    this._id = idCounter++;
-	    var layers = node.getLayer() || (node instanceof Konva$3['Stage'] ? node.getLayers() : null);
+	    var layers = node.getLayer() || (node instanceof Konva$2['Stage'] ? node.getLayers() : null);
 
 	    if (!layers) {
 	      Util.error('Tween constructor have `node` that is not in a layer. Please add node into layer first.');
@@ -14656,7 +14656,7 @@
 
 	};
 
-	const Konva$2 = Util._assign(Konva$3, {
+	const Konva$1 = Util._assign(Konva$2, {
 	  Util,
 	  Transform,
 	  Node,
@@ -14665,7 +14665,7 @@
 	  stages,
 	  Layer: Layer$1,
 	  FastLayer,
-	  Group,
+	  Group: Group$1,
 	  DD,
 	  Shape,
 	  shapes,
@@ -14678,7 +14678,7 @@
 
 	class Arc extends Shape {
 	  _sceneFunc(context) {
-	    var angle = Konva$3.getAngle(this.angle()),
+	    var angle = Konva$2.getAngle(this.angle()),
 	        clockwise = this.clockwise();
 	    context.beginPath();
 	    context.arc(0, 0, this.outerRadius(), 0, angle, clockwise);
@@ -15965,7 +15965,7 @@
 	    DOWN = 'down',
 	    LEFT$1 = 'left',
 	    attrChangeListLen$1 = ATTR_CHANGE_LIST$2.length;
-	class Label extends Group {
+	class Label extends Group$1 {
 	  constructor(config) {
 	    super(config);
 	    this.on('add.konva', function (evt) {
@@ -17360,7 +17360,7 @@
 	  'bottom-center': 180,
 	  'bottom-right': 135
 	};
-	const TOUCH_DEVICE = ('ontouchstart' in Konva$3._global);
+	const TOUCH_DEVICE = ('ontouchstart' in Konva$2._global);
 
 	function getCursor(anchorName, rad) {
 	  if (anchorName === 'rotater') {
@@ -17421,7 +17421,7 @@
 	  let snapped = newRotationRad;
 
 	  for (let i = 0; i < snaps.length; i++) {
-	    const angle = Konva$3.getAngle(snaps[i]);
+	    const angle = Konva$2.getAngle(snaps[i]);
 	    const absDiff = Math.abs(angle - newRotationRad) % (Math.PI * 2);
 	    const dif = Math.min(absDiff, Math.PI * 2 - absDiff);
 
@@ -17433,7 +17433,7 @@
 	  return snapped;
 	}
 
-	class Transformer extends Group {
+	class Transformer extends Group$1 {
 	  constructor(config) {
 	    super(config);
 	    this._transforming = false;
@@ -17593,7 +17593,7 @@
 	    var absPos = node.getAbsolutePosition(relative);
 	    var dx = rect.x * absScale.x - node.offsetX() * absScale.x;
 	    var dy = rect.y * absScale.y - node.offsetY() * absScale.y;
-	    const rotation = (Konva$3.getAngle(node.getAbsoluteRotation()) + Math.PI * 2) % (Math.PI * 2);
+	    const rotation = (Konva$2.getAngle(node.getAbsoluteRotation()) + Math.PI * 2) % (Math.PI * 2);
 	    const box = {
 	      x: absPos.x + dx * Math.cos(rotation) + dy * Math.sin(-rotation),
 	      y: absPos.y + dy * Math.cos(rotation) + dx * Math.sin(rotation),
@@ -17601,7 +17601,7 @@
 	      height: rect.height * absScale.y,
 	      rotation: rotation
 	    };
-	    return rotateAroundPoint(box, -Konva$3.getAngle(rot), {
+	    return rotateAroundPoint(box, -Konva$2.getAngle(rot), {
 	      x: 0,
 	      y: 0
 	    });
@@ -17647,7 +17647,7 @@
 	      });
 	    });
 	    const tr = new Transform();
-	    tr.rotate(-Konva$3.getAngle(this.rotation()));
+	    tr.rotate(-Konva$2.getAngle(this.rotation()));
 	    var minX, minY, maxX, maxY;
 	    totalPoints.forEach(function (point) {
 	      var transformed = tr.point(point);
@@ -17672,7 +17672,7 @@
 	      y: p.y,
 	      width: maxX - minX,
 	      height: maxY - minY,
-	      rotation: Konva$3.getAngle(this.rotation())
+	      rotation: Konva$2.getAngle(this.rotation())
 	    };
 	  }
 
@@ -17724,7 +17724,7 @@
 	      e.cancelBubble = true;
 	    });
 	    anchor.on('mouseenter', () => {
-	      var rad = Konva$3.getAngle(this.rotation());
+	      var rad = Konva$2.getAngle(this.rotation());
 	      var cursor = getCursor(name, rad);
 	      anchor.getStage().content && (anchor.getStage().content.style.cursor = cursor);
 	      this._cursorChange = true;
@@ -17859,9 +17859,9 @@
 	        delta -= Math.PI;
 	      }
 
-	      var oldRotation = Konva$3.getAngle(this.rotation());
+	      var oldRotation = Konva$2.getAngle(this.rotation());
 	      const newRotation = oldRotation + delta;
-	      const tol = Konva$3.getAngle(this.rotationSnapTolerance());
+	      const tol = Konva$2.getAngle(this.rotationSnapTolerance());
 	      const snappedRot = getSnap(this.rotationSnaps(), newRotation, tol);
 	      const diff = snappedRot - attrs.rotation;
 	      const shape = rotateAroundCenter(attrs, diff);
@@ -17992,7 +17992,7 @@
 	      y: y,
 	      width: width,
 	      height: height,
-	      rotation: Konva$3.getAngle(this.rotation())
+	      rotation: Konva$2.getAngle(this.rotation())
 	    }, e);
 	  }
 
@@ -18052,7 +18052,7 @@
 
 	    const allowNegativeScale = this.flipEnabled();
 	    var t = new Transform();
-	    t.rotate(Konva$3.getAngle(this.rotation()));
+	    t.rotate(Konva$2.getAngle(this.rotation()));
 
 	    if (this._movingAnchorName && newAttrs.width < 0 && this._movingAnchorName.indexOf('left') >= 0) {
 	      const offset = t.point({
@@ -18308,7 +18308,7 @@
 	      this.getStage().content && (this.getStage().content.style.cursor = '');
 	    }
 
-	    Group.prototype.destroy.call(this);
+	    Group$1.prototype.destroy.call(this);
 	    this.detach();
 
 	    this._removeEvents();
@@ -18377,7 +18377,7 @@
 	class Wedge extends Shape {
 	  _sceneFunc(context) {
 	    context.beginPath();
-	    context.arc(0, 0, this.radius(), 0, Konva$3.getAngle(this.angle()), this.clockwise());
+	    context.arc(0, 0, this.radius(), 0, Konva$2.getAngle(this.angle()), this.clockwise());
 	    context.lineTo(0, 0);
 	    context.closePath();
 	    context.fillStrokeShape(this);
@@ -19632,7 +19632,7 @@
 	};
 	Factory.addGetterSetter(Node, 'threshold', 0.5, getNumberValidator(), Factory.afterSetFilter);
 
-	const Konva$1 = Konva$2.Util._assign(Konva$2, {
+	Konva$1.Util._assign(Konva$1, {
 	  Arc,
 	  Arrow,
 	  Circle,
@@ -22621,7 +22621,7 @@
 	var NO_CONTEXT = {};
 	var UPDATE_SIGNAL = {}; // for react-spring capability
 
-	Konva$2.Node.prototype._applyProps = applyNodeProps;
+	Konva$1.Node.prototype._applyProps = applyNodeProps;
 	function appendInitialChild(parentInstance, child) {
 	  if (typeof child === 'string') {
 	    // Noop for string children of Text (eg <Text>foo</Text>)
@@ -22633,11 +22633,11 @@
 	  updatePicture(parentInstance);
 	}
 	function createInstance(type, props, internalInstanceHandle) {
-	  var NodeClass = Konva$2[type];
+	  var NodeClass = Konva$1[type];
 
 	  if (!NodeClass) {
 	    console.error('Konva has no node with the type ' + type + '. Group will be used instead. If you use minimal version of react-konva, just import required nodes into Konva: "import "konva/lib/shapes/' + type + '"  If you want to render DOM elements as part of canvas tree take a look into this demo: https://konvajs.github.io/docs/react/DOM_Portal.html');
-	    NodeClass = Konva$2.Group;
+	    NodeClass = Konva$1.Group;
 	  } // we need to split props into events and non events
 	  // we we can pass non events into constructor directly
 	  // that way the performance should be better
@@ -22863,7 +22863,7 @@
 	  };
 
 	  React.useLayoutEffect(function () {
-	    stage.current = new Konva$2.Stage({
+	    stage.current = new Konva$1.Stage({
 	      width: props.width,
 	      height: props.height,
 	      container: container.current
@@ -22874,7 +22874,7 @@
 	    fiberRef.current = KonvaRenderer.createContainer(stage.current);
 	    KonvaRenderer.updateContainer(props.children, fiberRef.current);
 	    return function () {
-	      if (!Konva$2.isBrowser) {
+	      if (!Konva$1.isBrowser) {
 	        return;
 	      }
 
@@ -22902,6 +22902,7 @@
 	};
 
 	var Layer = 'Layer';
+	var Group = 'Group';
 	var Rect = 'Rect';
 	var Text = 'Text';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
@@ -22919,21 +22920,38 @@
 	  }));
 	});
 
+	function Button (props) {
+	    var background = react.exports.createElement(Rect, {
+	        x: 0,
+	        y: 0,
+	        width: 150,
+	        height: 50,
+	        fill: "cornflowerblue"
+	    });
+	    var text = react.exports.createElement(Text, {
+	        x: 20,
+	        y: 15,
+	        text: props.title
+	    });
+	    return react.exports.createElement(Group, null, [
+	        background,
+	        text
+	    ]);
+	}
+
 	function App () {
-	  return /*#__PURE__*/react.exports.createElement(Stage, {
-	    width: window.innerWidth,
-	    height: window.innerHeight,
-	    className: "konvaroot"
-	  }, [/*#__PURE__*/react.exports.createElement(Layer, null, [/*#__PURE__*/react.exports.createElement(Text, {
-	    text: "Try clicking on the rect"
-	  }), /*#__PURE__*/react.exports.createElement(Rect, {
-	    x: 20,
-	    y: 20,
-	    width: 50,
-	    height: 50,
-	    fill: Konva$1.Util.getRandomColor(),
-	    shadowBlur: 5
-	  })])]);
+	    return (react.exports.createElement(Stage, {
+	        width: window.innerWidth,
+	        height: window.innerHeight,
+	        className: "konvaroot"
+	    }, [
+	        react.exports.createElement(Layer, {
+	            key: "layer1"
+	        }, react.exports.createElement(Button, {
+	            title: "Click here",
+	            size: "Regular"
+	        }))
+	    ]));
 	}
 
 	ReactDOM.render( /*#__PURE__*/React.createElement(React.StrictMode, null, /*#__PURE__*/React.createElement(App, null)), document.getElementById('root')); // If you want to start measuring performance in your app, pass a function
