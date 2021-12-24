@@ -38,7 +38,7 @@ export default function() {
     "div", 
     { 
       className: "tree", 
-      style: { width: leftsidebarWidth, height: window.innerHeight } 
+      style: { width: leftsidebarWidth, height: window.innerHeight - 50 } 
     },
     h(
       Tree,
@@ -48,7 +48,7 @@ export default function() {
   const stage = h(Stage, 
     {
       width: window.innerWidth - leftsidebarWidth,
-      height: window.innerHeight,
+      height: window.innerHeight - 50,
       className: "stage",
       key: "stage"
     },
@@ -62,6 +62,7 @@ export default function() {
     ]
   );
 
+  const menubar = h("div", { className: "menubar", key: "menubar" });
 
   return (
     h(
@@ -70,6 +71,7 @@ export default function() {
         className: "konvaroot"
       }, 
       [
+        menubar,
         tree,
         stage
       ]

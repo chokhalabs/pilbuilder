@@ -23025,11 +23025,11 @@
 	    }
 	    var tree = react.exports.createElement("div", {
 	        className: "tree",
-	        style: { width: leftsidebarWidth, height: window.innerHeight }
+	        style: { width: leftsidebarWidth, height: window.innerHeight - 50 }
 	    }, react.exports.createElement(Tree, conf));
 	    var stage = react.exports.createElement(Stage, {
 	        width: window.innerWidth - leftsidebarWidth,
-	        height: window.innerHeight,
+	        height: window.innerHeight - 50,
 	        className: "stage",
 	        key: "stage"
 	    }, [
@@ -23037,9 +23037,11 @@
 	            key: "layer1"
 	        }, content)
 	    ]);
+	    var menubar = react.exports.createElement("div", { className: "menubar", key: "menubar" });
 	    return (react.exports.createElement("div", {
 	        className: "konvaroot"
 	    }, [
+	        menubar,
 	        tree,
 	        stage
 	    ]));
