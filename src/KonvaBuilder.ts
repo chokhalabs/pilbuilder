@@ -11,16 +11,15 @@ export default function() {
 
   useEffect(() => {
     if (!conf) {
+      // @ts-ignore
       import("http://localhost:3000/button.js")
         .then(({ default: config }) => {
-            // const Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
             setConf(config);
           })
           .catch(err => {
           console.error("error when downloading button: ", err);
         })
     }
-    
   }, [conf]);
 
   let content = h("Text", { text: "Not loaded yet!" });

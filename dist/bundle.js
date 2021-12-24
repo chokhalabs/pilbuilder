@@ -22970,10 +22970,10 @@
 	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
 	    react.exports.useEffect(function () {
 	        if (!conf) {
+	            // @ts-ignore
 	            import('http://localhost:3000/button.js')
 	                .then(function (_a) {
 	                var config = _a.default;
-	                // const Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
 	                setConf(config);
 	            })
 	                .catch(function (err) {
