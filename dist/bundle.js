@@ -13857,7 +13857,7 @@
 
 	_registerNode(FastLayer);
 
-	class Group$1 extends Container {
+	class Group extends Container {
 	  _validateAdd(child) {
 	    var type = child.getType();
 
@@ -13867,9 +13867,9 @@
 	  }
 
 	}
-	Group$1.prototype.nodeType = 'Group';
+	Group.prototype.nodeType = 'Group';
 
-	_registerNode(Group$1);
+	_registerNode(Group);
 
 	var now = function () {
 	  if (glob$1.performance && glob$1.performance.now) {
@@ -14665,7 +14665,7 @@
 	  stages,
 	  Layer: Layer$1,
 	  FastLayer,
-	  Group: Group$1,
+	  Group,
 	  DD,
 	  Shape,
 	  shapes,
@@ -15965,7 +15965,7 @@
 	    DOWN = 'down',
 	    LEFT$1 = 'left',
 	    attrChangeListLen$1 = ATTR_CHANGE_LIST$2.length;
-	class Label extends Group$1 {
+	class Label extends Group {
 	  constructor(config) {
 	    super(config);
 	    this.on('add.konva', function (evt) {
@@ -16167,7 +16167,7 @@
 	Factory.addGetterSetter(Tag, 'pointerHeight', 0, getNumberValidator());
 	Factory.addGetterSetter(Tag, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
 
-	class Rect$1 extends Shape {
+	class Rect extends Shape {
 	  _sceneFunc(context) {
 	    var cornerRadius = this.cornerRadius(),
 	        width = this.width(),
@@ -16207,11 +16207,11 @@
 	  }
 
 	}
-	Rect$1.prototype.className = 'Rect';
+	Rect.prototype.className = 'Rect';
 
-	_registerNode(Rect$1);
+	_registerNode(Rect);
 
-	Factory.addGetterSetter(Rect$1, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
+	Factory.addGetterSetter(Rect, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
 
 	class RegularPolygon extends Shape {
 	  _sceneFunc(context) {
@@ -16584,7 +16584,7 @@
 	  return config;
 	}
 
-	class Text$1 extends Shape {
+	class Text extends Shape {
 	  constructor(config) {
 	    super(checkDefaultFill(config));
 	    this._partialTextX = 0;
@@ -16921,28 +16921,28 @@
 	  }
 
 	}
-	Text$1.prototype._fillFunc = _fillFunc$1;
-	Text$1.prototype._strokeFunc = _strokeFunc$1;
-	Text$1.prototype.className = TEXT_UPPER;
-	Text$1.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
+	Text.prototype._fillFunc = _fillFunc$1;
+	Text.prototype._strokeFunc = _strokeFunc$1;
+	Text.prototype.className = TEXT_UPPER;
+	Text.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
 
-	_registerNode(Text$1);
+	_registerNode(Text);
 
-	Factory.overWriteSetter(Text$1, 'width', getNumberOrAutoValidator());
-	Factory.overWriteSetter(Text$1, 'height', getNumberOrAutoValidator());
-	Factory.addGetterSetter(Text$1, 'fontFamily', 'Arial');
-	Factory.addGetterSetter(Text$1, 'fontSize', 12, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'fontStyle', NORMAL$1);
-	Factory.addGetterSetter(Text$1, 'fontVariant', NORMAL$1);
-	Factory.addGetterSetter(Text$1, 'padding', 0, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'align', LEFT);
-	Factory.addGetterSetter(Text$1, 'verticalAlign', TOP);
-	Factory.addGetterSetter(Text$1, 'lineHeight', 1, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'wrap', WORD);
-	Factory.addGetterSetter(Text$1, 'ellipsis', false, getBooleanValidator());
-	Factory.addGetterSetter(Text$1, 'letterSpacing', 0, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'text', '', getStringValidator());
-	Factory.addGetterSetter(Text$1, 'textDecoration', '');
+	Factory.overWriteSetter(Text, 'width', getNumberOrAutoValidator());
+	Factory.overWriteSetter(Text, 'height', getNumberOrAutoValidator());
+	Factory.addGetterSetter(Text, 'fontFamily', 'Arial');
+	Factory.addGetterSetter(Text, 'fontSize', 12, getNumberValidator());
+	Factory.addGetterSetter(Text, 'fontStyle', NORMAL$1);
+	Factory.addGetterSetter(Text, 'fontVariant', NORMAL$1);
+	Factory.addGetterSetter(Text, 'padding', 0, getNumberValidator());
+	Factory.addGetterSetter(Text, 'align', LEFT);
+	Factory.addGetterSetter(Text, 'verticalAlign', TOP);
+	Factory.addGetterSetter(Text, 'lineHeight', 1, getNumberValidator());
+	Factory.addGetterSetter(Text, 'wrap', WORD);
+	Factory.addGetterSetter(Text, 'ellipsis', false, getBooleanValidator());
+	Factory.addGetterSetter(Text, 'letterSpacing', 0, getNumberValidator());
+	Factory.addGetterSetter(Text, 'text', '', getStringValidator());
+	Factory.addGetterSetter(Text, 'textDecoration', '');
 
 	var EMPTY_STRING = '',
 	    NORMAL = 'normal';
@@ -17042,11 +17042,11 @@
 	  }
 
 	  setText(text) {
-	    return Text$1.prototype.setText.call(this, text);
+	    return Text.prototype.setText.call(this, text);
 	  }
 
 	  _getContextFont() {
-	    return Text$1.prototype._getContextFont.call(this);
+	    return Text.prototype._getContextFont.call(this);
 	  }
 
 	  _getTextSize(text) {
@@ -17433,7 +17433,7 @@
 	  return snapped;
 	}
 
-	class Transformer extends Group$1 {
+	class Transformer extends Group {
 	  constructor(config) {
 	    super(config);
 	    this._transforming = false;
@@ -17703,7 +17703,7 @@
 	  }
 
 	  _createAnchor(name) {
-	    var anchor = new Rect$1({
+	    var anchor = new Rect({
 	      stroke: 'rgb(0, 161, 255)',
 	      fill: 'white',
 	      strokeWidth: 1,
@@ -18308,7 +18308,7 @@
 	      this.getStage().content && (this.getStage().content.style.cursor = '');
 	    }
 
-	    Group$1.prototype.destroy.call(this);
+	    Group.prototype.destroy.call(this);
 	    this.detach();
 
 	    this._removeEvents();
@@ -19642,12 +19642,12 @@
 	  Tag,
 	  Line,
 	  Path,
-	  Rect: Rect$1,
+	  Rect,
 	  RegularPolygon,
 	  Ring,
 	  Sprite,
 	  Star,
-	  Text: Text$1,
+	  Text,
 	  TextPath,
 	  Transformer,
 	  Wedge,
@@ -22902,9 +22902,6 @@
 	};
 
 	var Layer = 'Layer';
-	var Group = 'Group';
-	var Rect = 'Rect';
-	var Text = 'Text';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
 	KonvaRenderer.injectIntoDevTools({
 	  findHostInstanceByFiber: function findHostInstanceByFiber() {
@@ -22920,25 +22917,63 @@
 	  }));
 	});
 
+	var config = {
+	    type: "Group",
+	    props: null,
+	    children: [
+	        {
+	            type: "Rect",
+	            props: {
+	                x: 0,
+	                y: 0,
+	                width: 150,
+	                height: 50,
+	                fill: "cornflowerblue"
+	            },
+	            children: []
+	        },
+	        {
+	            type: "Text",
+	            props: {
+	                x: 20,
+	                y: 15,
+	                text: {
+	                    expr: "$props.title"
+	                }
+	            },
+	            children: []
+	        }
+	    ]
+	};
+	function tranformToVDOM(config, $props) {
+	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child)); });
+	    return function ($props) {
+	        return react.exports.createElement(config.type, config.props, children);
+	    };
+	}
 	function Button (props) {
-	    var background = react.exports.createElement(Rect, {
+	    var background = react.exports.createElement("Rect", {
 	        x: 0,
 	        y: 0,
 	        width: 150,
 	        height: 50,
 	        fill: "cornflowerblue"
 	    });
-	    var text = react.exports.createElement(Text, {
+	    var text = react.exports.createElement("Text", {
 	        x: 20,
 	        y: 15,
 	        text: props.title
 	    });
-	    return react.exports.createElement(Group, null, [
+	    return react.exports.createElement("Group", null, [
 	        background,
 	        text
 	    ]);
 	}
 
+	var BTn = react.exports.createElement(Button, { title: "Click here", size: "regular" });
+	console.log("Button: ", BTn);
+	var Btn = react.exports.createElement(tranformToVDOM(config));
+	console.log("Btn: ", Btn);
 	function App () {
 	    return (react.exports.createElement(Stage, {
 	        width: window.innerWidth,
@@ -22947,10 +22982,7 @@
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
-	        }, react.exports.createElement(Button, {
-	            title: "Click here",
-	            size: "Regular"
-	        }))
+	        }, Btn)
 	    ]));
 	}
 

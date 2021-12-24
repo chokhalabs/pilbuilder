@@ -2,7 +2,14 @@ import { Stage, Layer } from 'react-konva';
 // import Konva from 'konva';
 import { createElement as h } from 'react';
 import "./App.css";
-import Button from "./Button";
+import Button, { tranformToVDOM, config } from "./Button";
+
+
+const BTn = h(Button, { title: "Click here", size: "regular" });
+console.log("Button: ", BTn);
+
+const Btn = h(tranformToVDOM(config, { title: "Click here", size: "Regular" }));
+console.log("Btn: ", Btn);
 
 export default function() {
   return (
@@ -17,13 +24,7 @@ export default function() {
           {
             key: "layer1"
           },
-          h(
-            Button,
-            {
-              title: "Click here",
-              size: "Regular" 
-            }
-          )
+          Btn
         )
       ]
     )
