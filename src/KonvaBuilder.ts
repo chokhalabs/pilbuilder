@@ -1,7 +1,7 @@
 import { Stage, Layer } from 'react-konva';
-// import Konva from 'konva';
 import { createElement as h, useEffect, useState } from 'react';
-import "./App.css";
+
+import "./KonvaBuilder.css";
 import { tranformToVDOM } from "./utils";
 
 
