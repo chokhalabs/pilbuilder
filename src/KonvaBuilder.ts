@@ -1,12 +1,34 @@
 import { Stage, Layer } from 'react-konva';
 // import Konva from 'konva';
-import { createElement as h } from 'react';
+import { createElement as h, useEffect, useState } from 'react';
 import "./App.css";
-import { tranformToVDOM, config } from "./Button";
+import { tranformToVDOM } from "./utils";
 
-const Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
 
 export default function() {
+
+  const [ conf, setConf ] = useState(null);
+
+  useEffect(() => {
+    if (!conf) {
+      import("http://localhost:3000/button.js")
+        .then(({ default: config }) => {
+            // const Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
+            setConf(config);
+          })
+          .catch(err => {
+          console.error("error when downloading button: ", err);
+        })
+    }
+    
+  }, [conf]);
+
+  let content = h("Text", { text: "Not loaded yet!" });
+
+  if (conf) {
+    content = h(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
+  }
+
   return (
     h(Stage, 
       {
@@ -19,7 +41,7 @@ export default function() {
           {
             key: "layer1"
           },
-          h(Button)
+          content
         )
       ]
     )

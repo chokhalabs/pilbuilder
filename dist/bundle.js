@@ -22945,34 +22945,6 @@
 	  return __assign.apply(this, arguments);
 	};
 
-	var config = {
-	    type: "Group",
-	    props: null,
-	    children: [
-	        {
-	            type: "Rect",
-	            props: {
-	                x: 0,
-	                y: 0,
-	                width: 150,
-	                height: 50,
-	                fill: "cornflowerblue"
-	            },
-	            children: []
-	        },
-	        {
-	            type: "Text",
-	            props: {
-	                x: 20,
-	                y: 15,
-	                text: {
-	                    expr: "$props.title"
-	                }
-	            },
-	            children: []
-	        }
-	    ]
-	};
 	function evaluateProps($props, propsExprs) {
 	    var evaluated = __assign({}, propsExprs);
 	    Object.keys(propsExprs).forEach(function (key) {
@@ -22994,8 +22966,25 @@
 	    };
 	}
 
-	var Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
 	function App () {
+	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
+	    react.exports.useEffect(function () {
+	        if (!conf) {
+	            import('http://localhost:3000/button.js')
+	                .then(function (_a) {
+	                var config = _a.default;
+	                // const Button = tranformToVDOM(config, { title: "Click here", size: "Regular" });
+	                setConf(config);
+	            })
+	                .catch(function (err) {
+	                console.error("error when downloading button: ", err);
+	            });
+	        }
+	    }, [conf]);
+	    var content = react.exports.createElement("Text", { text: "Not loaded yet!" });
+	    if (conf) {
+	        content = react.exports.createElement(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
+	    }
 	    return (react.exports.createElement(Stage, {
 	        width: window.innerWidth,
 	        height: window.innerHeight,
@@ -23003,7 +22992,7 @@
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
-	        }, react.exports.createElement(Button))
+	        }, content)
 	    ]));
 	}
 

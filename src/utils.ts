@@ -9,35 +9,6 @@ interface Config {
   children: Config[];
 }
 
-export const config: Config = {
-  type: "Group",
-  props: null,
-  children: [
-    {
-      type: "Rect",
-      props: {
-        x: 0,
-        y: 0,
-        width:  150,
-        height: 50,
-        fill: "cornflowerblue"
-      },
-      children: []
-    },
-    {
-      type: "Text",
-      props: {
-        x: 20,
-        y: 15,
-        text: {
-          expr: "$props.title"
-        }
-      },
-      children: []
-    }
-  ]
-};
-
 function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   const evaluated = {...propsExprs};
   Object.keys(propsExprs).forEach(key => {
@@ -62,33 +33,4 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
       children
     );
   }
-}
-
-function Button(props: { title: string; size: string; }) {
-  const background = h(
-    "Rect", 
-    {
-      x: 0,
-      y: 0,
-      width: 150,
-      height: 50,
-      fill: "cornflowerblue"
-    } 
-  );
-  const text = h(
-    "Text",
-    {
-      x: 20,
-      y: 15,
-      text: props.title
-    }
-  )
-  return h(
-    "Group",
-    null,
-    [
-      background,
-      text
-    ]
-  )
 }
