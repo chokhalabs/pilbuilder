@@ -23125,8 +23125,7 @@
 	            y: 0,
 	            width: 50,
 	            height: 50,
-	            stroke: "none",
-	            fill: "white"
+	            fill: "#c4c4c4"
 	        },
 	        children: []
 	    }
