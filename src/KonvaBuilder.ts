@@ -11,8 +11,7 @@ export default function() {
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ selectedasset, setSelectedAsset ] = useState(null as string | null);
-  // const [ assets ] = useState();
+  const [ components, setComponents ] = useState([] as Array<{ name: string; config: Config; }>);
 
   useEffect(() => {
     // @ts-ignore
@@ -21,6 +20,10 @@ export default function() {
           // TODO: Add better validation
           if (config && config.type && config.children && config.id) {
             setConf(config);
+            setComponents([{
+              name: "Button",
+              config
+            }])
             setSelectedConf(config.id);
           } else {
             console.error("Invalid config");
@@ -31,10 +34,10 @@ export default function() {
       })
   }, []);
 
-  function addNodeToStage(dropEv: { x: number; y: number; }, id: string|null) {
+  function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
     // Add it to existing confs to get new confs
-    console.log("dropping: ", id, selectedasset, dropEv);
+    console.log("dropping: ", dropEv);
     // setDraggingAsset(null);
     // The next render cycle will update the vdom to render both
   }
@@ -48,7 +51,7 @@ export default function() {
       onNodeSelect: (nodeid: string) => setSelectedConf(nodeid),
       width: leftsidebarWidth,
       height: window.innerHeight - menubarHeight,
-      onDragAsset: (assetid: string) => { console.log("arg: ", assetid); setSelectedAsset(assetid); console.log("set value: ", selectedasset); }
+      components
     } 
   );
 
@@ -59,7 +62,7 @@ export default function() {
       leftsidebarWidth,
       menubarHeight,
       conf,
-      onDrop: (ev) => { console.log("current asset: ", selectedasset); addNodeToStage(ev, selectedasset); }
+      onDrop: (ev) => addNodeToStage(ev)
     }
   );
 

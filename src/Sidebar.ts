@@ -1,4 +1,4 @@
-import { createElement as h, useState } from 'react';
+import React, { createElement as h, useState } from 'react';
 
 import { Config } from "./utils";
 
@@ -74,46 +74,25 @@ function Tabs(props: { tabs: string[], selectedTab: string; onSelect: (p: string
   )
 }
 
-function Assets(props: { onDragStart: (id: string) => void }) {
-  const config = {
-    type: "Group",
-    id: "id1",
-    props: null,
-    children: [
-      {
-        type: "Rect",
-        id: "id2",
-        props: {
-          x: 0,
-          y: 0,
-          width:  150,
-          height: 50,
-          fill: "cornflowerblue"
-        },
-        children: []
-      },
-      {
-        type: "Text",
-        id: "id3",
-        props: {
-          x: 20,
-          y: 15,
-          text: {
-            expr: "$props.title"
-          }
-        },
-        children: []
-      }
-    ]
-  };
+function Assets(props: { components: Array<{ config: Config; name: string; }> }) {
   return h(
     "div", 
     {
-      draggable: true,
-      onMouseDown: () => props.onDragStart(config.id),
-      onMouseUp: () => props.onDragStart("")
+      key: "assets"
     },
-    config.id 
+    props.components.map((component, i) => {
+      return h(
+        "div",
+        {
+          draggable: true,
+          onDragStart: (ev: React.DragEvent) => {
+            ev.dataTransfer.setData("text", component.name)
+          },
+          key: component.name
+        },
+        component.name
+      )
+    })
   );
 }
 
@@ -123,14 +102,14 @@ type SidebarProps = {
   height: number; 
   selectedNode: string; 
   onNodeSelect: (id: string) => void;
-  onDragAsset: (id: string) => void;
+  components: Array<{config: Config; name: string;}>
 };
 export default function(props: SidebarProps) {
 
   const [tabs, setTabs] = useState([ "Layers", "Assets" ]);
   const [selectedTab, setSelectedTab] = useState("Layers");
 
-  let tabBody: ReturnType<typeof h> = h(Assets, { onDragStart: props.onDragAsset, key: "tabbody" });
+  let tabBody: ReturnType<typeof h> = h(Assets, { components: props.components, key: "tabbody" });
   if (selectedTab === "Layers") {
     tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
   }

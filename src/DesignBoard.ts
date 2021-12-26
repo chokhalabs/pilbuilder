@@ -6,7 +6,7 @@ type Props = {
   leftsidebarWidth: number; 
   menubarHeight: number; 
   conf: Config | null; 
-  onDrop: (arg: { x: number; y: number; }) => void
+  onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void
 }
 
 export default function(props: Props) {
@@ -24,9 +24,11 @@ export default function(props: Props) {
       // console.log("Adding event listener")
       console.log("Adding eventlistener")
       canvas.addEventListener("drop", (ev) => {
+        const id = ev.dataTransfer?.getData("text");
         props.onDrop({
           x: ev.x,
-          y: ev.y
+          y: ev.y,
+          id: id
         });
       });
       canvas.addEventListener("dragover", (ev) => {

@@ -7729,47 +7729,22 @@
 	    }, tab); }));
 	}
 	function Assets(props) {
-	    var config = {
-	        type: "Group",
-	        id: "id1",
-	        props: null,
-	        children: [
-	            {
-	                type: "Rect",
-	                id: "id2",
-	                props: {
-	                    x: 0,
-	                    y: 0,
-	                    width: 150,
-	                    height: 50,
-	                    fill: "cornflowerblue"
-	                },
-	                children: []
-	            },
-	            {
-	                type: "Text",
-	                id: "id3",
-	                props: {
-	                    x: 20,
-	                    y: 15,
-	                    text: {
-	                        expr: "$props.title"
-	                    }
-	                },
-	                children: []
-	            }
-	        ]
-	    };
 	    return react.exports.createElement("div", {
-	        draggable: true,
-	        onMouseDown: function () { return props.onDragStart(config.id); },
-	        onMouseUp: function () { return props.onDragStart(""); }
-	    }, config.id);
+	        key: "assets"
+	    }, props.components.map(function (component, i) {
+	        return react.exports.createElement("div", {
+	            draggable: true,
+	            onDragStart: function (ev) {
+	                ev.dataTransfer.setData("text", component.name);
+	            },
+	            key: component.name
+	        }, component.name);
+	    }));
 	}
 	function Sidebar (props) {
 	    var _a = react.exports.useState(["Layers", "Assets"]), tabs = _a[0]; _a[1];
 	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
-	    var tabBody = react.exports.createElement(Assets, { onDragStart: props.onDragAsset, key: "tabbody" });
+	    var tabBody = react.exports.createElement(Assets, { components: props.components, key: "tabbody" });
 	    if (selectedTab === "Layers") {
 	        tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
 	    }
@@ -23086,9 +23061,12 @@
 	            // console.log("Adding event listener")
 	            console.log("Adding eventlistener");
 	            canvas.addEventListener("drop", function (ev) {
+	                var _a;
+	                var id = (_a = ev.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text");
 	                props.onDrop({
 	                    x: ev.x,
-	                    y: ev.y
+	                    y: ev.y,
+	                    id: id
 	                });
 	            });
 	            canvas.addEventListener("dragover", function (ev) {
@@ -23119,8 +23097,7 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState(null), selectedasset = _e[0], setSelectedAsset = _e[1];
-	    // const [ assets ] = useState();
+	    var _e = react.exports.useState([]), components = _e[0], setComponents = _e[1];
 	    react.exports.useEffect(function () {
 	        // @ts-ignore
 	        import('http://localhost:3000/button.js')
@@ -23129,6 +23106,10 @@
 	            // TODO: Add better validation
 	            if (config && config.type && config.children && config.id) {
 	                setConf(config);
+	                setComponents([{
+	                        name: "Button",
+	                        config: config
+	                    }]);
 	                setSelectedConf(config.id);
 	            }
 	            else {
@@ -23139,10 +23120,10 @@
 	            console.error("error when downloading button: ", err);
 	        });
 	    }, []);
-	    function addNodeToStage(dropEv, id) {
+	    function addNodeToStage(dropEv) {
 	        // Find the node
 	        // Add it to existing confs to get new confs
-	        console.log("dropping: ", id, selectedasset, dropEv);
+	        console.log("dropping: ", dropEv);
 	        // setDraggingAsset(null);
 	        // The next render cycle will update the vdom to render both
 	    }
@@ -23153,14 +23134,14 @@
 	        onNodeSelect: function (nodeid) { return setSelectedConf(nodeid); },
 	        width: leftsidebarWidth,
 	        height: window.innerHeight - menubarHeight,
-	        onDragAsset: function (assetid) { console.log("arg: ", assetid); setSelectedAsset(assetid); console.log("set value: ", selectedasset); }
+	        components: components
 	    });
 	    var designboard = react.exports.createElement(DesignBoard, {
 	        key: "designboard",
 	        leftsidebarWidth: leftsidebarWidth,
 	        menubarHeight: menubarHeight,
 	        conf: conf,
-	        onDrop: function (ev) { console.log("current asset: ", selectedasset); addNodeToStage(ev, selectedasset); }
+	        onDrop: function (ev) { return addNodeToStage(ev); }
 	    });
 	    var menubar = react.exports.createElement("div", { className: "menubar", key: "menubar" });
 	    return (react.exports.createElement("div", {
