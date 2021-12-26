@@ -3,6 +3,7 @@ import "./KonvaBuilder.css";
 import { Config } from "./utils";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
+import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf } from "./KonvaPrimitives";
 
 export default function() {
@@ -11,29 +12,7 @@ export default function() {
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
   const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf ]);
-
-  /*
-  useEffect(() => {
-    // @ts-ignore
-    import("http://localhost:3000/button.js")
-      .then(({ default: config }) => {
-          // TODO: Add better validation
-          if (config && config.type && config.children && config.id) {
-            // setConf(config);
-            setComponents([{
-              name: "Button",
-              config
-            }])
-            // setSelectedConf(config.id);
-          } else {
-            console.error("Invalid config");
-          }
-        })
-        .catch(err => {
-        console.error("error when downloading button: ", err);
-      })
-  }, []);
-  */
+  const [ selectedTool, setSelectedTool ] = useState("arrow");
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
@@ -72,7 +51,14 @@ export default function() {
     }
   );
 
-  const menubar = h("div", { className: "menubar", key: "menubar" });
+  const menubar = h(
+    Menubar, 
+    {
+      key: "menubar", 
+      selectedTool, 
+      onSelectTool: setSelectedTool 
+    }
+  );
 
   return (
     h(

@@ -23098,6 +23098,22 @@
 	    ]);
 	}
 
+	function Menubar (props) {
+	    function createClass(key) {
+	        return key === props.selectedTool ? "tool selected" : "tool";
+	    }
+	    return react.exports.createElement("div", {
+	        className: "menubar",
+	        key: "menubar"
+	    }, ["arrow", "rect", "text", "group"].map(function (it) {
+	        return react.exports.createElement("div", {
+	            key: it,
+	            className: createClass(it),
+	            onClick: function () { return props.onSelectTool(it); }
+	        }, it[0].toUpperCase());
+	    }));
+	}
+
 	var RectangleConf = {
 	    name: "Rectangle",
 	    config: {
@@ -23148,28 +23164,7 @@
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
 	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0]; _e[1];
-	    /*
-	    useEffect(() => {
-	      // @ts-ignore
-	      import("http://localhost:3000/button.js")
-	        .then(({ default: config }) => {
-	            // TODO: Add better validation
-	            if (config && config.type && config.children && config.id) {
-	              // setConf(config);
-	              setComponents([{
-	                name: "Button",
-	                config
-	              }])
-	              // setSelectedConf(config.id);
-	            } else {
-	              console.error("Invalid config");
-	            }
-	          })
-	          .catch(err => {
-	          console.error("error when downloading button: ", err);
-	        })
-	    }, []);
-	    */
+	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    function addNodeToStage(dropEv) {
 	        var _a;
 	        // Find the node
@@ -23199,7 +23194,11 @@
 	        components: components,
 	        onDrop: function (ev) { return addNodeToStage(ev); }
 	    });
-	    var menubar = react.exports.createElement("div", { className: "menubar", key: "menubar" });
+	    var menubar = react.exports.createElement(Menubar, {
+	        key: "menubar",
+	        selectedTool: selectedTool,
+	        onSelectTool: setSelectedTool
+	    });
 	    return (react.exports.createElement("div", {
 	        className: "konvaroot"
 	    }, [
