@@ -26,6 +26,16 @@ export default function() {
     // The next render cycle will update the vdom to render both
   }
 
+  function pointerType(selectedTool: string) {
+    if (selectedTool === "rect" || selectedTool === "group") {
+      return "crosshair";
+    } else if (selectedTool === "text") {
+      return "text";
+    } else {
+      return "default";
+    }
+  }
+
   const sidebar = h(
     Sidebar,
     { 
@@ -47,6 +57,7 @@ export default function() {
       menubarHeight,
       conf,
       components,
+      cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev)
     }
   );

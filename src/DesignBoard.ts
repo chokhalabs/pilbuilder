@@ -6,8 +6,9 @@ type Props = {
   leftsidebarWidth: number; 
   menubarHeight: number; 
   conf: Config | null; 
-  onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void,
-  components: Array<{ name: string }>
+  onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void;
+  components: Array<{ name: string }>;
+  cursor: string;
 }
 
 export default function(props: Props) {
@@ -54,7 +55,8 @@ export default function(props: Props) {
       width: window.innerWidth - props.leftsidebarWidth,
       height: window.innerHeight - props.menubarHeight,
       className: "stage",
-      key: "designboard"
+      key: "designboard",
+      style: { cursor: props.cursor } 
     },
     [
       h(Layer,

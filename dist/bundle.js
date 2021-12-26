@@ -23090,7 +23090,8 @@
 	        width: window.innerWidth - props.leftsidebarWidth,
 	        height: window.innerHeight - props.menubarHeight,
 	        className: "stage",
-	        key: "designboard"
+	        key: "designboard",
+	        style: { cursor: props.cursor }
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
@@ -23177,6 +23178,17 @@
 	        }
 	        // The next render cycle will update the vdom to render both
 	    }
+	    function pointerType(selectedTool) {
+	        if (selectedTool === "rect" || selectedTool === "group") {
+	            return "crosshair";
+	        }
+	        else if (selectedTool === "text") {
+	            return "text";
+	        }
+	        else {
+	            return "default";
+	        }
+	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
 	        key: "sidebar",
 	        tree: conf,
@@ -23192,6 +23204,7 @@
 	        menubarHeight: menubarHeight,
 	        conf: conf,
 	        components: components,
+	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); }
 	    });
 	    var menubar = react.exports.createElement(Menubar, {
