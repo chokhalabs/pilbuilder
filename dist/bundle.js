@@ -7677,6 +7677,161 @@
 
 	var ReactDOM = reactDom.exports;
 
+	function traversePreOrder(config, selectedNode) {
+	    var traversal = [];
+	    var stack = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
+	    while (stack.length > 0) {
+	        // Pop item out
+	        var node = stack.pop();
+	        if (!node) {
+	            throw new Error("No idea what happened!");
+	        }
+	        // Put it in traversal
+	        traversal.push(node);
+	        // Push right child and then left child
+	        for (var i = node.children.length - 1; i >= 0; i--) {
+	            stack.push({
+	                step: node.step + 1,
+	                label: node.children[i].type,
+	                children: node.children[i].children,
+	                id: node.children[i].id,
+	                selected: node.children[i].id === selectedNode
+	            });
+	        }
+	    }
+	    return traversal;
+	}
+	function makeNodeTree(config, selectedNode, onNodeSelect) {
+	    if (config) {
+	        var nodes = traversePreOrder(config, selectedNode);
+	        return react.exports.createElement("div", {
+	            key: "nodetree"
+	        }, nodes.map(function (node) {
+	            return react.exports.createElement("div", {
+	                key: node.id,
+	                className: node.selected ? "sidebar-tree-item selected" : "sidebar-tree-item",
+	                style: { paddingLeft: node.step * 10 },
+	                onClick: function () { return onNodeSelect(node.id); }
+	            }, node.label);
+	        }));
+	    }
+	    else {
+	        return react.exports.createElement("div", { key: "nodetree" }, "Nothing loaded yet!");
+	    }
+	}
+	function Tabs(props) {
+	    return react.exports.createElement("div", {
+	        className: "tabs"
+	    }, props.tabs.map(function (tab, i) { return react.exports.createElement("div", {
+	        key: "tab-" + i,
+	        className: props.selectedTab === tab ? "selected tab" : "tab",
+	        onClick: function () { return props.onSelect(tab); }
+	    }, tab); }));
+	}
+	function Assets(props) {
+	    var config = {
+	        type: "Group",
+	        id: "id1",
+	        props: null,
+	        children: [
+	            {
+	                type: "Rect",
+	                id: "id2",
+	                props: {
+	                    x: 0,
+	                    y: 0,
+	                    width: 150,
+	                    height: 50,
+	                    fill: "cornflowerblue"
+	                },
+	                children: []
+	            },
+	            {
+	                type: "Text",
+	                id: "id3",
+	                props: {
+	                    x: 20,
+	                    y: 15,
+	                    text: {
+	                        expr: "$props.title"
+	                    }
+	                },
+	                children: []
+	            }
+	        ]
+	    };
+	    return react.exports.createElement("div", {
+	        draggable: true,
+	        onMouseDown: function () { return props.onDragStart(config.id); },
+	        onMouseUp: function () { return props.onDragStart(""); }
+	    }, config.id);
+	}
+	function Sidebar (props) {
+	    var _a = react.exports.useState(["Layers", "Assets"]), tabs = _a[0]; _a[1];
+	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
+	    var tabBody = react.exports.createElement(Assets, { onDragStart: props.onDragAsset, key: "tabbody" });
+	    if (selectedTab === "Layers") {
+	        tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
+	    }
+	    return react.exports.createElement("div", {
+	        className: "sidebar",
+	        style: { width: props.width, height: props.height },
+	        key: "sidebar"
+	    }, [
+	        react.exports.createElement(Tabs, { tabs: tabs, selectedTab: selectedTab, onSelect: function (tab) { return setSelectedTab(tab); }, key: "tabs" }),
+	        tabBody
+	    ]);
+	}
+
+	/*! *****************************************************************************
+	Copyright (c) Microsoft Corporation.
+
+	Permission to use, copy, modify, and/or distribute this software for any
+	purpose with or without fee is hereby granted.
+
+	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+	PERFORMANCE OF THIS SOFTWARE.
+	***************************************************************************** */
+	var __assign = function () {
+	  __assign = Object.assign || function __assign(t) {
+	    for (var s, i = 1, n = arguments.length; i < n; i++) {
+	      s = arguments[i];
+
+	      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+	    }
+
+	    return t;
+	  };
+
+	  return __assign.apply(this, arguments);
+	};
+
+	function evaluateProps($props, propsExprs) {
+	    var evaluated = __assign({}, propsExprs);
+	    Object.keys(propsExprs).forEach(function (key) {
+	        var propval = propsExprs[key];
+	        if (typeof propval === "object") {
+	            evaluated[key] = eval(propval.expr);
+	        }
+	    });
+	    return evaluated;
+	}
+	function tranformToVDOM(config, $props) {
+	    var props = null;
+	    if (config.props) {
+	        props = evaluateProps($props, config.props);
+	    }
+	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
+	    return function () {
+	        return react.exports.createElement(config.type, __assign(__assign({}, props), { draggable: true }), children);
+	    };
+	}
+
 	var PI_OVER_180$1 = Math.PI / 180;
 
 	function detectBrowser$1() {
@@ -16584,7 +16739,7 @@
 	  return config;
 	}
 
-	class Text extends Shape {
+	class Text$1 extends Shape {
 	  constructor(config) {
 	    super(checkDefaultFill(config));
 	    this._partialTextX = 0;
@@ -16921,28 +17076,28 @@
 	  }
 
 	}
-	Text.prototype._fillFunc = _fillFunc$1;
-	Text.prototype._strokeFunc = _strokeFunc$1;
-	Text.prototype.className = TEXT_UPPER;
-	Text.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
+	Text$1.prototype._fillFunc = _fillFunc$1;
+	Text$1.prototype._strokeFunc = _strokeFunc$1;
+	Text$1.prototype.className = TEXT_UPPER;
+	Text$1.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
 
-	_registerNode(Text);
+	_registerNode(Text$1);
 
-	Factory.overWriteSetter(Text, 'width', getNumberOrAutoValidator());
-	Factory.overWriteSetter(Text, 'height', getNumberOrAutoValidator());
-	Factory.addGetterSetter(Text, 'fontFamily', 'Arial');
-	Factory.addGetterSetter(Text, 'fontSize', 12, getNumberValidator());
-	Factory.addGetterSetter(Text, 'fontStyle', NORMAL$1);
-	Factory.addGetterSetter(Text, 'fontVariant', NORMAL$1);
-	Factory.addGetterSetter(Text, 'padding', 0, getNumberValidator());
-	Factory.addGetterSetter(Text, 'align', LEFT);
-	Factory.addGetterSetter(Text, 'verticalAlign', TOP);
-	Factory.addGetterSetter(Text, 'lineHeight', 1, getNumberValidator());
-	Factory.addGetterSetter(Text, 'wrap', WORD);
-	Factory.addGetterSetter(Text, 'ellipsis', false, getBooleanValidator());
-	Factory.addGetterSetter(Text, 'letterSpacing', 0, getNumberValidator());
-	Factory.addGetterSetter(Text, 'text', '', getStringValidator());
-	Factory.addGetterSetter(Text, 'textDecoration', '');
+	Factory.overWriteSetter(Text$1, 'width', getNumberOrAutoValidator());
+	Factory.overWriteSetter(Text$1, 'height', getNumberOrAutoValidator());
+	Factory.addGetterSetter(Text$1, 'fontFamily', 'Arial');
+	Factory.addGetterSetter(Text$1, 'fontSize', 12, getNumberValidator());
+	Factory.addGetterSetter(Text$1, 'fontStyle', NORMAL$1);
+	Factory.addGetterSetter(Text$1, 'fontVariant', NORMAL$1);
+	Factory.addGetterSetter(Text$1, 'padding', 0, getNumberValidator());
+	Factory.addGetterSetter(Text$1, 'align', LEFT);
+	Factory.addGetterSetter(Text$1, 'verticalAlign', TOP);
+	Factory.addGetterSetter(Text$1, 'lineHeight', 1, getNumberValidator());
+	Factory.addGetterSetter(Text$1, 'wrap', WORD);
+	Factory.addGetterSetter(Text$1, 'ellipsis', false, getBooleanValidator());
+	Factory.addGetterSetter(Text$1, 'letterSpacing', 0, getNumberValidator());
+	Factory.addGetterSetter(Text$1, 'text', '', getStringValidator());
+	Factory.addGetterSetter(Text$1, 'textDecoration', '');
 
 	var EMPTY_STRING = '',
 	    NORMAL = 'normal';
@@ -17042,11 +17197,11 @@
 	  }
 
 	  setText(text) {
-	    return Text.prototype.setText.call(this, text);
+	    return Text$1.prototype.setText.call(this, text);
 	  }
 
 	  _getContextFont() {
-	    return Text.prototype._getContextFont.call(this);
+	    return Text$1.prototype._getContextFont.call(this);
 	  }
 
 	  _getTextSize(text) {
@@ -19647,7 +19802,7 @@
 	  Ring,
 	  Sprite,
 	  Star,
-	  Text,
+	  Text: Text$1,
 	  TextPath,
 	  Transformer,
 	  Wedge,
@@ -22902,6 +23057,7 @@
 	};
 
 	var Layer = 'Layer';
+	var Text = 'Text';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
 	KonvaRenderer.injectIntoDevTools({
 	  findHostInstanceByFiber: function findHostInstanceByFiber() {
@@ -22917,115 +23073,44 @@
 	  }));
 	});
 
-	/*! *****************************************************************************
-	Copyright (c) Microsoft Corporation.
-
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with or without fee is hereby granted.
-
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-	PERFORMANCE OF THIS SOFTWARE.
-	***************************************************************************** */
-	var __assign = function () {
-	  __assign = Object.assign || function __assign(t) {
-	    for (var s, i = 1, n = arguments.length; i < n; i++) {
-	      s = arguments[i];
-
-	      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+	function DesignBoard (props) {
+	    var content = react.exports.createElement(Text, { text: "Not loaded yet!" });
+	    if (props.conf) {
+	        content = react.exports.createElement(tranformToVDOM(props.conf, { title: "Click here", size: "Regular" }));
 	    }
-
-	    return t;
-	  };
-
-	  return __assign.apply(this, arguments);
-	};
-
-	function evaluateProps($props, propsExprs) {
-	    var evaluated = __assign({}, propsExprs);
-	    Object.keys(propsExprs).forEach(function (key) {
-	        var propval = propsExprs[key];
-	        if (typeof propval === "object") {
-	            evaluated[key] = eval(propval.expr);
-	        }
-	    });
-	    return evaluated;
-	}
-	function tranformToVDOM(config, $props) {
-	    var props = null;
-	    if (config.props) {
-	        props = evaluateProps($props, config.props);
-	    }
-	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props)); });
-	    return function () {
-	        return react.exports.createElement(config.type, props, children);
-	    };
-	}
-
-	function traversePreOrder(config, selectedNode) {
-	    var traversal = [];
-	    var stack = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
-	    while (stack.length > 0) {
-	        // Pop item out
-	        var node = stack.pop();
-	        if (!node) {
-	            throw new Error("No idea what happened!");
-	        }
-	        // Put it in traversal
-	        traversal.push(node);
-	        // Push right child and then left child
-	        for (var i = node.children.length - 1; i >= 0; i--) {
-	            stack.push({
-	                step: node.step + 1,
-	                label: node.children[i].type,
-	                children: node.children[i].children,
-	                id: node.children[i].id,
-	                selected: node.children[i].id === selectedNode
+	    var stageNode = react.exports.useRef(null);
+	    react.exports.useEffect(function () {
+	        if (stageNode.current) {
+	            var root = stageNode.current;
+	            var canvas = root.children[0].canvas._canvas;
+	            // console.log("Adding event listener")
+	            console.log("Adding eventlistener");
+	            canvas.addEventListener("drop", function (ev) {
+	                props.onDrop({
+	                    x: ev.x,
+	                    y: ev.y
+	                });
+	            });
+	            canvas.addEventListener("dragover", function (ev) {
+	                // console.log("Dragover: ", ev)
+	                ev.stopPropagation();
+	                ev.preventDefault();
 	            });
 	        }
-	    }
-	    return traversal;
-	}
-	function makeVDom(config, selectedNode, onNodeSelect) {
-	    if (config) {
-	        var nodes = traversePreOrder(config, selectedNode);
-	        return react.exports.createElement("div", null, nodes.map(function (node) {
-	            return react.exports.createElement("div", {
-	                className: node.selected ? "sidebar-tree-item selected" : "sidebar-tree-item",
-	                style: { paddingLeft: node.step * 10 },
-	                onClick: function () { return onNodeSelect(node.id); }
-	            }, node.label);
-	        }));
-	    }
-	    else {
-	        return react.exports.createElement("div", null, "Nothing loaded yet!");
-	    }
-	}
-	function Tabs(props) {
-	    return react.exports.createElement("div", {
-	        className: "tabs"
-	    }, props.tabs.map(function (tab) { return react.exports.createElement("div", {
-	        className: props.selectedTab === tab ? "selected tab" : "tab",
-	        onClick: function () { return props.onSelect(tab); }
-	    }, tab); }));
-	}
-	function Sidebar (props) {
-	    var _a = react.exports.useState(["Layers", "Assets"]), tabs = _a[0]; _a[1];
-	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
-	    var tabBody = react.exports.createElement("div", null, "No assets here yet!");
-	    if (selectedTab === "Layers") {
-	        tabBody = makeVDom(props.tree, props.selectedNode, props.onNodeSelect);
-	    }
-	    return react.exports.createElement("div", {
-	        className: "sidebar",
-	        style: { width: props.width, height: props.height }
+	        else {
+	            console.error("Could not attach drop listener");
+	        }
+	    }, [stageNode]);
+	    return react.exports.createElement(Stage, {
+	        ref: stageNode,
+	        width: window.innerWidth - props.leftsidebarWidth,
+	        height: window.innerHeight - props.menubarHeight,
+	        className: "stage",
+	        key: "designboard"
 	    }, [
-	        react.exports.createElement(Tabs, { tabs: tabs, selectedTab: selectedTab, onSelect: function (tab) { return setSelectedTab(tab); } }),
-	        tabBody
+	        react.exports.createElement(Layer, {
+	            key: "layer1"
+	        }, content)
 	    ]);
 	}
 
@@ -23034,54 +23119,56 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
+	    var _e = react.exports.useState(null), selectedasset = _e[0], setSelectedAsset = _e[1];
+	    // const [ assets ] = useState();
 	    react.exports.useEffect(function () {
-	        if (!conf) {
-	            // @ts-ignore
-	            import('http://localhost:3000/button.js')
-	                .then(function (_a) {
-	                var config = _a.default;
-	                // TODO: Add better validation
-	                if (config && config.type && config.children && config.id) {
-	                    setConf(config);
-	                    setSelectedConf(config.id);
-	                }
-	                else {
-	                    console.error("Invalid config");
-	                }
-	            })
-	                .catch(function (err) {
-	                console.error("error when downloading button: ", err);
-	            });
-	        }
-	    }, [conf]);
-	    var content = react.exports.createElement("Text", { text: "Not loaded yet!" });
-	    if (conf) {
-	        content = react.exports.createElement(tranformToVDOM(conf, { title: "Click here", size: "Regular" }));
+	        // @ts-ignore
+	        import('http://localhost:3000/button.js')
+	            .then(function (_a) {
+	            var config = _a.default;
+	            // TODO: Add better validation
+	            if (config && config.type && config.children && config.id) {
+	                setConf(config);
+	                setSelectedConf(config.id);
+	            }
+	            else {
+	                console.error("Invalid config");
+	            }
+	        })
+	            .catch(function (err) {
+	            console.error("error when downloading button: ", err);
+	        });
+	    }, []);
+	    function addNodeToStage(dropEv, id) {
+	        // Find the node
+	        // Add it to existing confs to get new confs
+	        console.log("dropping: ", id, selectedasset, dropEv);
+	        // setDraggingAsset(null);
+	        // The next render cycle will update the vdom to render both
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
+	        key: "sidebar",
 	        tree: conf,
 	        selectedNode: selectedConf,
 	        onNodeSelect: function (nodeid) { return setSelectedConf(nodeid); },
 	        width: leftsidebarWidth,
-	        height: window.innerHeight - menubarHeight
-	    });
-	    var stage = react.exports.createElement(Stage, {
-	        width: window.innerWidth - leftsidebarWidth,
 	        height: window.innerHeight - menubarHeight,
-	        className: "stage",
-	        key: "stage"
-	    }, [
-	        react.exports.createElement(Layer, {
-	            key: "layer1"
-	        }, content)
-	    ]);
+	        onDragAsset: function (assetid) { console.log("arg: ", assetid); setSelectedAsset(assetid); console.log("set value: ", selectedasset); }
+	    });
+	    var designboard = react.exports.createElement(DesignBoard, {
+	        key: "designboard",
+	        leftsidebarWidth: leftsidebarWidth,
+	        menubarHeight: menubarHeight,
+	        conf: conf,
+	        onDrop: function (ev) { console.log("current asset: ", selectedasset); addNodeToStage(ev, selectedasset); }
+	    });
 	    var menubar = react.exports.createElement("div", { className: "menubar", key: "menubar" });
 	    return (react.exports.createElement("div", {
 	        className: "konvaroot"
 	    }, [
 	        menubar,
 	        sidebar,
-	        stage
+	        designboard
 	    ]));
 	}
 

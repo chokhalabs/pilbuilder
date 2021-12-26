@@ -26,11 +26,14 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
   if (config.props) {
     props = evaluateProps($props, config.props);
   }
-  const children = config.children.map(child => h(tranformToVDOM(child, $props)));
+  const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
   return function() {
     return h(
       config.type,
-      props, 
+      {
+        ...props,
+        draggable: true
+      }, 
       children
     );
   }
