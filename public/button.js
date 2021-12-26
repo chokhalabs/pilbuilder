@@ -1,7 +1,11 @@
 const config = {
   type: "Group",
   id: "id1",
-  props: null,
+  props: {
+    x: 0,
+    y: 0,
+    draggable: true
+  },
   children: [
     {
       type: "Rect",

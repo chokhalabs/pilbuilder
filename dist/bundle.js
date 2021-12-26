@@ -7803,7 +7803,7 @@
 	    }
 	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
 	    return function () {
-	        return react.exports.createElement(config.type, __assign(__assign({}, props), { draggable: true }), children);
+	        return react.exports.createElement(config.type, props, children);
 	    };
 	}
 

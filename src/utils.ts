@@ -30,10 +30,7 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
   return function() {
     return h(
       config.type,
-      {
-        ...props,
-        draggable: true
-      }, 
+      props,
       children
     );
   }
