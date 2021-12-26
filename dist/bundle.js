@@ -23054,31 +23054,37 @@
 	        content = react.exports.createElement(tranformToVDOM(props.conf, { title: "Click here", size: "Regular" }));
 	    }
 	    var stageNode = react.exports.useRef(null);
+	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    react.exports.useEffect(function () {
 	        if (stageNode.current) {
 	            var root = stageNode.current;
 	            var canvas = root.children[0].canvas._canvas;
 	            // console.log("Adding event listener")
+	            if (!dropListener) {
+	                canvas.addEventListener("dragover", function (ev) {
+	                    // console.log("Dragover: ", ev)
+	                    ev.stopPropagation();
+	                    ev.preventDefault();
+	                });
+	            }
 	            console.log("Adding eventlistener");
-	            canvas.addEventListener("drop", function (ev) {
-	                var _a;
-	                var id = (_a = ev.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text");
+	            canvas.removeEventListener("drop", dropListener === null || dropListener === void 0 ? void 0 : dropListener.listener);
+	            var newDropListener = function (ev) {
+	                var _a, _b, _c, _d;
+	                var id = (_b = (_a = ev === null || ev === void 0 ? void 0 : ev.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text")) !== null && _b !== void 0 ? _b : "event not found";
 	                props.onDrop({
-	                    x: ev.x,
-	                    y: ev.y,
+	                    x: (_c = ev === null || ev === void 0 ? void 0 : ev.x) !== null && _c !== void 0 ? _c : 10,
+	                    y: (_d = ev === null || ev === void 0 ? void 0 : ev.y) !== null && _d !== void 0 ? _d : 10,
 	                    id: id
 	                });
-	            });
-	            canvas.addEventListener("dragover", function (ev) {
-	                // console.log("Dragover: ", ev)
-	                ev.stopPropagation();
-	                ev.preventDefault();
-	            });
+	            };
+	            setDropListener({ listener: newDropListener });
+	            canvas.addEventListener("drop", newDropListener);
 	        }
 	        else {
 	            console.error("Could not attach drop listener");
 	        }
-	    }, [stageNode]);
+	    }, [stageNode, props.components]);
 	    return react.exports.createElement(Stage, {
 	        ref: stageNode,
 	        width: window.innerWidth - props.leftsidebarWidth,
@@ -23105,12 +23111,12 @@
 	            var config = _a.default;
 	            // TODO: Add better validation
 	            if (config && config.type && config.children && config.id) {
-	                setConf(config);
+	                // setConf(config);
 	                setComponents([{
 	                        name: "Button",
 	                        config: config
 	                    }]);
-	                setSelectedConf(config.id);
+	                // setSelectedConf(config.id);
 	            }
 	            else {
 	                console.error("Invalid config");
@@ -23121,10 +23127,12 @@
 	        });
 	    }, []);
 	    function addNodeToStage(dropEv) {
+	        var _a;
 	        // Find the node
+	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
-	        console.log("dropping: ", dropEv);
-	        // setDraggingAsset(null);
+	        console.log("dropping: ", dropEv, component);
+	        setConf((_a = component === null || component === void 0 ? void 0 : component.config) !== null && _a !== void 0 ? _a : null);
 	        // The next render cycle will update the vdom to render both
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
@@ -23141,6 +23149,7 @@
 	        leftsidebarWidth: leftsidebarWidth,
 	        menubarHeight: menubarHeight,
 	        conf: conf,
+	        components: components,
 	        onDrop: function (ev) { return addNodeToStage(ev); }
 	    });
 	    var menubar = react.exports.createElement("div", { className: "menubar", key: "menubar" });

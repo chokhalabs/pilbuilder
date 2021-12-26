@@ -19,12 +19,12 @@ export default function() {
       .then(({ default: config }) => {
           // TODO: Add better validation
           if (config && config.type && config.children && config.id) {
-            setConf(config);
+            // setConf(config);
             setComponents([{
               name: "Button",
               config
             }])
-            setSelectedConf(config.id);
+            // setSelectedConf(config.id);
           } else {
             console.error("Invalid config");
           }
@@ -36,9 +36,10 @@ export default function() {
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
+    const component = components.find(cmp => cmp.name === dropEv.id);
     // Add it to existing confs to get new confs
-    console.log("dropping: ", dropEv);
-    // setDraggingAsset(null);
+    console.log("dropping: ", dropEv, component);
+    setConf(component?.config ?? null);
     // The next render cycle will update the vdom to render both
   }
 
@@ -62,6 +63,7 @@ export default function() {
       leftsidebarWidth,
       menubarHeight,
       conf,
+      components,
       onDrop: (ev) => addNodeToStage(ev)
     }
   );
