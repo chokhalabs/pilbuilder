@@ -10,6 +10,11 @@ export interface Config {
   children: Config[];
 }
 
+export interface Component {
+  name: string;
+  config: Config;
+}
+
 function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   const evaluated = {...propsExprs};
   Object.keys(propsExprs).forEach(key => {

@@ -43,8 +43,6 @@ export default function(props: Props) {
       };
       setDropListener({ listener: newDropListener });
       canvas.addEventListener("drop", newDropListener);
-      
-      
     } else {
       console.error("Could not attach drop listener");
     }

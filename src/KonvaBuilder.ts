@@ -1,18 +1,18 @@
-import { Stage, Layer } from 'react-konva';
 import { createElement as h, useEffect, useState } from 'react';
-
 import "./KonvaBuilder.css";
 import { Config } from "./utils";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
+import { RectangleConf, GroupConf, TextConf } from "./KonvaPrimitives";
 
 export default function() {
   const [ conf, setConf ] = useState(null as Config | null);
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ components, setComponents ] = useState([] as Array<{ name: string; config: Config; }>);
+  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf ]);
 
+  /*
   useEffect(() => {
     // @ts-ignore
     import("http://localhost:3000/button.js")
@@ -33,13 +33,17 @@ export default function() {
         console.error("error when downloading button: ", err);
       })
   }, []);
+  */
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
     const component = components.find(cmp => cmp.name === dropEv.id);
     // Add it to existing confs to get new confs
     console.log("dropping: ", dropEv, component);
-    setConf(component?.config ?? null);
+    if (component?.config) {
+      setConf(component.config ?? null);
+      setSelectedConf(component.config.id);
+    }
     // The next render cycle will update the vdom to render both
   }
 

@@ -23098,41 +23098,88 @@
 	    ]);
 	}
 
+	var RectangleConf = {
+	    name: "Rectangle",
+	    config: {
+	        type: "Rect",
+	        id: "rectroot",
+	        props: {
+	            x: 0,
+	            y: 0,
+	            width: 50,
+	            height: 50,
+	            stroke: "none",
+	            fill: "white"
+	        },
+	        children: []
+	    }
+	};
+	var TextConf = {
+	    name: "Text",
+	    config: {
+	        type: "Text",
+	        id: "textroot",
+	        props: {
+	            x: 0,
+	            y: 0,
+	            text: "text"
+	        },
+	        children: []
+	    }
+	};
+	var GroupConf = {
+	    name: "Group",
+	    config: {
+	        type: "Group",
+	        id: "grouproot",
+	        props: {
+	            x: 0,
+	            y: 0,
+	            width: 100,
+	            height: 100
+	        },
+	        children: []
+	    }
+	};
+
 	function App () {
 	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([]), components = _e[0], setComponents = _e[1];
-	    react.exports.useEffect(function () {
-	        // @ts-ignore
-	        import('http://localhost:3000/button.js')
-	            .then(function (_a) {
-	            var config = _a.default;
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0]; _e[1];
+	    /*
+	    useEffect(() => {
+	      // @ts-ignore
+	      import("http://localhost:3000/button.js")
+	        .then(({ default: config }) => {
 	            // TODO: Add better validation
 	            if (config && config.type && config.children && config.id) {
-	                // setConf(config);
-	                setComponents([{
-	                        name: "Button",
-	                        config: config
-	                    }]);
-	                // setSelectedConf(config.id);
+	              // setConf(config);
+	              setComponents([{
+	                name: "Button",
+	                config
+	              }])
+	              // setSelectedConf(config.id);
+	            } else {
+	              console.error("Invalid config");
 	            }
-	            else {
-	                console.error("Invalid config");
-	            }
+	          })
+	          .catch(err => {
+	          console.error("error when downloading button: ", err);
 	        })
-	            .catch(function (err) {
-	            console.error("error when downloading button: ", err);
-	        });
 	    }, []);
+	    */
 	    function addNodeToStage(dropEv) {
 	        var _a;
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
 	        console.log("dropping: ", dropEv, component);
-	        setConf((_a = component === null || component === void 0 ? void 0 : component.config) !== null && _a !== void 0 ? _a : null);
+	        if (component === null || component === void 0 ? void 0 : component.config) {
+	            setConf((_a = component.config) !== null && _a !== void 0 ? _a : null);
+	            setSelectedConf(component.config.id);
+	        }
 	        // The next render cycle will update the vdom to render both
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
