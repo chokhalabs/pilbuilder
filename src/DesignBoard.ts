@@ -16,8 +16,8 @@ type Props = {
 }
 
 export default function(props: Props) {
-  const nodes = props.conf.map(config => h(tranformToVDOM(config, {})));
-  let content: ReturnType<typeof h> = h(Group, {}, nodes);
+  const nodes = props.conf.map((config, i) => h(tranformToVDOM(config, { key: "rect-" + i })));
+  // let content: ReturnType<typeof h> = h(Group, { key: "" }, nodes);
 
   const stageNode = useRef(null);
   const [ dropListener, setDropListener ] = useState(null as any);
@@ -68,7 +68,7 @@ export default function(props: Props) {
         {
           key: "layer1"
         },
-        content
+        nodes
       )
     ]
   );

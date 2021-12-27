@@ -13998,7 +13998,7 @@
 
 	_registerNode(FastLayer);
 
-	class Group$1 extends Container {
+	class Group extends Container {
 	  _validateAdd(child) {
 	    var type = child.getType();
 
@@ -14008,9 +14008,9 @@
 	  }
 
 	}
-	Group$1.prototype.nodeType = 'Group';
+	Group.prototype.nodeType = 'Group';
 
-	_registerNode(Group$1);
+	_registerNode(Group);
 
 	var now = function () {
 	  if (glob$1.performance && glob$1.performance.now) {
@@ -14806,7 +14806,7 @@
 	  stages,
 	  Layer: Layer$1,
 	  FastLayer,
-	  Group: Group$1,
+	  Group,
 	  DD,
 	  Shape,
 	  shapes,
@@ -16106,7 +16106,7 @@
 	    DOWN = 'down',
 	    LEFT$1 = 'left',
 	    attrChangeListLen$1 = ATTR_CHANGE_LIST$2.length;
-	class Label extends Group$1 {
+	class Label extends Group {
 	  constructor(config) {
 	    super(config);
 	    this.on('add.konva', function (evt) {
@@ -17574,7 +17574,7 @@
 	  return snapped;
 	}
 
-	class Transformer extends Group$1 {
+	class Transformer extends Group {
 	  constructor(config) {
 	    super(config);
 	    this._transforming = false;
@@ -18449,7 +18449,7 @@
 	      this.getStage().content && (this.getStage().content.style.cursor = '');
 	    }
 
-	    Group$1.prototype.destroy.call(this);
+	    Group.prototype.destroy.call(this);
 	    this.detach();
 
 	    this._removeEvents();
@@ -23043,7 +23043,6 @@
 	};
 
 	var Layer = 'Layer';
-	var Group = 'Group';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
 	KonvaRenderer.injectIntoDevTools({
 	  findHostInstanceByFiber: function findHostInstanceByFiber() {
@@ -23060,8 +23059,8 @@
 	});
 
 	function DesignBoard (props) {
-	    var nodes = props.conf.map(function (config) { return react.exports.createElement(tranformToVDOM(config, {})); });
-	    var content = react.exports.createElement(Group, {}, nodes);
+	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, { key: "rect-" + i })); });
+	    // let content: ReturnType<typeof h> = h(Group, { key: "" }, nodes);
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    react.exports.useEffect(function () {
@@ -23107,7 +23106,7 @@
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
-	        }, content)
+	        }, nodes)
 	    ]);
 	}
 
