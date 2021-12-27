@@ -7677,6 +7677,43 @@
 
 	var ReactDOM = reactDom.exports;
 
+	/*! *****************************************************************************
+	Copyright (c) Microsoft Corporation.
+
+	Permission to use, copy, modify, and/or distribute this software for any
+	purpose with or without fee is hereby granted.
+
+	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+	PERFORMANCE OF THIS SOFTWARE.
+	***************************************************************************** */
+	var __assign = function () {
+	  __assign = Object.assign || function __assign(t) {
+	    for (var s, i = 1, n = arguments.length; i < n; i++) {
+	      s = arguments[i];
+
+	      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+	    }
+
+	    return t;
+	  };
+
+	  return __assign.apply(this, arguments);
+	};
+	function __spreadArray(to, from, pack) {
+	  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+	    if (ar || !(i in from)) {
+	      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+	      ar[i] = from[i];
+	    }
+	  }
+	  return to.concat(ar || Array.prototype.slice.call(from));
+	}
+
 	function traversePreOrder(config, selectedNode) {
 	    var traversal = [];
 	    var stack = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
@@ -7746,7 +7783,9 @@
 	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
 	    var tabBody = react.exports.createElement(Assets, { components: props.components, key: "tabbody" });
 	    if (selectedTab === "Layers") {
-	        tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
+	        var subtrees = props.tree.map(function (config) { return makeNodeTree(config, props.selectedNode, props.onNodeSelect); });
+	        // tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
+	        tabBody = react.exports.createElement("div", { id: "treecontainer" }, subtrees);
 	    }
 	    return react.exports.createElement("div", {
 	        className: "sidebar",
@@ -7757,34 +7796,6 @@
 	        tabBody
 	    ]);
 	}
-
-	/*! *****************************************************************************
-	Copyright (c) Microsoft Corporation.
-
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with or without fee is hereby granted.
-
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-	PERFORMANCE OF THIS SOFTWARE.
-	***************************************************************************** */
-	var __assign = function () {
-	  __assign = Object.assign || function __assign(t) {
-	    for (var s, i = 1, n = arguments.length; i < n; i++) {
-	      s = arguments[i];
-
-	      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-	    }
-
-	    return t;
-	  };
-
-	  return __assign.apply(this, arguments);
-	};
 
 	function evaluateProps($props, propsExprs) {
 	    var evaluated = __assign({}, propsExprs);
@@ -13987,7 +13998,7 @@
 
 	_registerNode(FastLayer);
 
-	class Group extends Container {
+	class Group$1 extends Container {
 	  _validateAdd(child) {
 	    var type = child.getType();
 
@@ -13997,9 +14008,9 @@
 	  }
 
 	}
-	Group.prototype.nodeType = 'Group';
+	Group$1.prototype.nodeType = 'Group';
 
-	_registerNode(Group);
+	_registerNode(Group$1);
 
 	var now = function () {
 	  if (glob$1.performance && glob$1.performance.now) {
@@ -14795,7 +14806,7 @@
 	  stages,
 	  Layer: Layer$1,
 	  FastLayer,
-	  Group,
+	  Group: Group$1,
 	  DD,
 	  Shape,
 	  shapes,
@@ -16095,7 +16106,7 @@
 	    DOWN = 'down',
 	    LEFT$1 = 'left',
 	    attrChangeListLen$1 = ATTR_CHANGE_LIST$2.length;
-	class Label extends Group {
+	class Label extends Group$1 {
 	  constructor(config) {
 	    super(config);
 	    this.on('add.konva', function (evt) {
@@ -16714,7 +16725,7 @@
 	  return config;
 	}
 
-	class Text$1 extends Shape {
+	class Text extends Shape {
 	  constructor(config) {
 	    super(checkDefaultFill(config));
 	    this._partialTextX = 0;
@@ -17051,28 +17062,28 @@
 	  }
 
 	}
-	Text$1.prototype._fillFunc = _fillFunc$1;
-	Text$1.prototype._strokeFunc = _strokeFunc$1;
-	Text$1.prototype.className = TEXT_UPPER;
-	Text$1.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
+	Text.prototype._fillFunc = _fillFunc$1;
+	Text.prototype._strokeFunc = _strokeFunc$1;
+	Text.prototype.className = TEXT_UPPER;
+	Text.prototype._attrsAffectingSize = ['text', 'fontSize', 'padding', 'wrap', 'lineHeight', 'letterSpacing'];
 
-	_registerNode(Text$1);
+	_registerNode(Text);
 
-	Factory.overWriteSetter(Text$1, 'width', getNumberOrAutoValidator());
-	Factory.overWriteSetter(Text$1, 'height', getNumberOrAutoValidator());
-	Factory.addGetterSetter(Text$1, 'fontFamily', 'Arial');
-	Factory.addGetterSetter(Text$1, 'fontSize', 12, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'fontStyle', NORMAL$1);
-	Factory.addGetterSetter(Text$1, 'fontVariant', NORMAL$1);
-	Factory.addGetterSetter(Text$1, 'padding', 0, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'align', LEFT);
-	Factory.addGetterSetter(Text$1, 'verticalAlign', TOP);
-	Factory.addGetterSetter(Text$1, 'lineHeight', 1, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'wrap', WORD);
-	Factory.addGetterSetter(Text$1, 'ellipsis', false, getBooleanValidator());
-	Factory.addGetterSetter(Text$1, 'letterSpacing', 0, getNumberValidator());
-	Factory.addGetterSetter(Text$1, 'text', '', getStringValidator());
-	Factory.addGetterSetter(Text$1, 'textDecoration', '');
+	Factory.overWriteSetter(Text, 'width', getNumberOrAutoValidator());
+	Factory.overWriteSetter(Text, 'height', getNumberOrAutoValidator());
+	Factory.addGetterSetter(Text, 'fontFamily', 'Arial');
+	Factory.addGetterSetter(Text, 'fontSize', 12, getNumberValidator());
+	Factory.addGetterSetter(Text, 'fontStyle', NORMAL$1);
+	Factory.addGetterSetter(Text, 'fontVariant', NORMAL$1);
+	Factory.addGetterSetter(Text, 'padding', 0, getNumberValidator());
+	Factory.addGetterSetter(Text, 'align', LEFT);
+	Factory.addGetterSetter(Text, 'verticalAlign', TOP);
+	Factory.addGetterSetter(Text, 'lineHeight', 1, getNumberValidator());
+	Factory.addGetterSetter(Text, 'wrap', WORD);
+	Factory.addGetterSetter(Text, 'ellipsis', false, getBooleanValidator());
+	Factory.addGetterSetter(Text, 'letterSpacing', 0, getNumberValidator());
+	Factory.addGetterSetter(Text, 'text', '', getStringValidator());
+	Factory.addGetterSetter(Text, 'textDecoration', '');
 
 	var EMPTY_STRING = '',
 	    NORMAL = 'normal';
@@ -17172,11 +17183,11 @@
 	  }
 
 	  setText(text) {
-	    return Text$1.prototype.setText.call(this, text);
+	    return Text.prototype.setText.call(this, text);
 	  }
 
 	  _getContextFont() {
-	    return Text$1.prototype._getContextFont.call(this);
+	    return Text.prototype._getContextFont.call(this);
 	  }
 
 	  _getTextSize(text) {
@@ -17563,7 +17574,7 @@
 	  return snapped;
 	}
 
-	class Transformer extends Group {
+	class Transformer extends Group$1 {
 	  constructor(config) {
 	    super(config);
 	    this._transforming = false;
@@ -18438,7 +18449,7 @@
 	      this.getStage().content && (this.getStage().content.style.cursor = '');
 	    }
 
-	    Group.prototype.destroy.call(this);
+	    Group$1.prototype.destroy.call(this);
 	    this.detach();
 
 	    this._removeEvents();
@@ -19777,7 +19788,7 @@
 	  Ring,
 	  Sprite,
 	  Star,
-	  Text: Text$1,
+	  Text,
 	  TextPath,
 	  Transformer,
 	  Wedge,
@@ -23032,7 +23043,7 @@
 	};
 
 	var Layer = 'Layer';
-	var Text = 'Text';
+	var Group = 'Group';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
 	KonvaRenderer.injectIntoDevTools({
 	  findHostInstanceByFiber: function findHostInstanceByFiber() {
@@ -23049,10 +23060,8 @@
 	});
 
 	function DesignBoard (props) {
-	    var content = react.exports.createElement(Text, { text: "Not loaded yet!" });
-	    if (props.conf) {
-	        content = react.exports.createElement(tranformToVDOM(props.conf, { title: "Click here", size: "Regular" }));
-	    }
+	    var nodes = props.conf.map(function (config) { return react.exports.createElement(tranformToVDOM(config, {})); });
+	    var content = react.exports.createElement(Group, {}, nodes);
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    react.exports.useEffect(function () {
@@ -23091,7 +23100,10 @@
 	        height: window.innerHeight - props.menubarHeight,
 	        className: "stage",
 	        key: "designboard",
-	        style: { cursor: props.cursor }
+	        style: { cursor: props.cursor },
+	        onMouseDown: props.onMouseDown,
+	        onMouseUp: props.onMouseUp,
+	        onMouseMove: props.onMouseMove
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
@@ -23103,10 +23115,11 @@
 	    function createClass(key) {
 	        return key === props.selectedTool ? "tool selected" : "tool";
 	    }
+	    var tools = ["arrow", "rect", "text", "group"];
 	    return react.exports.createElement("div", {
 	        className: "menubar",
 	        key: "menubar"
-	    }, ["arrow", "rect", "text", "group"].map(function (it) {
+	    }, tools.map(function (it) {
 	        return react.exports.createElement("div", {
 	            key: it,
 	            className: createClass(it),
@@ -23159,20 +23172,20 @@
 	};
 
 	function App () {
-	    var _a = react.exports.useState(null), conf = _a[0], setConf = _a[1];
+	    var _a = react.exports.useState([]), conf = _a[0], setConf = _a[1];
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
 	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0]; _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
+	    var _g = react.exports.useState(null), mouseDownAt = _g[0], setMouseDownAt = _g[1];
 	    function addNodeToStage(dropEv) {
-	        var _a;
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
 	        console.log("dropping: ", dropEv, component);
 	        if (component === null || component === void 0 ? void 0 : component.config) {
-	            setConf((_a = component.config) !== null && _a !== void 0 ? _a : null);
+	            setConf([component.config]);
 	            setSelectedConf(component.config.id);
 	        }
 	        // The next render cycle will update the vdom to render both
@@ -23186,6 +23199,37 @@
 	        }
 	        else {
 	            return "default";
+	        }
+	    }
+	    function setMouseDown(ev) {
+	        if (ev === null) {
+	            setMouseDownAt(null);
+	        }
+	        else {
+	            var coords = ev.target.getRelativePointerPosition();
+	            setMouseDownAt(coords);
+	        }
+	    }
+	    function handleMouseMove(ev) {
+	        if (mouseDownAt && selectedTool === "rect") {
+	            var rect = {
+	                type: "Rect",
+	                id: Date.now().toString(),
+	                children: [],
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    width: 100,
+	                    height: 100,
+	                    fill: "#c4c4c4"
+	                }
+	            };
+	            var newconfig = [rect];
+	            if (conf) {
+	                newconfig = __spreadArray(__spreadArray([], conf, true), [rect], false);
+	            }
+	            setConf(newconfig);
+	            setMouseDownAt(null);
 	        }
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
@@ -23204,7 +23248,10 @@
 	        conf: conf,
 	        components: components,
 	        cursor: pointerType(selectedTool),
-	        onDrop: function (ev) { return addNodeToStage(ev); }
+	        onDrop: function (ev) { return addNodeToStage(ev); },
+	        onMouseDown: setMouseDown,
+	        onMouseUp: function (ev) { return setMouseDown(null); },
+	        onMouseMove: function (ev) { return handleMouseMove(); }
 	    });
 	    var menubar = react.exports.createElement(Menubar, {
 	        key: "menubar",

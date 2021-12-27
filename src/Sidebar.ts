@@ -97,7 +97,7 @@ function Assets(props: { components: Array<{ config: Config; name: string; }> })
 }
 
 type SidebarProps = { 
-  tree: Config|null; 
+  tree: Config[]; 
   width: number; 
   height: number; 
   selectedNode: string; 
@@ -111,7 +111,9 @@ export default function(props: SidebarProps) {
 
   let tabBody: ReturnType<typeof h> = h(Assets, { components: props.components, key: "tabbody" });
   if (selectedTab === "Layers") {
-    tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
+    const subtrees = props.tree.map(config => makeNodeTree(config, props.selectedNode, props.onNodeSelect))
+    // tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
+    tabBody = h("div", { id: "treecontainer" }, subtrees);
   }
 
   return h(

@@ -1,21 +1,23 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Config, tranformToVDOM } from "./utils";
-import { Text, Stage, Layer } from "react-konva";
+import { Text, Stage, Layer, Group } from "react-konva";
+import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
   leftsidebarWidth: number; 
   menubarHeight: number; 
-  conf: Config | null; 
+  conf: Config[]; 
   onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void;
   components: Array<{ name: string }>;
   cursor: string;
+  onMouseDown: (arg: KonvaEventObject<MouseEvent>) => void;
+  onMouseUp: (arg: KonvaEventObject<MouseEvent>) => void;
+  onMouseMove: (arg: KonvaEventObject<MouseEvent>) => void;
 }
 
 export default function(props: Props) {
-  let content: ReturnType<typeof h> = h(Text, { text: "Not loaded yet!" });
-  if (props.conf) {
-    content = h(tranformToVDOM(props.conf, { title: "Click here", size: "Regular" }));
-  }
+  const nodes = props.conf.map(config => h(tranformToVDOM(config, {})));
+  let content: ReturnType<typeof h> = h(Group, {}, nodes);
 
   const stageNode = useRef(null);
   const [ dropListener, setDropListener ] = useState(null as any);
@@ -56,7 +58,10 @@ export default function(props: Props) {
       height: window.innerHeight - props.menubarHeight,
       className: "stage",
       key: "designboard",
-      style: { cursor: props.cursor } 
+      style: { cursor: props.cursor },
+      onMouseDown: props.onMouseDown,
+      onMouseUp: props.onMouseUp,
+      onMouseMove: props.onMouseMove
     },
     [
       h(Layer,

@@ -5,14 +5,18 @@ import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf } from "./KonvaPrimitives";
+import { KonvaEventObject } from 'konva/lib/Node';
+
+export type ToolType = "arrow" | "rect" | "text" | "group";
 
 export default function() {
-  const [ conf, setConf ] = useState(null as Config | null);
+  const [ conf, setConf ] = useState([] as Config[]);
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
   const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf ]);
-  const [ selectedTool, setSelectedTool ] = useState("arrow");
+  const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
+  const [ mouseDownAt, setMouseDownAt ] = useState(null as { x: number; y: number; } | null);
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
@@ -20,7 +24,7 @@ export default function() {
     // Add it to existing confs to get new confs
     console.log("dropping: ", dropEv, component);
     if (component?.config) {
-      setConf(component.config ?? null);
+      setConf([component.config]);
       setSelectedConf(component.config.id);
     }
     // The next render cycle will update the vdom to render both
@@ -33,6 +37,38 @@ export default function() {
       return "text";
     } else {
       return "default";
+    }
+  }
+
+  function setMouseDown(ev: KonvaEventObject<MouseEvent> | null) {
+    if (ev === null) {
+      setMouseDownAt(null);
+    } else {
+      const coords = ev.target.getRelativePointerPosition();
+      setMouseDownAt(coords);
+    }
+  }
+
+  function handleMouseMove(ev: KonvaEventObject<MouseEvent>) {
+    if (mouseDownAt && selectedTool === "rect") {
+      const rect: Config = {
+        type: "Rect",
+        id: Date.now().toString(),
+        children: [],
+        props: {
+          x: mouseDownAt.x,
+          y: mouseDownAt.y,
+          width: 100,
+          height: 100,
+          fill: "#c4c4c4"
+        }
+      }
+      let newconfig = [rect];
+      if (conf) {
+        newconfig = [...conf, rect]
+      } 
+      setConf(newconfig);
+      setMouseDownAt(null);
     }
   }
 
@@ -58,7 +94,10 @@ export default function() {
       conf,
       components,
       cursor: pointerType(selectedTool),
-      onDrop: (ev) => addNodeToStage(ev)
+      onDrop: (ev) => addNodeToStage(ev),
+      onMouseDown: setMouseDown,
+      onMouseUp: (ev: KonvaEventObject<MouseEvent>) => setMouseDown(null),
+      onMouseMove: (ev: KonvaEventObject<MouseEvent>) => handleMouseMove(ev)
     }
   );
 
