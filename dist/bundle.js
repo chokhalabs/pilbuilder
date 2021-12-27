@@ -16308,7 +16308,7 @@
 	Factory.addGetterSetter(Tag, 'pointerHeight', 0, getNumberValidator());
 	Factory.addGetterSetter(Tag, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
 
-	class Rect extends Shape {
+	class Rect$1 extends Shape {
 	  _sceneFunc(context) {
 	    var cornerRadius = this.cornerRadius(),
 	        width = this.width(),
@@ -16348,11 +16348,11 @@
 	  }
 
 	}
-	Rect.prototype.className = 'Rect';
+	Rect$1.prototype.className = 'Rect';
 
-	_registerNode(Rect);
+	_registerNode(Rect$1);
 
-	Factory.addGetterSetter(Rect, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
+	Factory.addGetterSetter(Rect$1, 'cornerRadius', 0, getNumberOrArrayOfNumbersValidator(4));
 
 	class RegularPolygon extends Shape {
 	  _sceneFunc(context) {
@@ -17844,7 +17844,7 @@
 	  }
 
 	  _createAnchor(name) {
-	    var anchor = new Rect({
+	    var anchor = new Rect$1({
 	      stroke: 'rgb(0, 161, 255)',
 	      fill: 'white',
 	      strokeWidth: 1,
@@ -19783,7 +19783,7 @@
 	  Tag,
 	  Line,
 	  Path,
-	  Rect,
+	  Rect: Rect$1,
 	  RegularPolygon,
 	  Ring,
 	  Sprite,
@@ -23043,6 +23043,7 @@
 	};
 
 	var Layer = 'Layer';
+	var Rect = 'Rect';
 	var KonvaRenderer = ReactFiberReconciler(HostConfig);
 	KonvaRenderer.injectIntoDevTools({
 	  findHostInstanceByFiber: function findHostInstanceByFiber() {
@@ -23060,7 +23061,6 @@
 
 	function DesignBoard (props) {
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, { key: "rect-" + i })); });
-	    // let content: ReturnType<typeof h> = h(Group, { key: "" }, nodes);
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    react.exports.useEffect(function () {
@@ -23093,6 +23093,12 @@
 	            console.error("Could not attach drop listener");
 	        }
 	    }, [stageNode, props.components]);
+	    react.exports.createElement(Rect, {
+	    // x: mousedownat.x,
+	    // y: mousedownat.y,
+	    // width: mousemove.x - mousedownat.x
+	    // height: mousemove.y - mousedownat.y
+	    });
 	    return react.exports.createElement(Stage, {
 	        ref: stageNode,
 	        width: window.innerWidth - props.leftsidebarWidth,

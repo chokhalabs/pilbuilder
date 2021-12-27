@@ -1,6 +1,6 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Config, tranformToVDOM } from "./utils";
-import { Text, Stage, Layer, Group } from "react-konva";
+import { Stage, Layer, Rect } from "react-konva";
 import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
@@ -17,7 +17,6 @@ type Props = {
 
 export default function(props: Props) {
   const nodes = props.conf.map((config, i) => h(tranformToVDOM(config, { key: "rect-" + i })));
-  // let content: ReturnType<typeof h> = h(Group, { key: "" }, nodes);
 
   const stageNode = useRef(null);
   const [ dropListener, setDropListener ] = useState(null as any);
@@ -50,6 +49,13 @@ export default function(props: Props) {
       console.error("Could not attach drop listener");
     }
   }, [stageNode, props.components]);
+
+  const drawingbox = h(Rect, {
+    // x: mousedownat.x,
+    // y: mousedownat.y,
+    // width: mousemove.x - mousedownat.x
+    // height: mousemove.y - mousedownat.y
+  });
 
   return h(Stage, 
     {
