@@ -93,6 +93,7 @@ export default function() {
       menubarHeight,
       conf,
       components,
+      selectedTool,
       cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev),
       onAddItem: (config: Config) => {

@@ -1,7 +1,7 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Config, tranformToVDOM } from "./utils";
 import { Stage, Layer, Rect } from "react-konva";
-import { KonvaEventObject } from "konva/lib/Node";
+import { ToolType } from "./KonvaBuilder";
 
 type Props = { 
   leftsidebarWidth: number; 
@@ -11,6 +11,7 @@ type Props = {
   components: Array<{ name: string }>;
   cursor: string;
   onAddItem: (arg: Config) => void;
+  selectedTool: ToolType;
 }
 
 export default function(props: Props) {
@@ -70,24 +71,52 @@ export default function(props: Props) {
       key: "designboard",
       style: { cursor: props.cursor },
       onMouseDown: ev => {
-        const mdownAt = ev.target.getRelativePointerPosition();
-        setMouseDownAt(mdownAt);
+        if (props.selectedTool === "rect" || props.selectedTool === "group") {
+          const mdownAt = ev.target.getRelativePointerPosition();
+          setMouseDownAt(mdownAt);
+        }
       },
       onMouseUp: () => {
         if (mouseDownAt && mouseAt) {
-          const conf: Config = {
-            id: Date.now().toString(),
-            type: "Rect",
-            props: {
-              x: mouseDownAt.x,
-              y: mouseDownAt.y,
-              width: mouseAt.x - mouseDownAt.x,
-              height: mouseAt.y - mouseDownAt.y,
-              fill: "#c4c4c4"
-            },
-            children: []
-          };
-          props.onAddItem(conf);
+          if (props.selectedTool === "rect") {
+            const conf: Config = {
+              id: Date.now().toString(),
+              type: "Rect",
+              props: {
+                x: mouseDownAt.x,
+                y: mouseDownAt.y,
+                width: mouseAt.x - mouseDownAt.x,
+                height: mouseAt.y - mouseDownAt.y,
+                fill: "#c4c4c4"
+              },
+              children: []
+            };
+            props.onAddItem(conf);
+          } else if (props.selectedTool === "group") {
+            const newid = Date.now().toString();
+            const conf: Config = {
+              id: newid + "-" + "group",
+              type: "Group",
+              props: {
+                x: mouseDownAt.x,
+                y: mouseDownAt.y
+              },
+              children: [{
+                id: newid + "-" + "backgroud",
+                type: "Rect",
+                props: {
+                  x: 0,
+                  y: 0,
+                  width: mouseAt.x - mouseDownAt.x,
+                  height: mouseAt.y - mouseDownAt.y,
+                  fill: "white"
+                },
+                children: []
+              }]
+            };
+            props.onAddItem(conf);
+          }
+          
         }
         setMouseDownAt(null);
         setMouseAt(null);

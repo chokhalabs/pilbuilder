@@ -23113,24 +23113,52 @@
 	        key: "designboard",
 	        style: { cursor: props.cursor },
 	        onMouseDown: function (ev) {
-	            var mdownAt = ev.target.getRelativePointerPosition();
-	            setMouseDownAt(mdownAt);
+	            if (props.selectedTool === "rect" || props.selectedTool === "group") {
+	                var mdownAt = ev.target.getRelativePointerPosition();
+	                setMouseDownAt(mdownAt);
+	            }
 	        },
 	        onMouseUp: function () {
 	            if (mouseDownAt && mouseAt) {
-	                var conf = {
-	                    id: Date.now().toString(),
-	                    type: "Rect",
-	                    props: {
-	                        x: mouseDownAt.x,
-	                        y: mouseDownAt.y,
-	                        width: mouseAt.x - mouseDownAt.x,
-	                        height: mouseAt.y - mouseDownAt.y,
-	                        fill: "#c4c4c4"
-	                    },
-	                    children: []
-	                };
-	                props.onAddItem(conf);
+	                if (props.selectedTool === "rect") {
+	                    var conf = {
+	                        id: Date.now().toString(),
+	                        type: "Rect",
+	                        props: {
+	                            x: mouseDownAt.x,
+	                            y: mouseDownAt.y,
+	                            width: mouseAt.x - mouseDownAt.x,
+	                            height: mouseAt.y - mouseDownAt.y,
+	                            fill: "#c4c4c4"
+	                        },
+	                        children: []
+	                    };
+	                    props.onAddItem(conf);
+	                }
+	                else if (props.selectedTool === "group") {
+	                    var newid = Date.now().toString();
+	                    var conf = {
+	                        id: newid + "-" + "group",
+	                        type: "Group",
+	                        props: {
+	                            x: mouseDownAt.x,
+	                            y: mouseDownAt.y
+	                        },
+	                        children: [{
+	                                id: newid + "-" + "backgroud",
+	                                type: "Rect",
+	                                props: {
+	                                    x: 0,
+	                                    y: 0,
+	                                    width: mouseAt.x - mouseDownAt.x,
+	                                    height: mouseAt.y - mouseDownAt.y,
+	                                    fill: "white"
+	                                },
+	                                children: []
+	                            }]
+	                    };
+	                    props.onAddItem(conf);
+	                }
 	            }
 	            setMouseDownAt(null);
 	            setMouseAt(null);
@@ -23253,6 +23281,7 @@
 	        menubarHeight: menubarHeight,
 	        conf: conf,
 	        components: components,
+	        selectedTool: selectedTool,
 	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); },
 	        onAddItem: function (config) {
