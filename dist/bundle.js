@@ -23063,6 +23063,8 @@
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, { key: "rect-" + i })); });
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
+	    var _b = react.exports.useState(null), mouseDownAt = _b[0], setMouseDownAt = _b[1];
+	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
 	    react.exports.useEffect(function () {
 	        if (stageNode.current) {
 	            var root = stageNode.current;
@@ -23093,12 +23095,16 @@
 	            console.error("Could not attach drop listener");
 	        }
 	    }, [stageNode, props.components]);
-	    react.exports.createElement(Rect, {
-	    // x: mousedownat.x,
-	    // y: mousedownat.y,
-	    // width: mousemove.x - mousedownat.x
-	    // height: mousemove.y - mousedownat.y
-	    });
+	    if (mouseAt && mouseDownAt) {
+	        var drawingbox = react.exports.createElement(Rect, {
+	            x: mouseDownAt.x,
+	            y: mouseDownAt.y,
+	            width: mouseAt.x - mouseDownAt.x,
+	            height: mouseAt.y - mouseDownAt.y,
+	            fill: "#c4c4c4"
+	        });
+	        nodes.push(drawingbox);
+	    }
 	    return react.exports.createElement(Stage, {
 	        ref: stageNode,
 	        width: window.innerWidth - props.leftsidebarWidth,
@@ -23106,9 +23112,35 @@
 	        className: "stage",
 	        key: "designboard",
 	        style: { cursor: props.cursor },
-	        onMouseDown: props.onMouseDown,
-	        onMouseUp: props.onMouseUp,
-	        onMouseMove: props.onMouseMove
+	        onMouseDown: function (ev) {
+	            var mdownAt = ev.target.getRelativePointerPosition();
+	            setMouseDownAt(mdownAt);
+	        },
+	        onMouseUp: function () {
+	            if (mouseDownAt && mouseAt) {
+	                var conf = {
+	                    id: Date.now().toString(),
+	                    type: "Rect",
+	                    props: {
+	                        x: mouseDownAt.x,
+	                        y: mouseDownAt.y,
+	                        width: mouseAt.x - mouseDownAt.x,
+	                        height: mouseAt.y - mouseDownAt.y,
+	                        fill: "#c4c4c4"
+	                    },
+	                    children: []
+	                };
+	                props.onAddItem(conf);
+	            }
+	            setMouseDownAt(null);
+	            setMouseAt(null);
+	        },
+	        onMouseMove: function (ev) {
+	            if (mouseDownAt) {
+	                var currentPos = ev.target.getRelativePointerPosition();
+	                setMouseAt(currentPos);
+	            }
+	        }
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"
@@ -23183,7 +23215,7 @@
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
 	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0]; _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
-	    var _g = react.exports.useState(null), mouseDownAt = _g[0], setMouseDownAt = _g[1];
+	    var _g = react.exports.useState(null); _g[0]; _g[1];
 	    function addNodeToStage(dropEv) {
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
@@ -23206,37 +23238,6 @@
 	            return "default";
 	        }
 	    }
-	    function setMouseDown(ev) {
-	        if (ev === null) {
-	            setMouseDownAt(null);
-	        }
-	        else {
-	            var coords = ev.target.getRelativePointerPosition();
-	            setMouseDownAt(coords);
-	        }
-	    }
-	    function handleMouseMove(ev) {
-	        if (mouseDownAt && selectedTool === "rect") {
-	            var rect = {
-	                type: "Rect",
-	                id: Date.now().toString(),
-	                children: [],
-	                props: {
-	                    x: mouseDownAt.x,
-	                    y: mouseDownAt.y,
-	                    width: 100,
-	                    height: 100,
-	                    fill: "#c4c4c4"
-	                }
-	            };
-	            var newconfig = [rect];
-	            if (conf) {
-	                newconfig = __spreadArray(__spreadArray([], conf, true), [rect], false);
-	            }
-	            setConf(newconfig);
-	            setMouseDownAt(null);
-	        }
-	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
 	        key: "sidebar",
 	        tree: conf,
@@ -23254,9 +23255,13 @@
 	        components: components,
 	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); },
-	        onMouseDown: setMouseDown,
-	        onMouseUp: function (ev) { return setMouseDown(null); },
-	        onMouseMove: function (ev) { return handleMouseMove(); }
+	        onAddItem: function (config) {
+	            var newconfig = [config];
+	            if (conf) {
+	                newconfig = __spreadArray(__spreadArray([], conf, true), [config], false);
+	            }
+	            setConf(newconfig);
+	        }
 	    });
 	    var menubar = react.exports.createElement(Menubar, {
 	        key: "menubar",

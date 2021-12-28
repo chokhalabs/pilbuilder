@@ -95,9 +95,13 @@ export default function() {
       components,
       cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev),
-      onMouseDown: setMouseDown,
-      onMouseUp: (ev: KonvaEventObject<MouseEvent>) => setMouseDown(null),
-      onMouseMove: (ev: KonvaEventObject<MouseEvent>) => handleMouseMove(ev)
+      onAddItem: (config: Config) => {
+        let newconfig = [config];
+        if (conf) {
+          newconfig = [ ...conf, config ];
+        }
+        setConf(newconfig);
+      }
     }
   );
 

@@ -10,17 +10,17 @@ type Props = {
   onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void;
   components: Array<{ name: string }>;
   cursor: string;
-  onMouseDown: (arg: KonvaEventObject<MouseEvent>) => void;
-  onMouseUp: (arg: KonvaEventObject<MouseEvent>) => void;
-  onMouseMove: (arg: KonvaEventObject<MouseEvent>) => void;
+  onAddItem: (arg: Config) => void;
 }
 
 export default function(props: Props) {
-  const nodes = props.conf.map((config, i) => h(tranformToVDOM(config, { key: "rect-" + i })));
+  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, { key: "rect-" + i })));
 
   const stageNode = useRef(null);
   const [ dropListener, setDropListener ] = useState(null as any);
-
+  const [ mouseDownAt, setMouseDownAt] = useState(null as { x: number; y: number; } | null);
+  const [ mouseAt, setMouseAt ] = useState(null as { x: number; y: number; } | null);
+  
   useEffect(() => {
     if (stageNode.current) {
       const root: any = stageNode.current;
@@ -50,12 +50,16 @@ export default function(props: Props) {
     }
   }, [stageNode, props.components]);
 
-  const drawingbox = h(Rect, {
-    // x: mousedownat.x,
-    // y: mousedownat.y,
-    // width: mousemove.x - mousedownat.x
-    // height: mousemove.y - mousedownat.y
-  });
+  if (mouseAt && mouseDownAt) {
+    const drawingbox = h(Rect, {
+      x: mouseDownAt.x,
+      y: mouseDownAt.y,
+      width: mouseAt.x - mouseDownAt.x,
+      height: mouseAt.y - mouseDownAt.y,
+      fill: "#c4c4c4"
+    });
+    nodes.push(drawingbox);
+  } 
 
   return h(Stage, 
     {
@@ -65,9 +69,35 @@ export default function(props: Props) {
       className: "stage",
       key: "designboard",
       style: { cursor: props.cursor },
-      onMouseDown: props.onMouseDown,
-      onMouseUp: props.onMouseUp,
-      onMouseMove: props.onMouseMove
+      onMouseDown: ev => {
+        const mdownAt = ev.target.getRelativePointerPosition();
+        setMouseDownAt(mdownAt);
+      },
+      onMouseUp: () => {
+        if (mouseDownAt && mouseAt) {
+          const conf: Config = {
+            id: Date.now().toString(),
+            type: "Rect",
+            props: {
+              x: mouseDownAt.x,
+              y: mouseDownAt.y,
+              width: mouseAt.x - mouseDownAt.x,
+              height: mouseAt.y - mouseDownAt.y,
+              fill: "#c4c4c4"
+            },
+            children: []
+          };
+          props.onAddItem(conf);
+        }
+        setMouseDownAt(null);
+        setMouseAt(null);
+      },
+      onMouseMove: ev => {
+        if (mouseDownAt) {
+          const currentPos = ev.target.getRelativePointerPosition();
+          setMouseAt(currentPos);
+        }
+      }
     },
     [
       h(Layer,
