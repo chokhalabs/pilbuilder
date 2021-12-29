@@ -1,7 +1,7 @@
 // import { Rect, Text, Group } from 'react-konva';
 import { createElement as h } from 'react';
 
-type PropExprs = Record<string, number|boolean|string|{ expr: string }>;
+type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|{ expr: string }>;
 
 export interface Config {
   id: string;
@@ -35,7 +35,10 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
   return function() {
     return h(
       config.type,
-      props,
+      { 
+        ...props,
+        id: config.id
+      },
       children
     );
   }

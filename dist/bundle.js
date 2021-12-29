@@ -7814,7 +7814,7 @@
 	    }
 	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
 	    return function () {
-	        return react.exports.createElement(config.type, props, children);
+	        return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
 	    };
 	}
 
@@ -23060,11 +23060,23 @@
 	});
 
 	function DesignBoard (props) {
-	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, { key: "rect-" + i })); });
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    var _b = react.exports.useState(null), mouseDownAt = _b[0], setMouseDownAt = _b[1];
 	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
+	    var _d = react.exports.useState(null), parent = _d[0], setParent = _d[1];
+	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, {
+	        key: "rect-" + i,
+	        // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
+	        //   console.log("Drawing in group: ", ev);
+	        //   setGroupBeingDrawinIn(ev.target.id)
+	        //   const clientRect = ev.target.getClientRect();
+	        //   const mdownAt = ev.target.getRelativePointerPosition();
+	        //   mdownAt.x += clientRect.x;
+	        //   mdownAt.y += clientRect.y;
+	        //   setMouseDownAt(mdownAt);
+	        // } 
+	    })); });
 	    react.exports.useEffect(function () {
 	        if (stageNode.current) {
 	            var root = stageNode.current;
@@ -23112,8 +23124,20 @@
 	        className: "stage",
 	        key: "designboard",
 	        style: { cursor: props.cursor },
+	        id: "stage",
 	        onMouseDown: function (ev) {
+	            if (ev.target.attrs.id !== "stage") {
+	                var parent_1 = ev.target;
+	                while (parent_1.attrs.id !== "stage" && !parent_1.attrs.id.endsWith("group")) {
+	                    parent_1 = parent_1.getParent();
+	                }
+	                setParent(parent_1.attrs.id);
+	            }
+	            else {
+	                setParent(null);
+	            }
 	            if (props.selectedTool === "rect" || props.selectedTool === "group") {
+	                // debugger
 	                var mdownAt = ev.target.getRelativePointerPosition();
 	                setMouseDownAt(mdownAt);
 	            }
@@ -23122,7 +23146,7 @@
 	            if (mouseDownAt && mouseAt) {
 	                if (props.selectedTool === "rect") {
 	                    var conf = {
-	                        id: Date.now().toString(),
+	                        id: Date.now().toString() + "-rect",
 	                        type: "Rect",
 	                        props: {
 	                            x: mouseDownAt.x,
@@ -23133,19 +23157,22 @@
 	                        },
 	                        children: []
 	                    };
-	                    props.onAddItem(conf);
+	                    props.onAddItem(conf, parent);
 	                }
 	                else if (props.selectedTool === "group") {
 	                    var newid = Date.now().toString();
 	                    var conf = {
-	                        id: newid + "-" + "group",
+	                        id: newid + "-group",
 	                        type: "Group",
 	                        props: {
 	                            x: mouseDownAt.x,
-	                            y: mouseDownAt.y
+	                            y: mouseDownAt.y,
+	                            onMouseDown: {
+	                                expr: "$props.onDrawInGroup"
+	                            }
 	                        },
 	                        children: [{
-	                                id: newid + "-" + "backgroud",
+	                                id: newid + "-backgroud",
 	                                type: "Rect",
 	                                props: {
 	                                    x: 0,
@@ -23157,7 +23184,7 @@
 	                                children: []
 	                            }]
 	                    };
-	                    props.onAddItem(conf);
+	                    props.onAddItem(conf, parent);
 	                }
 	            }
 	            setMouseDownAt(null);
@@ -23275,6 +23302,19 @@
 	        height: window.innerHeight - menubarHeight,
 	        components: components
 	    });
+	    function addChildToNode(node, cursor, parent) {
+	        if (cursor.id === parent && cursor.type === "Group") {
+	            cursor.children.push(node);
+	            return true;
+	        }
+	        else if (cursor.id === parent) {
+	            console.error("Found parent node that is not a group! ", node, parent, cursor);
+	            return true;
+	        }
+	        else {
+	            return cursor.children.map(function (child) { return addChildToNode(node, child, parent); }).some(function (added) { return added; });
+	        }
+	    }
 	    var designboard = react.exports.createElement(DesignBoard, {
 	        key: "designboard",
 	        leftsidebarWidth: leftsidebarWidth,
@@ -23284,10 +23324,20 @@
 	        selectedTool: selectedTool,
 	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); },
-	        onAddItem: function (config) {
+	        onAddItem: function (config, parent) {
 	            var newconfig = [config];
-	            if (conf) {
+	            if (conf && !parent) {
 	                newconfig = __spreadArray(__spreadArray([], conf, true), [config], false);
+	            }
+	            else if (conf && parent) {
+	                // Find the parent in the conf and add a child
+	                for (var i = 0; i < conf.length; i++) {
+	                    var group = conf[i];
+	                    var added = addChildToNode(config, group, parent);
+	                    if (added)
+	                        break;
+	                }
+	                newconfig = conf;
 	            }
 	            setConf(newconfig);
 	        }

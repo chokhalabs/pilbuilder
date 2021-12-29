@@ -85,6 +85,18 @@ export default function() {
     } 
   );
 
+  function addChildToNode(node: Config, cursor: Config, parent: string): boolean {
+    if (cursor.id === parent && cursor.type === "Group") {
+      cursor.children.push(node); 
+      return true;
+    } else if (cursor.id === parent) {
+      console.error("Found parent node that is not a group! ", node, parent, cursor);
+      return true;
+    } else {
+      return cursor.children.map(child => addChildToNode(node, child, parent)).some(added => added);
+    }
+  }
+
   const designboard = h(
     DesignBoard, 
     {
@@ -96,10 +108,18 @@ export default function() {
       selectedTool,
       cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev),
-      onAddItem: (config: Config) => {
+      onAddItem: (config: Config, parent: string | null) => {
         let newconfig = [config];
-        if (conf) {
+        if (conf && !parent) {
           newconfig = [ ...conf, config ];
+        } else if (conf && parent) {
+          // Find the parent in the conf and add a child
+          for (let i = 0; i < conf.length; i++) {
+            const group = conf[i];
+            const added = addChildToNode(config, group, parent);
+            if (added) break;
+          }
+          newconfig = conf;
         }
         setConf(newconfig);
       }

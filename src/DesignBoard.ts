@@ -2,6 +2,7 @@ import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Config, tranformToVDOM } from "./utils";
 import { Stage, Layer, Rect } from "react-konva";
 import { ToolType } from "./KonvaBuilder";
+import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
   leftsidebarWidth: number; 
@@ -10,17 +11,30 @@ type Props = {
   onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void;
   components: Array<{ name: string }>;
   cursor: string;
-  onAddItem: (arg: Config) => void;
+  onAddItem: (node: Config, parent: null | string) => void;
   selectedTool: ToolType;
 }
 
 export default function(props: Props) {
-  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, { key: "rect-" + i })));
-
   const stageNode = useRef(null);
   const [ dropListener, setDropListener ] = useState(null as any);
   const [ mouseDownAt, setMouseDownAt] = useState(null as { x: number; y: number; } | null);
   const [ mouseAt, setMouseAt ] = useState(null as { x: number; y: number; } | null);
+  const [ parent, setParent ] = useState(null as string | null);
+
+  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, 
+    { 
+      key: "rect-" + i, 
+      // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
+      //   console.log("Drawing in group: ", ev);
+      //   setGroupBeingDrawinIn(ev.target.id)
+      //   const clientRect = ev.target.getClientRect();
+      //   const mdownAt = ev.target.getRelativePointerPosition();
+      //   mdownAt.x += clientRect.x;
+      //   mdownAt.y += clientRect.y;
+      //   setMouseDownAt(mdownAt);
+      // } 
+    })));
   
   useEffect(() => {
     if (stageNode.current) {
@@ -70,8 +84,19 @@ export default function(props: Props) {
       className: "stage",
       key: "designboard",
       style: { cursor: props.cursor },
+      id: "stage",
       onMouseDown: ev => {
+        if (ev.target.attrs.id !== "stage") {
+          let parent = ev.target; 
+          while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+            parent = parent.getParent();
+          }
+          setParent(parent.attrs.id);
+        } else {
+          setParent(null);
+        }
         if (props.selectedTool === "rect" || props.selectedTool === "group") {
+          // debugger
           const mdownAt = ev.target.getRelativePointerPosition();
           setMouseDownAt(mdownAt);
         }
@@ -80,7 +105,7 @@ export default function(props: Props) {
         if (mouseDownAt && mouseAt) {
           if (props.selectedTool === "rect") {
             const conf: Config = {
-              id: Date.now().toString(),
+              id: Date.now().toString() + "-rect",
               type: "Rect",
               props: {
                 x: mouseDownAt.x,
@@ -91,18 +116,21 @@ export default function(props: Props) {
               },
               children: []
             };
-            props.onAddItem(conf);
+            props.onAddItem(conf, parent);
           } else if (props.selectedTool === "group") {
             const newid = Date.now().toString();
             const conf: Config = {
-              id: newid + "-" + "group",
+              id: newid + "-group",
               type: "Group",
               props: {
                 x: mouseDownAt.x,
-                y: mouseDownAt.y
+                y: mouseDownAt.y,
+                onMouseDown: {
+                  expr: "$props.onDrawInGroup"
+                }
               },
               children: [{
-                id: newid + "-" + "backgroud",
+                id: newid + "-backgroud",
                 type: "Rect",
                 props: {
                   x: 0,
@@ -114,7 +142,7 @@ export default function(props: Props) {
                 children: []
               }]
             };
-            props.onAddItem(conf);
+            props.onAddItem(conf, parent);
           }
           
         }
