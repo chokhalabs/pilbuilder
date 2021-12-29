@@ -23263,14 +23263,47 @@
 	    }
 	};
 
+	function traverse(cursor, id) {
+	    if (cursor.id === id) {
+	        return cursor;
+	    }
+	    else {
+	        var candidates = cursor.children.map(function (child) { return traverse(child, id); });
+	        return candidates.find(function (c) { return !!c; });
+	    }
+	}
+	function findNodeById(id, forest) {
+	    for (var i = 0; i < forest.length; i++) {
+	        var tree = forest[i];
+	        var node = traverse(tree, id);
+	        if (node)
+	            return node;
+	    }
+	}
 	function App () {
 	    var _a = react.exports.useState([]), conf = _a[0], setConf = _a[1];
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0]; _e[1];
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
-	    var _g = react.exports.useState(null); _g[0]; _g[1];
+	    react.exports.useEffect(function () {
+	        var addComponent = function (ev) {
+	            if (ev.key === "k" && ev.ctrlKey && ev.altKey && selectedConf) {
+	                // Find the selected conf
+	                var node = findNodeById(selectedConf, conf);
+	                // Add it to components 
+	                if (node) {
+	                    setComponents(__spreadArray(__spreadArray([], components, true), [{ name: node.id, config: node }], false));
+	                }
+	                else {
+	                    console.error("Could not find the node to create component");
+	                }
+	            }
+	        };
+	        document.body.addEventListener("keydown", addComponent);
+	        return function () { return document.body.removeEventListener("keydown", addComponent); };
+	    }, [selectedConf]);
 	    function addNodeToStage(dropEv) {
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });

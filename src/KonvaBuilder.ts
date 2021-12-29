@@ -9,6 +9,23 @@ import { KonvaEventObject } from 'konva/lib/Node';
 
 export type ToolType = "arrow" | "rect" | "text" | "group";
 
+function traverse(cursor: Config, id: string): Config|undefined {
+  if (cursor.id === id) {
+    return cursor;
+  } else {
+    const candidates = cursor.children.map(child => traverse(child, id));
+    return candidates.find(c => !!c)
+  }
+}
+
+function findNodeById(id: string, forest: Config[]) {
+  for (let i = 0; i < forest.length; i++) {
+    const tree = forest[i];
+    const node = traverse(tree, id);
+    if (node) return node;
+  }
+}
+
 export default function() {
   const [ conf, setConf ] = useState([] as Config[]);
   const [ selectedConf, setSelectedConf ] = useState("");
@@ -16,7 +33,23 @@ export default function() {
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
   const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf ]);
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
-  const [ mouseDownAt, setMouseDownAt ] = useState(null as { x: number; y: number; } | null);
+
+  useEffect(() => {
+    const addComponent = (ev: KeyboardEvent) => {
+      if (ev.key === "k" && ev.ctrlKey && ev.altKey && selectedConf) {
+        // Find the selected conf
+        const node = findNodeById(selectedConf, conf);
+        // Add it to components 
+        if (node) {
+          setComponents( [ ...components, { name: node.id, config: node } ])
+        } else {
+          console.error("Could not find the node to create component");
+        }
+      } 
+    }
+    document.body.addEventListener("keydown", addComponent);
+    return () => document.body.removeEventListener("keydown", addComponent);
+  }, [ selectedConf ]);
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node
@@ -37,38 +70,6 @@ export default function() {
       return "text";
     } else {
       return "default";
-    }
-  }
-
-  function setMouseDown(ev: KonvaEventObject<MouseEvent> | null) {
-    if (ev === null) {
-      setMouseDownAt(null);
-    } else {
-      const coords = ev.target.getRelativePointerPosition();
-      setMouseDownAt(coords);
-    }
-  }
-
-  function handleMouseMove(ev: KonvaEventObject<MouseEvent>) {
-    if (mouseDownAt && selectedTool === "rect") {
-      const rect: Config = {
-        type: "Rect",
-        id: Date.now().toString(),
-        children: [],
-        props: {
-          x: mouseDownAt.x,
-          y: mouseDownAt.y,
-          width: 100,
-          height: 100,
-          fill: "#c4c4c4"
-        }
-      }
-      let newconfig = [rect];
-      if (conf) {
-        newconfig = [...conf, rect]
-      } 
-      setConf(newconfig);
-      setMouseDownAt(null);
     }
   }
 
