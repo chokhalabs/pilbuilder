@@ -2,7 +2,6 @@ import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Config, tranformToVDOM } from "./utils";
 import { Stage, Layer, Rect } from "react-konva";
 import { ToolType } from "./KonvaBuilder";
-import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
   leftsidebarWidth: number; 

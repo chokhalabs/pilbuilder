@@ -23288,7 +23288,7 @@
 	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    react.exports.useEffect(function () {
-	        var addComponent = function (ev) {
+	        var handleKeyDown = function (ev) {
 	            if (ev.key === "k" && ev.ctrlKey && ev.altKey && selectedConf) {
 	                // Find the selected conf
 	                var node = findNodeById(selectedConf, conf);
@@ -23300,9 +23300,42 @@
 	                    console.error("Could not find the node to create component");
 	                }
 	            }
+	            else if (ev.key === "p" && ev.ctrlKey && ev.altKey && selectedConf) {
+	                var node = findNodeById(selectedConf, conf);
+	                if (node) {
+	                    fetch("http://localhost:3030/buildproject", {
+	                        method: "POST",
+	                        headers: {
+	                            'Content-Type': 'application/json'
+	                        },
+	                        body: JSON.stringify({
+	                            conf: node
+	                        })
+	                    })
+	                        .then(function (res) { return res.json(); })
+	                        .then(function (data) {
+	                        var id = data.generated_project;
+	                        console.log("http://localhost:3030/project/".concat(id));
+	                        // console.log("waiting for build to complete: ");
+	                        // setTimeout(() => {
+	                        // console.log("attempting download");
+	                        // fetch(`http://localhost:3030/project/${id}`, {
+	                        //   method: "GET"
+	                        // })
+	                        // .then()
+	                        // }, 5000);
+	                    })
+	                        .catch(function (err) {
+	                        console.error("Project generation failed: ", err);
+	                    });
+	                }
+	                else {
+	                    console.error("Could not find the node for download: ", selectedConf);
+	                }
+	            }
 	        };
-	        document.body.addEventListener("keydown", addComponent);
-	        return function () { return document.body.removeEventListener("keydown", addComponent); };
+	        document.body.addEventListener("keydown", handleKeyDown);
+	        return function () { return document.body.removeEventListener("keydown", handleKeyDown); };
 	    }, [selectedConf]);
 	    function addNodeToStage(dropEv) {
 	        // Find the node

@@ -35,7 +35,7 @@ export default function() {
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
 
   useEffect(() => {
-    const addComponent = (ev: KeyboardEvent) => {
+    const handleKeyDown = (ev: KeyboardEvent) => {
       if (ev.key === "k" && ev.ctrlKey && ev.altKey && selectedConf) {
         // Find the selected conf
         const node = findNodeById(selectedConf, conf);
@@ -45,10 +45,41 @@ export default function() {
         } else {
           console.error("Could not find the node to create component");
         }
-      } 
+      }  else if (ev.key === "p" && ev.ctrlKey && ev.altKey && selectedConf) {
+        const node = findNodeById(selectedConf, conf);
+        if (node) {
+          fetch("http://localhost:3030/buildproject", {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              conf: node
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            const id = data.generated_project;
+            console.log(`http://localhost:3030/project/${id}`)
+            // console.log("waiting for build to complete: ");
+            // setTimeout(() => {
+              // console.log("attempting download");
+              // fetch(`http://localhost:3030/project/${id}`, {
+              //   method: "GET"
+              // })
+              // .then()
+            // }, 5000);
+          })
+          .catch(err => {
+            console.error("Project generation failed: ", err);
+          })
+        } else {
+          console.error("Could not find the node for download: ", selectedConf)
+        }
+      }
     }
-    document.body.addEventListener("keydown", addComponent);
-    return () => document.body.removeEventListener("keydown", addComponent);
+    document.body.addEventListener("keydown", handleKeyDown);
+    return () => document.body.removeEventListener("keydown", handleKeyDown);
   }, [ selectedConf ]);
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
