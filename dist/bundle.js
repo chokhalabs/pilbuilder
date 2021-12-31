@@ -23166,10 +23166,7 @@
 	                        type: "Group",
 	                        props: {
 	                            x: mouseDownAt.x,
-	                            y: mouseDownAt.y,
-	                            onMouseDown: {
-	                                expr: "$props.onDrawInGroup"
-	                            }
+	                            y: mouseDownAt.y
 	                        },
 	                        children: [{
 	                                id: newid + "-backgroud",
