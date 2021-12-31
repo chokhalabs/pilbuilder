@@ -23124,6 +23124,76 @@
 	        });
 	        nodes.push(drawingbox);
 	    }
+	    function handleMouseDown(ev) {
+	        var parent = ev.target;
+	        if (parent.attrs.id !== "stage") {
+	            while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+	                parent = parent.getParent();
+	            }
+	            setParentId(parent.attrs.id);
+	        }
+	        else {
+	            setParentId(null);
+	        }
+	        if (props.selectedTool === "rect" || props.selectedTool === "group") {
+	            // debugger
+	            var parentrect_1 = parent.getClientRect();
+	            var mdownAt = parent.getRelativePointerPosition();
+	            setMouseDownAt(mdownAt);
+	            setParentRect(parentrect_1);
+	        }
+	    }
+	    function handleMouseUp(ev) {
+	        if (mouseDownAt && mouseAt) {
+	            if (props.selectedTool === "rect") {
+	                var conf = {
+	                    id: Date.now().toString() + "-rect",
+	                    type: "Rect",
+	                    props: {
+	                        x: mouseDownAt.x,
+	                        y: mouseDownAt.y,
+	                        width: mouseAt.x - mouseDownAt.x,
+	                        height: mouseAt.y - mouseDownAt.y,
+	                        fill: "#c4c4c4"
+	                    },
+	                    children: []
+	                };
+	                props.onAddItem(conf, parentid);
+	            }
+	            else if (props.selectedTool === "group") {
+	                var newid = Date.now().toString();
+	                var conf = {
+	                    id: newid + "-group",
+	                    type: "Group",
+	                    props: {
+	                        x: mouseDownAt.x,
+	                        y: mouseDownAt.y
+	                    },
+	                    children: [{
+	                            id: newid + "-backgroud",
+	                            type: "Rect",
+	                            props: {
+	                                x: 0,
+	                                y: 0,
+	                                width: mouseAt.x - mouseDownAt.x,
+	                                height: mouseAt.y - mouseDownAt.y,
+	                                fill: "white"
+	                            },
+	                            children: []
+	                        }]
+	                };
+	                props.onAddItem(conf, parentid);
+	            }
+	        }
+	        setMouseDownAt(null);
+	        setMouseAt(null);
+	    }
+	    function handleMouseMove(ev) {
+	        if (mouseDownAt) {
+	            var currentPos = ev.target.getRelativePointerPosition();
+	            setMouseAt(currentPos);
+	        }
+	    }
 	    return react.exports.createElement(Stage, {
 	        ref: stageNode,
 	        width: window.innerWidth - props.leftsidebarWidth,
@@ -23132,76 +23202,9 @@
 	        key: "designboard",
 	        style: { cursor: props.cursor },
 	        id: "stage",
-	        onMouseDown: function (ev) {
-	            var parent = ev.target;
-	            if (parent.attrs.id !== "stage") {
-	                while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
-	                    parent = parent.getParent();
-	                }
-	                setParentId(parent.attrs.id);
-	            }
-	            else {
-	                setParentId(null);
-	            }
-	            if (props.selectedTool === "rect" || props.selectedTool === "group") {
-	                // debugger
-	                var parentrect_1 = parent.getClientRect();
-	                var mdownAt = parent.getRelativePointerPosition();
-	                setMouseDownAt(mdownAt);
-	                setParentRect(parentrect_1);
-	            }
-	        },
-	        onMouseUp: function () {
-	            if (mouseDownAt && mouseAt) {
-	                if (props.selectedTool === "rect") {
-	                    var conf = {
-	                        id: Date.now().toString() + "-rect",
-	                        type: "Rect",
-	                        props: {
-	                            x: mouseDownAt.x,
-	                            y: mouseDownAt.y,
-	                            width: mouseAt.x - mouseDownAt.x,
-	                            height: mouseAt.y - mouseDownAt.y,
-	                            fill: "#c4c4c4"
-	                        },
-	                        children: []
-	                    };
-	                    props.onAddItem(conf, parentid);
-	                }
-	                else if (props.selectedTool === "group") {
-	                    var newid = Date.now().toString();
-	                    var conf = {
-	                        id: newid + "-group",
-	                        type: "Group",
-	                        props: {
-	                            x: mouseDownAt.x,
-	                            y: mouseDownAt.y
-	                        },
-	                        children: [{
-	                                id: newid + "-backgroud",
-	                                type: "Rect",
-	                                props: {
-	                                    x: 0,
-	                                    y: 0,
-	                                    width: mouseAt.x - mouseDownAt.x,
-	                                    height: mouseAt.y - mouseDownAt.y,
-	                                    fill: "white"
-	                                },
-	                                children: []
-	                            }]
-	                    };
-	                    props.onAddItem(conf, parentid);
-	                }
-	            }
-	            setMouseDownAt(null);
-	            setMouseAt(null);
-	        },
-	        onMouseMove: function (ev) {
-	            if (mouseDownAt) {
-	                var currentPos = ev.target.getRelativePointerPosition();
-	                setMouseAt(currentPos);
-	            }
-	        }
+	        onMouseDown: handleMouseDown,
+	        onMouseUp: handleMouseUp,
+	        onMouseMove: handleMouseMove
 	    }, [
 	        react.exports.createElement(Layer, {
 	            key: "layer1"

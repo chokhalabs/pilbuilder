@@ -3,6 +3,7 @@ import { Stage, Layer, Rect } from "react-konva";
 import Konva from "konva";
 import { ToolType } from "./KonvaBuilder";
 import { Config, tranformToVDOM } from "./utils";
+import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
   leftsidebarWidth: number; 
@@ -85,6 +86,80 @@ export default function(props: Props) {
     nodes.push(drawingbox);
   } 
 
+  function handleMouseDown(ev: KonvaEventObject<MouseEvent>) {
+    let parent = ev.target; 
+    
+    if (parent.attrs.id !== "stage") {
+      while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+        parent = parent.getParent();
+      }
+      setParentId(parent.attrs.id);
+    } else {
+      setParentId(null);
+    }
+
+    if (props.selectedTool === "rect" || props.selectedTool === "group") {
+      // debugger
+      const parentrect = parent.getClientRect();
+      const mdownAt = parent.getRelativePointerPosition();
+      setMouseDownAt(mdownAt);
+      setParentRect(parentrect);
+    }
+  }
+
+  function handleMouseUp(ev: KonvaEventObject<MouseEvent>) {
+    if (mouseDownAt && mouseAt) {
+      if (props.selectedTool === "rect") {
+        const conf: Config = {
+          id: Date.now().toString() + "-rect",
+          type: "Rect",
+          props: {
+            x: mouseDownAt.x,
+            y: mouseDownAt.y,
+            width: mouseAt.x - mouseDownAt.x,
+            height: mouseAt.y - mouseDownAt.y,
+            fill: "#c4c4c4"
+          },
+          children: []
+        };
+        props.onAddItem(conf, parentid);
+      } else if (props.selectedTool === "group") {
+        const newid = Date.now().toString();
+        const conf: Config = {
+          id: newid + "-group",
+          type: "Group",
+          props: {
+            x: mouseDownAt.x,
+            y: mouseDownAt.y
+          },
+          children: [{
+            id: newid + "-backgroud",
+            type: "Rect",
+            props: {
+              x: 0,
+              y: 0,
+              width: mouseAt.x - mouseDownAt.x,
+              height: mouseAt.y - mouseDownAt.y,
+              fill: "white"
+            },
+            children: []
+          }]
+        };
+        props.onAddItem(conf, parentid);
+      }
+      
+    }
+    setMouseDownAt(null);
+    setMouseAt(null);
+  }
+
+  function handleMouseMove(ev: KonvaEventObject<MouseEvent>) {
+    if (mouseDownAt) {
+      const currentPos = ev.target.getRelativePointerPosition();
+      setMouseAt(currentPos);
+    }
+  }
+
   return h(Stage, 
     {
       ref: stageNode,
@@ -94,78 +169,9 @@ export default function(props: Props) {
       key: "designboard",
       style: { cursor: props.cursor },
       id: "stage",
-      onMouseDown: ev => {
-        let parent = ev.target; 
-        
-        if (parent.attrs.id !== "stage") {
-          while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
-            parent = parent.getParent();
-          }
-          setParentId(parent.attrs.id);
-        } else {
-          setParentId(null);
-        }
-
-        if (props.selectedTool === "rect" || props.selectedTool === "group") {
-          // debugger
-          const parentrect = parent.getClientRect();
-          const mdownAt = parent.getRelativePointerPosition();
-          setMouseDownAt(mdownAt);
-          setParentRect(parentrect);
-        }
-        
-      },
-      onMouseUp: () => {
-        if (mouseDownAt && mouseAt) {
-          if (props.selectedTool === "rect") {
-            const conf: Config = {
-              id: Date.now().toString() + "-rect",
-              type: "Rect",
-              props: {
-                x: mouseDownAt.x,
-                y: mouseDownAt.y,
-                width: mouseAt.x - mouseDownAt.x,
-                height: mouseAt.y - mouseDownAt.y,
-                fill: "#c4c4c4"
-              },
-              children: []
-            };
-            props.onAddItem(conf, parentid);
-          } else if (props.selectedTool === "group") {
-            const newid = Date.now().toString();
-            const conf: Config = {
-              id: newid + "-group",
-              type: "Group",
-              props: {
-                x: mouseDownAt.x,
-                y: mouseDownAt.y
-              },
-              children: [{
-                id: newid + "-backgroud",
-                type: "Rect",
-                props: {
-                  x: 0,
-                  y: 0,
-                  width: mouseAt.x - mouseDownAt.x,
-                  height: mouseAt.y - mouseDownAt.y,
-                  fill: "white"
-                },
-                children: []
-              }]
-            };
-            props.onAddItem(conf, parentid);
-          }
-          
-        }
-        setMouseDownAt(null);
-        setMouseAt(null);
-      },
-      onMouseMove: ev => {
-        if (mouseDownAt) {
-          const currentPos = ev.target.getRelativePointerPosition();
-          setMouseAt(currentPos);
-        }
-      }
+      onMouseDown: handleMouseDown,
+      onMouseUp: handleMouseUp,
+      onMouseMove: handleMouseMove
     },
     [
       h(Layer,
