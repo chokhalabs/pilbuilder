@@ -1,7 +1,8 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
-import { Config, tranformToVDOM } from "./utils";
 import { Stage, Layer, Rect } from "react-konva";
+import Konva from "konva";
 import { ToolType } from "./KonvaBuilder";
+import { Config, tranformToVDOM } from "./utils";
 
 type Props = { 
   leftsidebarWidth: number; 
@@ -15,11 +16,12 @@ type Props = {
 }
 
 export default function(props: Props) {
-  const stageNode = useRef(null);
+  const stageNode = useRef(null as any);
   const [ dropListener, setDropListener ] = useState(null as any);
   const [ mouseDownAt, setMouseDownAt] = useState(null as { x: number; y: number; } | null);
   const [ mouseAt, setMouseAt ] = useState(null as { x: number; y: number; } | null);
-  const [ parent, setParent ] = useState(null as string | null);
+  const [ parentid, setParentId ] = useState(null as string | null);
+  const [ parentrect, setParentRect ] = useState(null as null | { x: number; y: number; });
 
   const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, 
     { 
@@ -65,9 +67,17 @@ export default function(props: Props) {
   }, [stageNode, props.components]);
 
   if (mouseAt && mouseDownAt) {
+    let x = mouseDownAt.x;
+    let y = mouseDownAt.y;
+
+    if (parentid && parentrect) {
+      x = x + parentrect.x;
+      y = y + parentrect.y;
+    } 
+
     const drawingbox = h(Rect, {
-      x: mouseDownAt.x,
-      y: mouseDownAt.y,
+      x,
+      y,
       width: mouseAt.x - mouseDownAt.x,
       height: mouseAt.y - mouseDownAt.y,
       fill: "#c4c4c4"
@@ -85,20 +95,25 @@ export default function(props: Props) {
       style: { cursor: props.cursor },
       id: "stage",
       onMouseDown: ev => {
-        if (ev.target.attrs.id !== "stage") {
-          let parent = ev.target; 
+        let parent = ev.target; 
+        
+        if (parent.attrs.id !== "stage") {
           while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
             parent = parent.getParent();
           }
-          setParent(parent.attrs.id);
+          setParentId(parent.attrs.id);
         } else {
-          setParent(null);
+          setParentId(null);
         }
+
         if (props.selectedTool === "rect" || props.selectedTool === "group") {
           // debugger
-          const mdownAt = ev.target.getRelativePointerPosition();
+          const parentrect = parent.getClientRect();
+          const mdownAt = parent.getRelativePointerPosition();
           setMouseDownAt(mdownAt);
+          setParentRect(parentrect);
         }
+        
       },
       onMouseUp: () => {
         if (mouseDownAt && mouseAt) {
@@ -115,7 +130,7 @@ export default function(props: Props) {
               },
               children: []
             };
-            props.onAddItem(conf, parent);
+            props.onAddItem(conf, parentid);
           } else if (props.selectedTool === "group") {
             const newid = Date.now().toString();
             const conf: Config = {
@@ -138,7 +153,7 @@ export default function(props: Props) {
                 children: []
               }]
             };
-            props.onAddItem(conf, parent);
+            props.onAddItem(conf, parentid);
           }
           
         }

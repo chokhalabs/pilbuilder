@@ -7797,27 +7797,6 @@
 	    ]);
 	}
 
-	function evaluateProps($props, propsExprs) {
-	    var evaluated = __assign({}, propsExprs);
-	    Object.keys(propsExprs).forEach(function (key) {
-	        var propval = propsExprs[key];
-	        if (typeof propval === "object") {
-	            evaluated[key] = eval(propval.expr);
-	        }
-	    });
-	    return evaluated;
-	}
-	function tranformToVDOM(config, $props) {
-	    var props = null;
-	    if (config.props) {
-	        props = evaluateProps($props, config.props);
-	    }
-	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
-	    return function () {
-	        return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
-	    };
-	}
-
 	var PI_OVER_180$1 = Math.PI / 180;
 
 	function detectBrowser$1() {
@@ -23059,12 +23038,34 @@
 	  }));
 	});
 
+	function evaluateProps($props, propsExprs) {
+	    var evaluated = __assign({}, propsExprs);
+	    Object.keys(propsExprs).forEach(function (key) {
+	        var propval = propsExprs[key];
+	        if (typeof propval === "object") {
+	            evaluated[key] = eval(propval.expr);
+	        }
+	    });
+	    return evaluated;
+	}
+	function tranformToVDOM(config, $props) {
+	    var props = null;
+	    if (config.props) {
+	        props = evaluateProps($props, config.props);
+	    }
+	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
+	    return function () {
+	        return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	    };
+	}
+
 	function DesignBoard (props) {
 	    var stageNode = react.exports.useRef(null);
 	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
 	    var _b = react.exports.useState(null), mouseDownAt = _b[0], setMouseDownAt = _b[1];
 	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
-	    var _d = react.exports.useState(null), parent = _d[0], setParent = _d[1];
+	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
+	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, {
 	        key: "rect-" + i,
 	        // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
@@ -23108,9 +23109,15 @@
 	        }
 	    }, [stageNode, props.components]);
 	    if (mouseAt && mouseDownAt) {
+	        var x = mouseDownAt.x;
+	        var y = mouseDownAt.y;
+	        if (parentid && parentrect) {
+	            x = x + parentrect.x;
+	            y = y + parentrect.y;
+	        }
 	        var drawingbox = react.exports.createElement(Rect, {
-	            x: mouseDownAt.x,
-	            y: mouseDownAt.y,
+	            x: x,
+	            y: y,
 	            width: mouseAt.x - mouseDownAt.x,
 	            height: mouseAt.y - mouseDownAt.y,
 	            fill: "#c4c4c4"
@@ -23126,20 +23133,22 @@
 	        style: { cursor: props.cursor },
 	        id: "stage",
 	        onMouseDown: function (ev) {
-	            if (ev.target.attrs.id !== "stage") {
-	                var parent_1 = ev.target;
-	                while (parent_1.attrs.id !== "stage" && !parent_1.attrs.id.endsWith("group")) {
-	                    parent_1 = parent_1.getParent();
+	            var parent = ev.target;
+	            if (parent.attrs.id !== "stage") {
+	                while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+	                    parent = parent.getParent();
 	                }
-	                setParent(parent_1.attrs.id);
+	                setParentId(parent.attrs.id);
 	            }
 	            else {
-	                setParent(null);
+	                setParentId(null);
 	            }
 	            if (props.selectedTool === "rect" || props.selectedTool === "group") {
 	                // debugger
-	                var mdownAt = ev.target.getRelativePointerPosition();
+	                var parentrect_1 = parent.getClientRect();
+	                var mdownAt = parent.getRelativePointerPosition();
 	                setMouseDownAt(mdownAt);
+	                setParentRect(parentrect_1);
 	            }
 	        },
 	        onMouseUp: function () {
@@ -23157,7 +23166,7 @@
 	                        },
 	                        children: []
 	                    };
-	                    props.onAddItem(conf, parent);
+	                    props.onAddItem(conf, parentid);
 	                }
 	                else if (props.selectedTool === "group") {
 	                    var newid = Date.now().toString();
@@ -23181,7 +23190,7 @@
 	                                children: []
 	                            }]
 	                    };
-	                    props.onAddItem(conf, parent);
+	                    props.onAddItem(conf, parentid);
 	                }
 	            }
 	            setMouseDownAt(null);
