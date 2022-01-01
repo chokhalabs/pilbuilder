@@ -6,6 +6,7 @@ import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf } from "./KonvaPrimitives";
 import { KonvaEventObject } from 'konva/lib/Node';
+import Detailsbar from './Detailsbar';
 
 export type ToolType = "arrow" | "rect" | "text" | "group";
 
@@ -94,6 +95,18 @@ export default function() {
     // The next render cycle will update the vdom to render both
   }
 
+  function updateNode(id: string, key: string, value: any) {
+    const newConf = JSON.parse(JSON.stringify(conf));
+    const node = findNodeById(id, newConf);
+    if (node) {
+      node.props = node.props || {};
+      node.props[key] = value;
+      setConf(newConf);
+    } else {
+      console.error("Could not find the node: ", id);
+    }
+  }
+
   function pointerType(selectedTool: string) {
     if (selectedTool === "rect" || selectedTool === "group") {
       return "crosshair";
@@ -167,6 +180,15 @@ export default function() {
     }
   );
 
+  const detailbar = h(
+    Detailsbar,
+    {
+      key: "detailsbar",
+      node: findNodeById(selectedConf, conf) || null,
+      onNodeUpdate: (key: string, value: any) => updateNode(selectedConf, key, value)
+    }
+  );
+
   return (
     h(
       "div", 
@@ -176,7 +198,8 @@ export default function() {
       [
         menubar,
         sidebar,
-        designboard
+        designboard,
+        detailbar
       ]
     )
   );

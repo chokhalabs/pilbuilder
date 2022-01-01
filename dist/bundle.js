@@ -23239,7 +23239,7 @@
 	    }
 	    return react.exports.createElement(Stage, {
 	        ref: stageNode,
-	        width: window.innerWidth - props.leftsidebarWidth,
+	        width: window.innerWidth - 2 * props.leftsidebarWidth,
 	        height: window.innerHeight - props.menubarHeight,
 	        className: "stage",
 	        key: "designboard",
@@ -23314,6 +23314,83 @@
 	        children: []
 	    }
 	};
+
+	function editNumber(props) {
+	    return react.exports.createElement("div", {
+	        className: "numberfield"
+	    }, [
+	        react.exports.createElement("div", {}, props.label),
+	        react.exports.createElement("input", {
+	            value: props.value,
+	            type: "number",
+	            onChange: function (ev) { return props.onChange(props.label, parseFloat(ev.target.value)); }
+	        })
+	    ]);
+	}
+	function editColor(props) {
+	    return react.exports.createElement("div", {
+	        className: "colorfield"
+	    }, [
+	        react.exports.createElement("div", {}, props.label),
+	        react.exports.createElement("input", {
+	            value: props.value,
+	            type: "color",
+	            onChange: function (ev) { return props.onChange(props.label, ev.target.value); }
+	        })
+	    ]);
+	}
+	function Detailsbar (props) {
+	    var _a, _b, _c, _d, _e;
+	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
+	    if (props.node) {
+	        var node = props.node;
+	        var propEditors = [];
+	        var x = (_a = node.props) === null || _a === void 0 ? void 0 : _a.x;
+	        if (typeof x === "number") {
+	            propEditors.push(editNumber({
+	                label: "x",
+	                value: x,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        var y = (_b = node.props) === null || _b === void 0 ? void 0 : _b.y;
+	        if (typeof y === "number") {
+	            propEditors.push(editNumber({
+	                label: "y",
+	                value: y,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        var width = (_c = node.props) === null || _c === void 0 ? void 0 : _c.width;
+	        if (typeof width === "number") {
+	            propEditors.push(editNumber({
+	                label: "width",
+	                value: width,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        var height = (_d = node.props) === null || _d === void 0 ? void 0 : _d.height;
+	        if (typeof height === "number") {
+	            propEditors.push(editNumber({
+	                label: "height",
+	                value: height,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        var fill = (_e = node.props) === null || _e === void 0 ? void 0 : _e.fill;
+	        if (typeof fill === "string") {
+	            propEditors.push(editColor({
+	                label: "fill",
+	                value: fill,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        body = react.exports.createElement("div", {}, propEditors);
+	    }
+	    return react.exports.createElement("div", {
+	        className: "detailsbar"
+	    }, body);
+	}
 
 	function traverse(cursor, id) {
 	    if (cursor.id === id) {
@@ -23400,6 +23477,18 @@
 	        }
 	        // The next render cycle will update the vdom to render both
 	    }
+	    function updateNode(id, key, value) {
+	        var newConf = JSON.parse(JSON.stringify(conf));
+	        var node = findNodeById(id, newConf);
+	        if (node) {
+	            node.props = node.props || {};
+	            node.props[key] = value;
+	            setConf(newConf);
+	        }
+	        else {
+	            console.error("Could not find the node: ", id);
+	        }
+	    }
 	    function pointerType(selectedTool) {
 	        if (selectedTool === "rect" || selectedTool === "group") {
 	            return "crosshair";
@@ -23465,12 +23554,18 @@
 	        selectedTool: selectedTool,
 	        onSelectTool: setSelectedTool
 	    });
+	    var detailbar = react.exports.createElement(Detailsbar, {
+	        key: "detailsbar",
+	        node: findNodeById(selectedConf, conf) || null,
+	        onNodeUpdate: function (key, value) { return updateNode(selectedConf, key, value); }
+	    });
 	    return (react.exports.createElement("div", {
 	        className: "konvaroot"
 	    }, [
 	        menubar,
 	        sidebar,
-	        designboard
+	        designboard,
+	        detailbar
 	    ]));
 	}
 

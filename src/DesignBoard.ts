@@ -203,7 +203,7 @@ export default function(props: Props) {
   return h(Stage, 
     {
       ref: stageNode,
-      width: window.innerWidth - props.leftsidebarWidth,
+      width: window.innerWidth - 2 * props.leftsidebarWidth,
       height: window.innerHeight - props.menubarHeight,
       className: "stage",
       key: "designboard",
