@@ -26,7 +26,7 @@ export default function(props: Props) {
 
   const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, 
     { 
-      key: "rect-" + i, 
+      key: props.selectedTool + "-" + i, 
       // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
       //   console.log("Drawing in group: ", ev);
       //   setGroupBeingDrawinIn(ev.target.id)
@@ -88,17 +88,23 @@ export default function(props: Props) {
 
   function handleMouseDown(ev: KonvaEventObject<MouseEvent>) {
     let parent = ev.target; 
-    
+
     if (parent.attrs.id !== "stage") {
-      while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+      let parentFound = false;
+      while (!parentFound) {
         parent = parent.getParent();
+        if (props.selectedTool === "rect" || props.selectedTool === "group") {
+          parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group");
+        } else if (props.selectedTool === "text") {
+          parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group") || parent.attrs.id.endsWith("rect");
+        }
       }
       setParentId(parent.attrs.id);
     } else {
       setParentId(null);
     }
 
-    if (props.selectedTool === "rect" || props.selectedTool === "group") {
+    if (props.selectedTool !== "arrow") {
       // debugger
       const parentrect = parent.getClientRect();
       const mdownAt = parent.getRelativePointerPosition();
@@ -133,7 +139,7 @@ export default function(props: Props) {
             y: mouseDownAt.y
           },
           children: [{
-            id: newid + "-backgroud",
+            id: newid + "-rect",
             type: "Rect",
             props: {
               x: 0,
@@ -146,8 +152,42 @@ export default function(props: Props) {
           }]
         };
         props.onAddItem(conf, parentid);
+      } else if (props.selectedTool === "text") {
+        const newid = Date.now().toString();
+        const conf: Config = {
+          id: newid + "-group",
+          type: "Group",
+          props: {
+            x: mouseDownAt.x,
+            y: mouseDownAt.y,
+          },
+          children: [
+            {
+              id: newid + "-rect",
+              type: "Rect",
+              props: {
+                x: 0,
+                y: 0,
+                width: mouseAt.x - mouseDownAt.x,
+                height: mouseAt.y - mouseDownAt.y,
+                fill: "white"
+              },
+              children: []
+            },
+            {
+              id: newid + "-text",
+              type: "Text",
+              props: {
+                x: 5,
+                y: 5,
+                text: "placeholder..."
+              },
+              children: []
+            }
+          ]
+        };
+        props.onAddItem(conf, parentid);
       }
-      
     }
     setMouseDownAt(null);
     setMouseAt(null);

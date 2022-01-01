@@ -23067,7 +23067,7 @@
 	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
 	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, {
-	        key: "rect-" + i,
+	        key: props.selectedTool + "-" + i,
 	        // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
 	        //   console.log("Drawing in group: ", ev);
 	        //   setGroupBeingDrawinIn(ev.target.id)
@@ -23127,15 +23127,22 @@
 	    function handleMouseDown(ev) {
 	        var parent = ev.target;
 	        if (parent.attrs.id !== "stage") {
-	            while (parent.attrs.id !== "stage" && !parent.attrs.id.endsWith("group")) {
+	            var parentFound = false;
+	            while (!parentFound) {
 	                parent = parent.getParent();
+	                if (props.selectedTool === "rect" || props.selectedTool === "group") {
+	                    parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group");
+	                }
+	                else if (props.selectedTool === "text") {
+	                    parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group") || parent.attrs.id.endsWith("rect");
+	                }
 	            }
 	            setParentId(parent.attrs.id);
 	        }
 	        else {
 	            setParentId(null);
 	        }
-	        if (props.selectedTool === "rect" || props.selectedTool === "group") {
+	        if (props.selectedTool !== "arrow") {
 	            // debugger
 	            var parentrect_1 = parent.getClientRect();
 	            var mdownAt = parent.getRelativePointerPosition();
@@ -23170,7 +23177,7 @@
 	                        y: mouseDownAt.y
 	                    },
 	                    children: [{
-	                            id: newid + "-backgroud",
+	                            id: newid + "-rect",
 	                            type: "Rect",
 	                            props: {
 	                                x: 0,
@@ -23181,6 +23188,42 @@
 	                            },
 	                            children: []
 	                        }]
+	                };
+	                props.onAddItem(conf, parentid);
+	            }
+	            else if (props.selectedTool === "text") {
+	                var newid = Date.now().toString();
+	                var conf = {
+	                    id: newid + "-group",
+	                    type: "Group",
+	                    props: {
+	                        x: mouseDownAt.x,
+	                        y: mouseDownAt.y,
+	                    },
+	                    children: [
+	                        {
+	                            id: newid + "-rect",
+	                            type: "Rect",
+	                            props: {
+	                                x: 0,
+	                                y: 0,
+	                                width: mouseAt.x - mouseDownAt.x,
+	                                height: mouseAt.y - mouseDownAt.y,
+	                                fill: "white"
+	                            },
+	                            children: []
+	                        },
+	                        {
+	                            id: newid + "-text",
+	                            type: "Text",
+	                            props: {
+	                                x: 5,
+	                                y: 5,
+	                                text: "placeholder..."
+	                            },
+	                            children: []
+	                        }
+	                    ]
 	                };
 	                props.onAddItem(conf, parentid);
 	            }
