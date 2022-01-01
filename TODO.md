@@ -5,7 +5,7 @@
 
 - Fix draw location inside group
 - Allow drawing textnode
-+ Allow editing selected node
+- Allow editing selected node
 + Allow wiring up event emitters
 + Generate a stub file for event handlers in exported projects
 + Allow mapping data to components

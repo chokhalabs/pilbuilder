@@ -1,3 +1,7 @@
+body {
+  margin: 0;
+}
+
 .konvaroot {
   background: #e5e5e5;
   display: grid;
