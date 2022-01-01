@@ -23194,36 +23194,15 @@
 	            else if (props.selectedTool === "text") {
 	                var newid = Date.now().toString();
 	                var conf = {
-	                    id: newid + "-group",
-	                    type: "Group",
+	                    id: newid + "-text",
+	                    type: "Text",
 	                    props: {
 	                        x: mouseDownAt.x,
 	                        y: mouseDownAt.y,
+	                        text: "placeholder...",
+	                        fill: "black"
 	                    },
-	                    children: [
-	                        {
-	                            id: newid + "-rect",
-	                            type: "Rect",
-	                            props: {
-	                                x: 0,
-	                                y: 0,
-	                                width: mouseAt.x - mouseDownAt.x,
-	                                height: mouseAt.y - mouseDownAt.y,
-	                                fill: "white"
-	                            },
-	                            children: []
-	                        },
-	                        {
-	                            id: newid + "-text",
-	                            type: "Text",
-	                            props: {
-	                                x: 5,
-	                                y: 5,
-	                                text: "placeholder..."
-	                            },
-	                            children: []
-	                        }
-	                    ]
+	                    children: []
 	                };
 	                props.onAddItem(conf, parentid);
 	            }
@@ -23339,8 +23318,20 @@
 	        })
 	    ]);
 	}
+	function editText(props) {
+	    return react.exports.createElement("div", {
+	        className: "textfield"
+	    }, [
+	        react.exports.createElement("div", {}, props.label),
+	        react.exports.createElement("input", {
+	            value: props.value,
+	            type: "text",
+	            onChange: function (ev) { return props.onChange(props.label, ev.target.value); }
+	        })
+	    ]);
+	}
 	function Detailsbar (props) {
-	    var _a, _b, _c, _d, _e;
+	    var _a, _b, _c, _d, _e, _f;
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
 	        var node = props.node;
@@ -23382,6 +23373,14 @@
 	            propEditors.push(editColor({
 	                label: "fill",
 	                value: fill,
+	                onChange: props.onNodeUpdate
+	            }));
+	        }
+	        var text = (_f = node.props) === null || _f === void 0 ? void 0 : _f.text;
+	        if (typeof text === "string") {
+	            propEditors.push(editText({
+	                label: "text",
+	                value: text,
 	                onChange: props.onNodeUpdate
 	            }));
 	        }

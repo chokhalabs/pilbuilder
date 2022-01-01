@@ -54,6 +54,30 @@ function editColor(props: { label: string; value: string; onChange: (key: string
   );
 }
 
+function editText(props: { label: string; value: string; onChange: (key: string, value: string) => void }) {
+  return h(
+    "div", 
+    {
+      className: "textfield"
+    },
+    [
+      h(
+        "div",
+        {},
+        props.label
+      ),
+      h(
+        "input",
+        {
+          value: props.value,
+          type: "text",
+          onChange: ev => props.onChange( props.label, ev.target.value)
+        }
+      )
+    ] 
+  );
+}
+
 export default function (props: DetailsProps) {
   let body = h("div", {}, "Select a node to edit its properties!");
   if (props.node) {
@@ -101,6 +125,15 @@ export default function (props: DetailsProps) {
       propEditors.push(editColor({ 
         label: "fill", 
         value: fill,
+        onChange: props.onNodeUpdate
+      }));
+    }
+
+    let text = node.props?.text;
+    if (typeof text === "string") {
+      propEditors.push(editText({ 
+        label: "text", 
+        value: text,
         onChange: props.onNodeUpdate
       }));
     }

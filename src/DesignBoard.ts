@@ -155,37 +155,16 @@ export default function(props: Props) {
       } else if (props.selectedTool === "text") {
         const newid = Date.now().toString();
         const conf: Config = {
-          id: newid + "-group",
-          type: "Group",
-          props: {
-            x: mouseDownAt.x,
-            y: mouseDownAt.y,
-          },
-          children: [
-            {
-              id: newid + "-rect",
-              type: "Rect",
-              props: {
-                x: 0,
-                y: 0,
-                width: mouseAt.x - mouseDownAt.x,
-                height: mouseAt.y - mouseDownAt.y,
-                fill: "white"
-              },
-              children: []
-            },
-            {
               id: newid + "-text",
               type: "Text",
               props: {
-                x: 5,
-                y: 5,
-                text: "placeholder..."
+                x: mouseDownAt.x,
+                y: mouseDownAt.y,
+                text: "placeholder...",
+                fill: "black"
               },
               children: []
-            }
-          ]
-        };
+            };
         props.onAddItem(conf, parentid);
       }
     }
