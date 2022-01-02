@@ -124,7 +124,10 @@ export default function(props: Props) {
             y: mouseDownAt.y,
             width: mouseAt.x - mouseDownAt.x,
             height: mouseAt.y - mouseDownAt.y,
-            fill: "#c4c4c4"
+            fill: "#c4c4c4",
+            onClick: {
+              expr: "null"
+            }
           },
           children: []
         };

@@ -44,3 +44,33 @@ export const GroupConf: Component = {
     children: []
   }
 }
+
+export const ButtonConf: Component = {
+  name: "Button",
+  config: {
+    type: "Group",
+    id: "grouproot",
+    props: {
+      title: {
+        expr: "$props.title"
+      },
+      onClick: {
+        expr: "$props.onClick"
+      }
+    },
+    children: [
+      {
+        id: "background",
+        type: "Rect",
+        props: {},
+        children: []
+      },
+      {
+        id: "text",
+        type: "Text",
+        props: {},
+        children: []
+      }
+    ]
+  }
+}

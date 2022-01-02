@@ -6,7 +6,7 @@ type DetailsProps = {
   onNodeUpdate: (key: string, value: any) => void
 };
 
-function editNumber(props: { label: string; value: number; onChange: (key: string, value: number) => void }) {
+function editNumber(props: { label: string; value: number; onChange: (key: string, value: number) => void, isCallback: boolean }) {
   return h(
     "div", 
     {
@@ -30,7 +30,7 @@ function editNumber(props: { label: string; value: number; onChange: (key: strin
   );
 }
 
-function editColor(props: { label: string; value: string; onChange: (key: string, value: string) => void }) {
+function editColor(props: { label: string; value: string; onChange: (key: string, value: string) => void, isCallback: boolean }) {
   return h(
     "div", 
     {
@@ -54,7 +54,7 @@ function editColor(props: { label: string; value: string; onChange: (key: string
   );
 }
 
-function editText(props: { label: string; value: string; onChange: (key: string, value: string) => void }) {
+function editText(props: { label: string; value: string; onChange: (key: string, value: string | { expr: string }) => void; isCallback: boolean} ) {
   return h(
     "div", 
     {
@@ -69,9 +69,9 @@ function editText(props: { label: string; value: string; onChange: (key: string,
       h(
         "input",
         {
-          value: props.value,
+          value: props.isCallback ? props.value.substring("$props.".length) : props.value,
           type: "text",
-          onChange: ev => props.onChange( props.label, ev.target.value)
+          onChange: ev => props.onChange(props.label, props.isCallback ? { expr: "$props." + ev.target.value } : ev.target.value)
         }
       )
     ] 
@@ -89,7 +89,8 @@ export default function (props: DetailsProps) {
       propEditors.push(editNumber({ 
         label: "x", 
         value: x,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
     }
 
@@ -98,7 +99,8 @@ export default function (props: DetailsProps) {
       propEditors.push(editNumber({ 
         label: "y", 
         value: y,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
     }
 
@@ -107,7 +109,8 @@ export default function (props: DetailsProps) {
       propEditors.push(editNumber({ 
         label: "width", 
         value: width,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
     }
 
@@ -116,7 +119,8 @@ export default function (props: DetailsProps) {
       propEditors.push(editNumber({ 
         label: "height", 
         value: height,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
     }
 
@@ -125,7 +129,8 @@ export default function (props: DetailsProps) {
       propEditors.push(editColor({ 
         label: "fill", 
         value: fill,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
     }
 
@@ -134,8 +139,19 @@ export default function (props: DetailsProps) {
       propEditors.push(editText({ 
         label: "text", 
         value: text,
-        onChange: props.onNodeUpdate
+        onChange: props.onNodeUpdate,
+        isCallback: false
       }));
+    }
+
+    let onClick = node.props?.onClick;
+    if (typeof onClick === "object") {
+      propEditors.push(editText({
+        label: "onClick",
+        value: onClick.expr, // TODO validate to ensure this is always the form { expr: null || /^\$props.([a-zA-Z0-9]+)$/ }
+        onChange: props.onNodeUpdate,
+        isCallback: true
+      }))
     }
 
     body = h(

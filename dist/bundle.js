@@ -23161,7 +23161,10 @@
 	                        y: mouseDownAt.y,
 	                        width: mouseAt.x - mouseDownAt.x,
 	                        height: mouseAt.y - mouseDownAt.y,
-	                        fill: "#c4c4c4"
+	                        fill: "#c4c4c4",
+	                        onClick: {
+	                            expr: "null"
+	                        }
 	                    },
 	                    children: []
 	                };
@@ -23324,14 +23327,14 @@
 	    }, [
 	        react.exports.createElement("div", {}, props.label),
 	        react.exports.createElement("input", {
-	            value: props.value,
+	            value: props.isCallback ? props.value.substring("$props.".length) : props.value,
 	            type: "text",
-	            onChange: function (ev) { return props.onChange(props.label, ev.target.value); }
+	            onChange: function (ev) { return props.onChange(props.label, props.isCallback ? { expr: "$props." + ev.target.value } : ev.target.value); }
 	        })
 	    ]);
 	}
 	function Detailsbar (props) {
-	    var _a, _b, _c, _d, _e, _f;
+	    var _a, _b, _c, _d, _e, _f, _g;
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
 	        var node = props.node;
@@ -23341,7 +23344,8 @@
 	            propEditors.push(editNumber({
 	                label: "x",
 	                value: x,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
 	            }));
 	        }
 	        var y = (_b = node.props) === null || _b === void 0 ? void 0 : _b.y;
@@ -23349,7 +23353,8 @@
 	            propEditors.push(editNumber({
 	                label: "y",
 	                value: y,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
 	            }));
 	        }
 	        var width = (_c = node.props) === null || _c === void 0 ? void 0 : _c.width;
@@ -23357,7 +23362,8 @@
 	            propEditors.push(editNumber({
 	                label: "width",
 	                value: width,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
 	            }));
 	        }
 	        var height = (_d = node.props) === null || _d === void 0 ? void 0 : _d.height;
@@ -23365,7 +23371,8 @@
 	            propEditors.push(editNumber({
 	                label: "height",
 	                value: height,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
 	            }));
 	        }
 	        var fill = (_e = node.props) === null || _e === void 0 ? void 0 : _e.fill;
@@ -23373,7 +23380,8 @@
 	            propEditors.push(editColor({
 	                label: "fill",
 	                value: fill,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
 	            }));
 	        }
 	        var text = (_f = node.props) === null || _f === void 0 ? void 0 : _f.text;
@@ -23381,7 +23389,17 @@
 	            propEditors.push(editText({
 	                label: "text",
 	                value: text,
-	                onChange: props.onNodeUpdate
+	                onChange: props.onNodeUpdate,
+	                isCallback: false
+	            }));
+	        }
+	        var onClick = (_g = node.props) === null || _g === void 0 ? void 0 : _g.onClick;
+	        if (typeof onClick === "object") {
+	            propEditors.push(editText({
+	                label: "onClick",
+	                value: onClick.expr,
+	                onChange: props.onNodeUpdate,
+	                isCallback: true
 	            }));
 	        }
 	        body = react.exports.createElement("div", {}, propEditors);
