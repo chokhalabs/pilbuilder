@@ -94,9 +94,9 @@ export default function(props: Props) {
       while (!parentFound) {
         parent = parent.getParent();
         if (props.selectedTool === "rect" || props.selectedTool === "group") {
-          parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group");
+          parentFound = parent.attrs.id === "stage" || parent.attrs.id?.endsWith("group");
         } else if (props.selectedTool === "text") {
-          parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group") || parent.attrs.id.endsWith("rect");
+          parentFound = parent.attrs.id === "stage" || parent.attrs.id?.endsWith("group") || parent.attrs.id?.endsWith("rect");
         }
       }
       setParentId(parent.attrs.id);

@@ -6,7 +6,7 @@ type DetailsProps = {
   onNodeUpdate: (key: string, value: any) => void
 };
 
-function editNumber(props: { label: string; value: number; onChange: (key: string, value: number) => void, isCallback: boolean }) {
+function editNumber(props: { label: string; value: number; onChange: (key: string, value: number) => void, isProvided: boolean }) {
   return h(
     "div", 
     {
@@ -30,7 +30,7 @@ function editNumber(props: { label: string; value: number; onChange: (key: strin
   );
 }
 
-function editColor(props: { label: string; value: string; onChange: (key: string, value: string) => void, isCallback: boolean }) {
+function editColor(props: { label: string; value: string; onChange: (key: string, value: string) => void, isProvided: boolean }) {
   return h(
     "div", 
     {
@@ -54,7 +54,7 @@ function editColor(props: { label: string; value: string; onChange: (key: string
   );
 }
 
-function editText(props: { label: string; value: string; onChange: (key: string, value: string | { expr: string }) => void; isCallback: boolean} ) {
+function editText(props: { label: string; value: string; onChange: (key: string, value: string | { expr: string }) => void; isProvided: boolean} ) {
   return h(
     "div", 
     {
@@ -69,11 +69,18 @@ function editText(props: { label: string; value: string; onChange: (key: string,
       h(
         "input",
         {
-          value: props.isCallback ? props.value.substring("$props.".length) : props.value,
+          value: props.isProvided ? props.value.substring("$props.".length) : props.value,
           type: "text",
-          onChange: ev => props.onChange(props.label, props.isCallback ? { expr: "$props." + ev.target.value } : ev.target.value)
+          onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value)
         }
-      )
+      ),
+      h("input", { type: "checkbox", checked: props.isProvided, onChange: ev => {
+        if (ev.target.checked) {
+          props.onChange(props.label, { expr: "$props." + props.value })
+        } else {
+          props.onChange(props.label, props.value)
+        }
+      } })
     ] 
   );
 }
@@ -82,76 +89,41 @@ export default function (props: DetailsProps) {
   let body = h("div", {}, "Select a node to edit its properties!");
   if (props.node) {
     const node = props.node;
-    let propEditors = [];
+    let propEditors: Array<ReturnType<typeof h>> = [];
 
-    let x = node.props?.x;
-    if (typeof x === "number") {
-      propEditors.push(editNumber({ 
-        label: "x", 
-        value: x,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let y = node.props?.y;
-    if (typeof y === "number") {
-      propEditors.push(editNumber({ 
-        label: "y", 
-        value: y,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let width = node.props?.width;
-    if (typeof width === "number") {
-      propEditors.push(editNumber({ 
-        label: "width", 
-        value: width,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let height = node.props?.height;
-    if (typeof height === "number") {
-      propEditors.push(editNumber({ 
-        label: "height", 
-        value: height,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let fill = node.props?.fill;
-    if (typeof fill === "string") {
-      propEditors.push(editColor({ 
-        label: "fill", 
-        value: fill,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let text = node.props?.text;
-    if (typeof text === "string") {
-      propEditors.push(editText({ 
-        label: "text", 
-        value: text,
-        onChange: props.onNodeUpdate,
-        isCallback: false
-      }));
-    }
-
-    let onClick = node.props?.onClick;
-    if (typeof onClick === "object") {
-      propEditors.push(editText({
-        label: "onClick",
-        value: onClick.expr, // TODO validate to ensure this is always the form { expr: null || /^\$props.([a-zA-Z0-9]+)$/ }
-        onChange: props.onNodeUpdate,
-        isCallback: true
-      }))
+    if (node.props) {
+      Object.keys(node.props).forEach(propkey => {
+        const propval = node.props && node.props[propkey];
+        if (propkey === "fill") {
+          propEditors.push(editColor({ 
+            label: propkey, 
+            value: propval as string, // fill is always string
+            onChange: props.onNodeUpdate,
+            isProvided: false
+          }));
+        } else if (typeof propval === "number") {
+          propEditors.push(editNumber({
+            label: propkey,
+            value: propval,
+            onChange: props.onNodeUpdate,
+            isProvided: false
+          }));
+        } else if (typeof propval === "string") {
+          propEditors.push(editText({
+            label: propkey,
+            value: propval,
+            onChange: props.onNodeUpdate,
+            isProvided: false
+          }));
+        } else if (typeof propval === "object" && propval) {
+          propEditors.push(editText({
+            label: propkey,
+            value: propval.expr,
+            onChange: props.onNodeUpdate,
+            isProvided: true
+          }));
+        }
+      })
     }
 
     body = h(

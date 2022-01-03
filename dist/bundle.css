@@ -53,13 +53,21 @@ body {
   padding: 10px 10px;
 }
 
-.detailsbar .numberfield {
+.detailsbar .numberfield,
+.detailsbar .colorfield,
+.detailsbar .textfield {
   display: flex;
 }
 
-.numberfield input {
+.numberfield input,
+.colorfield input {
   margin-left: 5px;
   width: 50px;
+}
+
+.textfield input {
+  margin-left: 5px;
+  width: 150px;
 }
 
 .sidebar .tabs .tab {

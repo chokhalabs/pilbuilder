@@ -81,7 +81,7 @@ export default function() {
     }
     document.body.addEventListener("keydown", handleKeyDown);
     return () => document.body.removeEventListener("keydown", handleKeyDown);
-  }, [ selectedConf ]);
+  }, [ selectedConf, conf ]);
 
   function addNodeToStage(dropEv: { x: number; y: number; id: string | undefined; }) {
     // Find the node

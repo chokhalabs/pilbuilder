@@ -23125,16 +23125,17 @@
 	        nodes.push(drawingbox);
 	    }
 	    function handleMouseDown(ev) {
+	        var _a, _b, _c;
 	        var parent = ev.target;
 	        if (parent.attrs.id !== "stage") {
 	            var parentFound = false;
 	            while (!parentFound) {
 	                parent = parent.getParent();
 	                if (props.selectedTool === "rect" || props.selectedTool === "group") {
-	                    parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group");
+	                    parentFound = parent.attrs.id === "stage" || ((_a = parent.attrs.id) === null || _a === void 0 ? void 0 : _a.endsWith("group"));
 	                }
 	                else if (props.selectedTool === "text") {
-	                    parentFound = parent.attrs.id === "stage" || parent.attrs.id.endsWith("group") || parent.attrs.id.endsWith("rect");
+	                    parentFound = parent.attrs.id === "stage" || ((_b = parent.attrs.id) === null || _b === void 0 ? void 0 : _b.endsWith("group")) || ((_c = parent.attrs.id) === null || _c === void 0 ? void 0 : _c.endsWith("rect"));
 	                }
 	            }
 	            setParentId(parent.attrs.id);
@@ -23327,82 +23328,63 @@
 	    }, [
 	        react.exports.createElement("div", {}, props.label),
 	        react.exports.createElement("input", {
-	            value: props.isCallback ? props.value.substring("$props.".length) : props.value,
+	            value: props.isProvided ? props.value.substring("$props.".length) : props.value,
 	            type: "text",
-	            onChange: function (ev) { return props.onChange(props.label, props.isCallback ? { expr: "$props." + ev.target.value } : ev.target.value); }
-	        })
+	            onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value); }
+	        }),
+	        react.exports.createElement("input", { type: "checkbox", checked: props.isProvided, onChange: function (ev) {
+	                if (ev.target.checked) {
+	                    props.onChange(props.label, { expr: "$props." + props.value });
+	                }
+	                else {
+	                    props.onChange(props.label, props.value);
+	                }
+	            } })
 	    ]);
 	}
 	function Detailsbar (props) {
-	    var _a, _b, _c, _d, _e, _f, _g;
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
-	        var node = props.node;
-	        var propEditors = [];
-	        var x = (_a = node.props) === null || _a === void 0 ? void 0 : _a.x;
-	        if (typeof x === "number") {
-	            propEditors.push(editNumber({
-	                label: "x",
-	                value: x,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
+	        var node_1 = props.node;
+	        var propEditors_1 = [];
+	        if (node_1.props) {
+	            Object.keys(node_1.props).forEach(function (propkey) {
+	                var propval = node_1.props && node_1.props[propkey];
+	                if (propkey === "fill") {
+	                    propEditors_1.push(editColor({
+	                        label: propkey,
+	                        value: propval,
+	                        onChange: props.onNodeUpdate,
+	                        isProvided: false
+	                    }));
+	                }
+	                else if (typeof propval === "number") {
+	                    propEditors_1.push(editNumber({
+	                        label: propkey,
+	                        value: propval,
+	                        onChange: props.onNodeUpdate,
+	                        isProvided: false
+	                    }));
+	                }
+	                else if (typeof propval === "string") {
+	                    propEditors_1.push(editText({
+	                        label: propkey,
+	                        value: propval,
+	                        onChange: props.onNodeUpdate,
+	                        isProvided: false
+	                    }));
+	                }
+	                else if (typeof propval === "object" && propval) {
+	                    propEditors_1.push(editText({
+	                        label: propkey,
+	                        value: propval.expr,
+	                        onChange: props.onNodeUpdate,
+	                        isProvided: true
+	                    }));
+	                }
+	            });
 	        }
-	        var y = (_b = node.props) === null || _b === void 0 ? void 0 : _b.y;
-	        if (typeof y === "number") {
-	            propEditors.push(editNumber({
-	                label: "y",
-	                value: y,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
-	        }
-	        var width = (_c = node.props) === null || _c === void 0 ? void 0 : _c.width;
-	        if (typeof width === "number") {
-	            propEditors.push(editNumber({
-	                label: "width",
-	                value: width,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
-	        }
-	        var height = (_d = node.props) === null || _d === void 0 ? void 0 : _d.height;
-	        if (typeof height === "number") {
-	            propEditors.push(editNumber({
-	                label: "height",
-	                value: height,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
-	        }
-	        var fill = (_e = node.props) === null || _e === void 0 ? void 0 : _e.fill;
-	        if (typeof fill === "string") {
-	            propEditors.push(editColor({
-	                label: "fill",
-	                value: fill,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
-	        }
-	        var text = (_f = node.props) === null || _f === void 0 ? void 0 : _f.text;
-	        if (typeof text === "string") {
-	            propEditors.push(editText({
-	                label: "text",
-	                value: text,
-	                onChange: props.onNodeUpdate,
-	                isCallback: false
-	            }));
-	        }
-	        var onClick = (_g = node.props) === null || _g === void 0 ? void 0 : _g.onClick;
-	        if (typeof onClick === "object") {
-	            propEditors.push(editText({
-	                label: "onClick",
-	                value: onClick.expr,
-	                onChange: props.onNodeUpdate,
-	                isCallback: true
-	            }));
-	        }
-	        body = react.exports.createElement("div", {}, propEditors);
+	        body = react.exports.createElement("div", {}, propEditors_1);
 	    }
 	    return react.exports.createElement("div", {
 	        className: "detailsbar"
@@ -23482,7 +23464,7 @@
 	        };
 	        document.body.addEventListener("keydown", handleKeyDown);
 	        return function () { return document.body.removeEventListener("keydown", handleKeyDown); };
-	    }, [selectedConf]);
+	    }, [selectedConf, conf]);
 	    function addNodeToStage(dropEv) {
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
