@@ -163,7 +163,7 @@ export default function(props: Props) {
               props: {
                 x: mouseDownAt.x,
                 y: mouseDownAt.y,
-                text: "placeholder...",
+                text: "placeholder",
                 fill: "black"
               },
               children: []
