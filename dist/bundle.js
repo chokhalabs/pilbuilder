@@ -23203,7 +23203,7 @@
 	                    props: {
 	                        x: mouseDownAt.x,
 	                        y: mouseDownAt.y,
-	                        text: "placeholder...",
+	                        text: "placeholder",
 	                        fill: "black"
 	                    },
 	                    children: []
@@ -23323,24 +23323,31 @@
 	    ]);
 	}
 	function editText(props) {
+	    var editor = react.exports.createElement("div", {
+	        className: "boundfield"
+	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
+	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
+	        type: "text",
+	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value); }
+	    }), react.exports.createElement("input", {
+	        type: "checkbox",
+	        checked: props.isProvided,
+	        onChange: function (ev) {
+	            if (ev.target.checked) {
+	                props.onChange(props.label, { expr: "$props." + props.value });
+	            }
+	            else {
+	                props.onChange(props.label, props.value);
+	            }
+	        }
+	    }));
+	    var defaultValue = react.exports.createElement("input", {
+	        placeholder: "Default value",
+	        value: "default " + props.value.substring("$props.".length)
+	    });
 	    return react.exports.createElement("div", {
 	        className: "textfield"
-	    }, [
-	        react.exports.createElement("div", {}, props.label),
-	        react.exports.createElement("input", {
-	            value: props.isProvided ? props.value.substring("$props.".length) : props.value,
-	            type: "text",
-	            onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value); }
-	        }),
-	        react.exports.createElement("input", { type: "checkbox", checked: props.isProvided, onChange: function (ev) {
-	                if (ev.target.checked) {
-	                    props.onChange(props.label, { expr: "$props." + props.value });
-	                }
-	                else {
-	                    props.onChange(props.label, props.value);
-	                }
-	            } })
-	    ]);
+	    }, editor, props.isProvided ? defaultValue : null);
 	}
 	function Detailsbar (props) {
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");

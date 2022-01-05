@@ -53,10 +53,21 @@ body {
   padding: 10px 10px;
 }
 
+.detailsbar .boundfield {
+  display: flex;
+}
+
 .detailsbar .numberfield,
 .detailsbar .colorfield,
 .detailsbar .textfield {
   display: flex;
+  border: solid 1px #ccc;
+  margin: 4px;
+  padding: 4px;
+}
+
+.detailsbar .textfield {
+  flex-direction: column;
 }
 
 .numberfield input,

@@ -55,33 +55,55 @@ function editColor(props: { label: string; value: string; onChange: (key: string
 }
 
 function editText(props: { label: string; value: string; onChange: (key: string, value: string | { expr: string }) => void; isProvided: boolean} ) {
+  const editor = h(
+    "div", 
+    {
+      className: "boundfield"
+    }, 
+    h(
+      "div",
+      {},
+      props.label
+    ),
+    h(
+      "input",
+      {
+        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
+        type: "text",
+        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value)
+      }
+    ),
+    h(
+      "input", 
+      { 
+        type: "checkbox", 
+        checked: props.isProvided, 
+        onChange: ev => {
+          if (ev.target.checked) {
+            props.onChange(props.label, { expr: "$props." + props.value })
+          } else {
+            props.onChange(props.label, props.value)
+          }
+        } 
+      }
+    )
+  );
+
+  const defaultValue = h(
+    "input",
+    {
+      placeholder: "Default value",
+      value: "default " + props.value.substring("$props.".length)
+    }
+  );
+
   return h(
     "div", 
     {
       className: "textfield"
     },
-    [
-      h(
-        "div",
-        {},
-        props.label
-      ),
-      h(
-        "input",
-        {
-          value: props.isProvided ? props.value.substring("$props.".length) : props.value,
-          type: "text",
-          onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value)
-        }
-      ),
-      h("input", { type: "checkbox", checked: props.isProvided, onChange: ev => {
-        if (ev.target.checked) {
-          props.onChange(props.label, { expr: "$props." + props.value })
-        } else {
-          props.onChange(props.label, props.value)
-        }
-      } })
-    ] 
+    editor,
+    props.isProvided ? defaultValue : null 
   );
 }
 
