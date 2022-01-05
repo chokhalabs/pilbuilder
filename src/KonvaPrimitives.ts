@@ -52,10 +52,12 @@ export const ButtonConf: Component = {
     id: "grouproot",
     props: {
       title: {
-        expr: "$props.title"
+        expr: "$props.title",
+        default: "Default title"
       },
       onClick: {
-        expr: "$props.onClick"
+        expr: "$props.onClick",
+        default: () => alert("clicked!")
       }
     },
     children: [

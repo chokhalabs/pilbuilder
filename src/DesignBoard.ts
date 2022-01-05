@@ -126,7 +126,8 @@ export default function(props: Props) {
             height: mouseAt.y - mouseDownAt.y,
             fill: "#c4c4c4",
             onClick: {
-              expr: "null"
+              expr: "$props.onClick",
+              default: () => alert("clicked!")
             }
           },
           children: []

@@ -23043,7 +23043,13 @@
 	    Object.keys(propsExprs).forEach(function (key) {
 	        var propval = propsExprs[key];
 	        if (typeof propval === "object") {
-	            evaluated[key] = eval(propval.expr);
+	            if ($props[propval.expr.substring("$props.".length)]) {
+	                // evaluated[key] = eval(propval.expr);
+	                evaluated[key] = $props[propval.expr.substring("$props.".length)];
+	            }
+	            else {
+	                evaluated[key] = propval.default;
+	            }
 	        }
 	    });
 	    return evaluated;
@@ -23164,7 +23170,8 @@
 	                        height: mouseAt.y - mouseDownAt.y,
 	                        fill: "#c4c4c4",
 	                        onClick: {
-	                            expr: "null"
+	                            expr: "$props.onClick",
+	                            default: function () { return alert("clicked!"); }
 	                        }
 	                    },
 	                    children: []
@@ -23328,26 +23335,34 @@
 	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
 	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
 	        type: "text",
-	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value); }
+	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue } : ev.target.value); }
 	    }), react.exports.createElement("input", {
 	        type: "checkbox",
 	        checked: props.isProvided,
 	        onChange: function (ev) {
 	            if (ev.target.checked) {
-	                props.onChange(props.label, { expr: "$props." + props.value });
+	                if (!props.defaultValue) {
+	                    props.defaultValue = "default " + props.value.substring("$props.".length);
+	                }
+	                props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue });
 	            }
 	            else {
 	                props.onChange(props.label, props.value);
 	            }
 	        }
 	    }));
-	    var defaultValue = react.exports.createElement("input", {
+	    var defaultValue = react.exports.createElement("div", {}, react.exports.createElement("div", {}, "default"), react.exports.createElement("div", {
+	        style: { display: "flex" }
+	    }, react.exports.createElement("input", {
 	        placeholder: "Default value",
-	        value: "default " + props.value.substring("$props.".length)
-	    });
+	        value: props.defaultValue,
+	        onChange: function (ev) {
+	            props.onChange(props.label, { expr: props.value, default: ev.target.value });
+	        }
+	    }), react.exports.createElement("button", {}, "+")));
 	    return react.exports.createElement("div", {
 	        className: "textfield"
-	    }, editor, props.isProvided ? defaultValue : null);
+	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
 	}
 	function Detailsbar (props) {
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
@@ -23377,6 +23392,7 @@
 	                    propEditors_1.push(editText({
 	                        label: propkey,
 	                        value: propval,
+	                        defaultValue: "",
 	                        onChange: props.onNodeUpdate,
 	                        isProvided: false
 	                    }));
@@ -23385,6 +23401,7 @@
 	                    propEditors_1.push(editText({
 	                        label: propkey,
 	                        value: propval.expr,
+	                        defaultValue: propval.default.toString(),
 	                        onChange: props.onNodeUpdate,
 	                        isProvided: true
 	                    }));

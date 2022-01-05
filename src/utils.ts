@@ -1,7 +1,12 @@
 // import { Rect, Text, Group } from 'react-konva';
 import { createElement as h } from 'react';
 
-type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|{ expr: string }>;
+export type BindingExpression = {
+  expr: string;
+  default: string | number | boolean | ((...args: any[]) => any)
+};
+
+type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|BindingExpression>;
 
 export interface Config {
   id: string;
@@ -20,7 +25,12 @@ function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   Object.keys(propsExprs).forEach(key => {
     const propval = propsExprs[key];
     if (typeof propval === "object") {
-      evaluated[key] = eval(propval.expr);
+      if ($props[propval.expr.substring("$props.".length)]) {
+        // evaluated[key] = eval(propval.expr);
+        evaluated[key] = $props[propval.expr.substring("$props.".length)];
+      } else {
+        evaluated[key] = propval.default;
+      }
     }
   });
   return evaluated;

@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { Config } from "./utils";
+import { Config, BindingExpression } from "./utils";
 
 type DetailsProps = {
   node: Config | null,
@@ -54,7 +54,7 @@ function editColor(props: { label: string; value: string; onChange: (key: string
   );
 }
 
-function editText(props: { label: string; value: string; onChange: (key: string, value: string | { expr: string }) => void; isProvided: boolean} ) {
+function editText(props: { label: string; value: string; defaultValue: string, onChange: (key: string, value: string | BindingExpression) => void; isProvided: boolean} ) {
   const editor = h(
     "div", 
     {
@@ -70,7 +70,7 @@ function editText(props: { label: string; value: string; onChange: (key: string,
       {
         value: props.isProvided ? props.value.substring("$props.".length) : props.value,
         type: "text",
-        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value } : ev.target.value)
+        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue } : ev.target.value)
       }
     ),
     h(
@@ -80,7 +80,10 @@ function editText(props: { label: string; value: string; onChange: (key: string,
         checked: props.isProvided, 
         onChange: ev => {
           if (ev.target.checked) {
-            props.onChange(props.label, { expr: "$props." + props.value })
+            if (!props.defaultValue) {
+              props.defaultValue = "default " + props.value.substring("$props.".length);
+            }
+            props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue })
           } else {
             props.onChange(props.label, props.value)
           }
@@ -90,11 +93,34 @@ function editText(props: { label: string; value: string; onChange: (key: string,
   );
 
   const defaultValue = h(
-    "input",
-    {
-      placeholder: "Default value",
-      value: "default " + props.value.substring("$props.".length)
-    }
+    "div",
+    {},
+    h(
+      "div",
+      {},
+      "default"
+    ),
+    h(
+      "div",
+      {
+        style: { display: "flex" }
+      },
+      h(
+        "input",
+        {
+          placeholder: "Default value",
+          value: props.defaultValue,
+          onChange: ev => {
+            props.onChange(props.label, { expr: props.value, default: ev.target.value })
+          }
+        }
+      ),
+      h(
+        "button",
+        {},
+        "+"
+      )
+    )
   );
 
   return h(
@@ -103,6 +129,7 @@ function editText(props: { label: string; value: string; onChange: (key: string,
       className: "textfield"
     },
     editor,
+    h("hr"),
     props.isProvided ? defaultValue : null 
   );
 }
@@ -134,6 +161,7 @@ export default function (props: DetailsProps) {
           propEditors.push(editText({
             label: propkey,
             value: propval,
+            defaultValue: "", 
             onChange: props.onNodeUpdate,
             isProvided: false
           }));
@@ -141,6 +169,7 @@ export default function (props: DetailsProps) {
           propEditors.push(editText({
             label: propkey,
             value: propval.expr,
+            defaultValue: propval.default.toString(),
             onChange: props.onNodeUpdate,
             isProvided: true
           }));
