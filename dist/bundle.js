@@ -23056,12 +23056,36 @@
 	}
 	function tranformToVDOM(config, $props) {
 	    var props = null;
+	    var mappedProps = [];
 	    if (config.props) {
 	        props = evaluateProps($props, config.props);
+	        // If config has more than one mapped props then choose only one to map over and print an error 
+	        // telling that only one mapped prop is allowed per component
+	        mappedProps = Object.keys(props).filter(function (key) {
+	            var prop = (props || {})[key];
+	            return (typeof prop === "object") && prop.map;
+	        });
+	        if (mappedProps.length > 1) {
+	            console.error("There are multiple mapped props in the ccomponent which is not allowed!", config, $props, mappedProps);
+	        }
 	    }
 	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
 	    return function () {
-	        return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	        // If there is a mapped prop then return a group with one component per item in the mapped prop
+	        if (mappedProps.length === 0) {
+	            return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	        }
+	        else {
+	            var mappedPropKey_1 = mappedProps[0];
+	            var mappedProp = (props && props[mappedPropKey_1] || []);
+	            if (mappedProp.length === 0) {
+	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
+	            }
+	            return react.exports.createElement("Group", {}, mappedProp.map(function (item, i) {
+	                var _a;
+	                return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children);
+	            }));
+	        }
 	    };
 	}
 
@@ -23171,7 +23195,8 @@
 	                        fill: "#c4c4c4",
 	                        onClick: {
 	                            expr: "$props.onClick",
-	                            default: function () { return alert("clicked!"); }
+	                            default: function () { return alert("clicked!"); },
+	                            map: false
 	                        }
 	                    },
 	                    children: []
@@ -23335,7 +23360,7 @@
 	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
 	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
 	        type: "text",
-	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue } : ev.target.value); }
+	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue, map: false } : ev.target.value); }
 	    }), react.exports.createElement("input", {
 	        type: "checkbox",
 	        checked: props.isProvided,
@@ -23344,7 +23369,7 @@
 	                if (!props.defaultValue) {
 	                    props.defaultValue = "default " + props.value.substring("$props.".length);
 	                }
-	                props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue });
+	                props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue, map: false });
 	            }
 	            else {
 	                props.onChange(props.label, props.value);
@@ -23357,9 +23382,13 @@
 	        placeholder: "Default value",
 	        value: props.defaultValue,
 	        onChange: function (ev) {
-	            props.onChange(props.label, { expr: props.value, default: ev.target.value });
+	            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: Array.isArray(props.defaultValue) });
 	        }
-	    }), react.exports.createElement("button", {}, "+")));
+	    }), react.exports.createElement("button", {
+	        onClick: function () {
+	            props.onChange(props.label, { expr: props.value, default: ["def1", "def2"], map: true });
+	        }
+	    }, "+")));
 	    return react.exports.createElement("div", {
 	        className: "textfield"
 	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
@@ -23401,7 +23430,7 @@
 	                    propEditors_1.push(editText({
 	                        label: propkey,
 	                        value: propval.expr,
-	                        defaultValue: propval.default.toString(),
+	                        defaultValue: (propval.default || "").toString(),
 	                        onChange: props.onNodeUpdate,
 	                        isProvided: true
 	                    }));

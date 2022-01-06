@@ -127,7 +127,8 @@ export default function(props: Props) {
             fill: "#c4c4c4",
             onClick: {
               expr: "$props.onClick",
-              default: () => alert("clicked!")
+              default: () => alert("clicked!"),
+              map: false
             }
           },
           children: []

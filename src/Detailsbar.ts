@@ -54,7 +54,7 @@ function editColor(props: { label: string; value: string; onChange: (key: string
   );
 }
 
-function editText(props: { label: string; value: string; defaultValue: string, onChange: (key: string, value: string | BindingExpression) => void; isProvided: boolean} ) {
+function editText(props: { label: string; value: string; defaultValue: string | string[], onChange: (key: string, value: string | BindingExpression) => void; isProvided: boolean} ) {
   const editor = h(
     "div", 
     {
@@ -70,7 +70,7 @@ function editText(props: { label: string; value: string; defaultValue: string, o
       {
         value: props.isProvided ? props.value.substring("$props.".length) : props.value,
         type: "text",
-        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue } : ev.target.value)
+        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue, map: false } : ev.target.value)
       }
     ),
     h(
@@ -83,7 +83,7 @@ function editText(props: { label: string; value: string; defaultValue: string, o
             if (!props.defaultValue) {
               props.defaultValue = "default " + props.value.substring("$props.".length);
             }
-            props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue })
+            props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue, map: false })
           } else {
             props.onChange(props.label, props.value)
           }
@@ -111,13 +111,17 @@ function editText(props: { label: string; value: string; defaultValue: string, o
           placeholder: "Default value",
           value: props.defaultValue,
           onChange: ev => {
-            props.onChange(props.label, { expr: props.value, default: ev.target.value })
+            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: Array.isArray(props.defaultValue) })
           }
         }
       ),
       h(
         "button",
-        {},
+        {
+          onClick: () => {
+            props.onChange(props.label, { expr: props.value, default: ["def1", "def2"], map: true })
+          }
+        },
         "+"
       )
     )
@@ -169,7 +173,7 @@ export default function (props: DetailsProps) {
           propEditors.push(editText({
             label: propkey,
             value: propval.expr,
-            defaultValue: propval.default.toString(),
+            defaultValue: (propval.default || "").toString(),
             onChange: props.onNodeUpdate,
             isProvided: true
           }));
