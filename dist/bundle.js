@@ -23376,17 +23376,48 @@
 	            }
 	        }
 	    }));
-	    var defaultValue = react.exports.createElement("div", {}, react.exports.createElement("div", {}, "default"), react.exports.createElement("div", {
-	        style: { display: "flex" }
-	    }, react.exports.createElement("input", {
+	    var inputs = react.exports.createElement("input", {
 	        placeholder: "Default value",
 	        value: props.defaultValue,
 	        onChange: function (ev) {
-	            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: Array.isArray(props.defaultValue) });
+	            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: false });
 	        }
-	    }), react.exports.createElement("button", {
+	    });
+	    if (Array.isArray(props.defaultValue)) {
+	        var arrayItems = props.defaultValue.map(function (val, i) {
+	            return react.exports.createElement("input", {
+	                placeholder: "Default value",
+	                value: val,
+	                onChange: function (ev) {
+	                    var newDefaults = [];
+	                    if (Array.isArray(props.defaultValue)) {
+	                        newDefaults = __spreadArray([], props.defaultValue, true);
+	                        newDefaults.splice(i, 1, ev.target.value);
+	                    }
+	                    props.onChange(props.label, { expr: props.value, default: newDefaults, map: true });
+	                }
+	            });
+	        });
+	        inputs = react.exports.createElement("div", {
+	            style: {
+	                display: "flex",
+	                flexDirection: "column"
+	            }
+	        }, arrayItems);
+	    }
+	    var defaultValue = react.exports.createElement("div", {}, react.exports.createElement("div", {}, "default"), react.exports.createElement("div", {
+	        style: { display: "flex" }
+	    }, inputs, react.exports.createElement("button", {
 	        onClick: function () {
-	            props.onChange(props.label, { expr: props.value, default: ["def1", "def2"], map: true });
+	            var defaultValues = [];
+	            if (Array.isArray(props.defaultValue)) {
+	                defaultValues = defaultValues.concat(props.defaultValue);
+	            }
+	            else {
+	                defaultValues.push(props.defaultValue);
+	            }
+	            defaultValues.push("new");
+	            props.onChange(props.label, { expr: props.value, default: defaultValues, map: true });
 	        }
 	    }, "+")));
 	    return react.exports.createElement("div", {
@@ -23427,10 +23458,20 @@
 	                    }));
 	                }
 	                else if (typeof propval === "object" && propval) {
+	                    var defaultValue = void 0;
+	                    if (typeof propval.default === "string") {
+	                        defaultValue = propval.default;
+	                    }
+	                    else if (Array.isArray(propval.default)) {
+	                        defaultValue = propval.default;
+	                    }
+	                    else {
+	                        defaultValue = (propval.default || "").toString();
+	                    }
 	                    propEditors_1.push(editText({
 	                        label: propkey,
 	                        value: propval.expr,
-	                        defaultValue: (propval.default || "").toString(),
+	                        defaultValue: defaultValue,
 	                        onChange: props.onNodeUpdate,
 	                        isProvided: true
 	                    }));

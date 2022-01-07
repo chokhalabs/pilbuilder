@@ -92,6 +92,47 @@ function editText(props: { label: string; value: string; defaultValue: string | 
     )
   );
 
+  let inputs = h(
+    "input",
+    {
+      placeholder: "Default value",
+      value: props.defaultValue,
+      onChange: ev => {
+        props.onChange(props.label, { expr: props.value, default: ev.target.value, map: false })
+      }
+    }
+  );
+
+  if (Array.isArray(props.defaultValue)) {
+    let arrayItems = props.defaultValue.map((val, i) => {
+      return h(
+        "input",
+        {
+          placeholder: "Default value",
+          value: val,
+          onChange: ev => {
+            let newDefaults: string[] = [];
+            if (Array.isArray(props.defaultValue)) {
+              newDefaults = [...props.defaultValue]
+              newDefaults.splice(i, 1, ev.target.value);
+            }
+            props.onChange(props.label, { expr: props.value, default: newDefaults, map: true })
+          }
+        }
+      )
+    });
+    inputs = h(
+      "div",
+      {
+        style: {
+          display: "flex",
+          flexDirection: "column"
+        }
+      },
+      arrayItems
+    )
+  }
+
   const defaultValue = h(
     "div",
     {},
@@ -105,21 +146,19 @@ function editText(props: { label: string; value: string; defaultValue: string | 
       {
         style: { display: "flex" }
       },
-      h(
-        "input",
-        {
-          placeholder: "Default value",
-          value: props.defaultValue,
-          onChange: ev => {
-            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: Array.isArray(props.defaultValue) })
-          }
-        }
-      ),
+      inputs,
       h(
         "button",
         {
           onClick: () => {
-            props.onChange(props.label, { expr: props.value, default: ["def1", "def2"], map: true })
+            let defaultValues: string[] = [];
+            if (Array.isArray(props.defaultValue)) {
+              defaultValues = defaultValues.concat(props.defaultValue);
+            } else {
+              defaultValues.push(props.defaultValue);
+            }
+            defaultValues.push("new")
+            props.onChange(props.label, { expr: props.value, default: defaultValues, map: true })
           }
         },
         "+"
@@ -170,10 +209,18 @@ export default function (props: DetailsProps) {
             isProvided: false
           }));
         } else if (typeof propval === "object" && propval) {
+          let defaultValue: string|string[];
+          if (typeof propval.default === "string") {
+            defaultValue = propval.default;
+          } else if (Array.isArray(propval.default)) {
+            defaultValue = propval.default as string[];
+          } else {
+            defaultValue = (propval.default || "").toString();
+          }
           propEditors.push(editText({
             label: propkey,
             value: propval.expr,
-            defaultValue: (propval.default || "").toString(),
+            defaultValue,
             onChange: props.onNodeUpdate,
             isProvided: true
           }));
