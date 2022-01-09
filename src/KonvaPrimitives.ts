@@ -45,32 +45,49 @@ export const GroupConf: Component = {
   }
 }
 
-export const ButtonConf: Component = {
-  name: "Button",
+export const LayoutExample: Component = {
+  name: "LayoutExample",
   config: {
-    type: "Group",
+    type: "LayoutGroup",
     id: "grouproot",
     props: {
-      title: {
-        expr: "$props.title",
-        default: "Default title"
-      },
-      onClick: {
-        expr: "$props.onClick",
-        default: () => alert("clicked!")
-      }
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 200
     },
     children: [
       {
-        id: "background",
-        type: "Rect",
-        props: {},
+        id: "rect1",
+        type: "Text",
+        props: {
+          x: 0,
+          y: 0,
+          fill: "rgba(0, 0, 255, 0.5)",
+          text: "Line 1"
+        },
         children: []
       },
       {
-        id: "text",
+        id: "rect2",
         type: "Text",
-        props: {},
+        props: {
+          x: 0,
+          y: 0,
+          fill: "rgba(0, 255, 0, 0.5)",
+          text: "Line 2"
+        },
+        children: []
+      },
+      {
+        id: "rect3",
+        type: "Text",
+        props: {
+          x: 0,
+          y: 0,
+          fill: "rgba(255, 255, 0, 0.5)",
+          text: "Line 3"
+        },
         children: []
       }
     ]

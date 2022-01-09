@@ -11,7 +11,7 @@ type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|
 
 export interface Config {
   id: string;
-  type: "Group" | "Rect" | "Text";
+  type: "Group" | "Rect" | "Text" | "LayoutGroup";
   props: PropExprs|null; 
   children: Config[];
 }
@@ -52,10 +52,10 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
       console.error("There are multiple mapped props in the ccomponent which is not allowed!", config, $props, mappedProps);
     }
   }
-  const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
   return function() {
     // If there is a mapped prop then return a group with one component per item in the mapped prop
     if (mappedProps.length === 0) {
+      const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
       return h(
         config.type,
         { 
@@ -70,19 +70,16 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
       if (mappedProp.length === 0) {
         console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey);
       }
-      return h(
-        "Group",
-        {},
-        mappedProp.map((item, i) => h(
-          config.type,
-          {
-            ...props,
-            [mappedPropKey]: item,
-            id: config.id + i
-          },
-          children
-        ))
-      ) 
+      const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
+      return mappedProp.map((item, i) => h(
+        config.type,
+        {
+          ...props,
+          [mappedPropKey]: item,
+          id: config.id + i
+        },
+        children
+      )) 
     }
   }
 }

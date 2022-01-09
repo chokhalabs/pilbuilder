@@ -4,11 +4,15 @@ import { Config } from "./utils";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
-import { RectangleConf, GroupConf, TextConf } from "./KonvaPrimitives";
+import { RectangleConf, GroupConf, TextConf, LayoutExample } from "./KonvaPrimitives";
 import { KonvaEventObject } from 'konva/lib/Node';
 import Detailsbar from './Detailsbar';
 
-export type ToolType = "arrow" | "rect" | "text" | "group";
+export function assertNever(arg: never): never {
+  throw new Error("arg should never happen!")
+}
+
+export type ToolType = "arrow" | "rect" | "text" | "group" | "layoutgroup";
 
 function traverse(cursor: Config, id: string): Config|undefined {
   if (cursor.id === id) {
@@ -32,7 +36,7 @@ export default function() {
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf ]);
+  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample ]);
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
 
   useEffect(() => {
@@ -107,13 +111,18 @@ export default function() {
     }
   }
 
-  function pointerType(selectedTool: string) {
-    if (selectedTool === "rect" || selectedTool === "group") {
-      return "crosshair";
-    } else if (selectedTool === "text") {
-      return "text";
-    } else {
-      return "default";
+  function pointerType(selectedTool: ToolType) {
+    switch (selectedTool) {
+      case "rect":
+      case "group":
+      case "layoutgroup":
+        return "crosshair";
+      case "text":
+        return "text";
+      case "arrow":
+        return "default"
+      default:
+        assertNever(selectedTool);
     }
   }
 
@@ -131,7 +140,7 @@ export default function() {
   );
 
   function addChildToNode(node: Config, cursor: Config, parent: string): boolean {
-    if (cursor.id === parent && cursor.type === "Group") {
+    if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type)) {
       cursor.children.push(node); 
       return true;
     } else if (cursor.id === parent) {
@@ -154,6 +163,9 @@ export default function() {
       cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev),
       onAddItem: (config: Config, parent: string | null) => {
+        if (selectedConf) {
+          parent = selectedConf;
+        }
         let newconfig = [config];
         if (conf && !parent) {
           newconfig = [ ...conf, config ];

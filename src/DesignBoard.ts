@@ -1,7 +1,7 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import Konva from "konva";
-import { ToolType } from "./KonvaBuilder";
+import { ToolType, assertNever } from "./KonvaBuilder";
 import { Config, tranformToVDOM } from "./utils";
 import { KonvaEventObject } from "konva/lib/Node";
 
@@ -93,10 +93,11 @@ export default function(props: Props) {
       let parentFound = false;
       while (!parentFound) {
         parent = parent.getParent();
-        if (props.selectedTool === "rect" || props.selectedTool === "group") {
-          parentFound = parent.attrs.id === "stage" || parent.attrs.id?.endsWith("group");
+        const className = parent.getClassName();
+        if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
+          parentFound = [ "Stage", "Group", "LayoutGroup" ].includes(className);
         } else if (props.selectedTool === "text") {
-          parentFound = parent.attrs.id === "stage" || parent.attrs.id?.endsWith("group") || parent.attrs.id?.endsWith("rect");
+          parentFound = [ "Stage", "Group", "LayoutGroup", "Rect" ].includes(className)
         }
       }
       setParentId(parent.attrs.id);
@@ -113,64 +114,118 @@ export default function(props: Props) {
     }
   }
 
-  function handleMouseUp(ev: KonvaEventObject<MouseEvent>) {
-    if (mouseDownAt && mouseAt) {
-      if (props.selectedTool === "rect") {
-        const conf: Config = {
-          id: Date.now().toString() + "-rect",
+  function emitRect() {
+    if (mouseAt && mouseDownAt) {
+      const conf: Config = {
+        id: Date.now().toString() + "-rect",
+        type: "Rect",
+        props: {
+          x: mouseDownAt.x,
+          y: mouseDownAt.y,
+          width: mouseAt.x - mouseDownAt.x,
+          height: mouseAt.y - mouseDownAt.y,
+          fill: "#c4c4c4",
+          onClick: {
+            expr: "$props.onClick",
+            default: () => alert("clicked!"),
+            map: false
+          }
+        },
+        children: []
+      };
+      props.onAddItem(conf, parentid);
+    }
+  }
+  
+  function emitGroup() {
+    if (mouseAt && mouseDownAt) {
+      const newid = Date.now().toString();
+      const conf: Config = {
+        id: newid + "-group",
+        type: "Group",
+        props: {
+          x: mouseDownAt.x,
+          y: mouseDownAt.y
+        },
+        children: [{
+          id: newid + "-rect",
           type: "Rect",
           props: {
-            x: mouseDownAt.x,
-            y: mouseDownAt.y,
+            x: 0,
+            y: 0,
             width: mouseAt.x - mouseDownAt.x,
             height: mouseAt.y - mouseDownAt.y,
-            fill: "#c4c4c4",
-            onClick: {
-              expr: "$props.onClick",
-              default: () => alert("clicked!"),
-              map: false
-            }
+            fill: "white"
           },
           children: []
-        };
-        props.onAddItem(conf, parentid);
-      } else if (props.selectedTool === "group") {
-        const newid = Date.now().toString();
-        const conf: Config = {
-          id: newid + "-group",
-          type: "Group",
-          props: {
-            x: mouseDownAt.x,
-            y: mouseDownAt.y
-          },
-          children: [{
-            id: newid + "-rect",
-            type: "Rect",
+        }]
+      };
+      props.onAddItem(conf, parentid);
+    }
+  }
+
+  function emitLayoutGroup() {
+    if (mouseAt && mouseDownAt) {
+      const newid = Date.now().toString();
+      const conf: Config = {
+        id: newid + "-layoutgroup",
+        type: "LayoutGroup",
+        props: {
+          x: mouseDownAt.x,
+          y: mouseDownAt.y,
+          width: mouseAt.x - mouseDownAt.x,
+          height: mouseAt.y - mouseDownAt.y,
+          fill: "white"
+        },
+        children: []
+      };
+      props.onAddItem(conf, parentid);
+    }
+  }
+
+  function emitText() {
+    if (mouseAt && mouseDownAt) {
+      const newid = Date.now().toString();
+      const conf: Config = {
+            id: newid + "-text",
+            type: "Text",
             props: {
-              x: 0,
-              y: 0,
-              width: mouseAt.x - mouseDownAt.x,
-              height: mouseAt.y - mouseDownAt.y,
-              fill: "white"
+              x: mouseDownAt.x,
+              y: mouseDownAt.y,
+              text: "placeholder",
+              fill: "black"
             },
             children: []
-          }]
-        };
-        props.onAddItem(conf, parentid);
-      } else if (props.selectedTool === "text") {
-        const newid = Date.now().toString();
-        const conf: Config = {
-              id: newid + "-text",
-              type: "Text",
-              props: {
-                x: mouseDownAt.x,
-                y: mouseDownAt.y,
-                text: "placeholder",
-                fill: "black"
-              },
-              children: []
-            };
-        props.onAddItem(conf, parentid);
+          };
+      props.onAddItem(conf, parentid);
+    }
+  }
+
+  function resetMouse() {
+    setMouseAt(null);
+    setMouseDownAt(null);
+  }
+
+  function handleMouseUp(ev: KonvaEventObject<MouseEvent>) {
+    if (mouseDownAt && mouseAt) {
+      switch(props.selectedTool) {
+        case "rect":
+          emitRect();
+          break;
+        case "group":
+          emitGroup();
+          break;
+        case "text":
+          emitText();
+          break;
+        case "layoutgroup":
+          emitLayoutGroup();
+          break;
+        case "arrow":
+          resetMouse();
+          break;
+        default:
+          assertNever(props.selectedTool);
       }
     }
     setMouseDownAt(null);

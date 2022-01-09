@@ -3,10 +3,10 @@ import { createElement as h } from 'react';
 import { ToolType } from "./KonvaBuilder";
 
 export default function( props: { selectedTool: string; onSelectTool: (key: ToolType) => void } ) {
-  function createClass(key: string) {
+  function createCssClass(key: string) {
     return key === props.selectedTool ? "tool selected" : "tool";
   }
-  const tools: ToolType[] =  ["arrow", "rect", "text", "group"];
+  const tools: ToolType[] =  ["arrow", "rect", "text", "group", "layoutgroup"];
   return h(
     "div", 
     { 
@@ -18,7 +18,7 @@ export default function( props: { selectedTool: string; onSelectTool: (key: Tool
         "div",
         {
           key: it,
-          className: createClass(it),
+          className: createCssClass(it),
           onClick: () => props.onSelectTool(it)
         },
         it[0].toUpperCase()

@@ -7806,7 +7806,7 @@
 	const glob$1 = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof WorkerGlobalScope !== 'undefined' ? self : {};
 	const Konva$2 = {
 	  _global: glob$1,
-	  version: '8.3.1',
+	  version: '8.3.2',
 	  isBrowser: detectBrowser$1(),
 	  isUnminified: /param/.test(function (param) {}.toString()),
 	  dblClickWindow: 400,
@@ -8387,7 +8387,13 @@
 	  _rgbaColorToRGBA(str) {
 	    if (str.indexOf('rgba(') === 0) {
 	      str = str.match(/rgba\(([^)]+)\)/)[1];
-	      var parts = str.split(/ *, */).map(Number);
+	      var parts = str.split(/ *, */).map((n, index) => {
+	        if (n.slice(-1) === '%') {
+	          return index === 3 ? parseInt(n) / 100 : parseInt(n) / 100 * 255;
+	        }
+
+	        return Number(n);
+	      });
 	      return {
 	        r: parts[0],
 	        g: parts[1],
@@ -13762,8 +13768,8 @@
 	  _validateAdd(child) {
 	    var type = child.getType();
 
-	    if (type !== 'Group' && type !== 'Shape') {
-	      Util.throw('You may only add groups and shapes to a layer.');
+	    if (type !== 'Group' && type !== 'Shape' && type !== 'LayoutGroup') {
+	      Util.throw('You may only add groups, layoutgroups and shapes to a layer.');
 	    }
 	  }
 
@@ -13981,8 +13987,8 @@
 	  _validateAdd(child) {
 	    var type = child.getType();
 
-	    if (type !== 'Group' && type !== 'Shape') {
-	      Util.throw('You may only add groups and shapes to groups.');
+	    if (type !== 'Group' && type !== 'Shape' && type !== 'LayoutGroup') {
+	      Util.throw('You may only add layoutgroups, groups and shapes to groups.');
 	    }
 	  }
 
@@ -13990,6 +13996,39 @@
 	Group.prototype.nodeType = 'Group';
 
 	_registerNode(Group);
+
+	class LayoutGroup extends Container {
+	  _validateAdd(child) {
+	    var type = child.getType();
+
+	    if (type !== 'Group' && type !== 'Shape' && type !== 'LayoutGroup') {
+	      Util.throw('You may only add layoutgroups, groups and shapes to groups.');
+	    }
+	  }
+
+	  add(...children) {
+	    const allChildren = this.getChildren().concat(children);
+	    let step = this.height();
+
+	    if (allChildren.length > 0) {
+	      step = (this.height() - this.y()) / allChildren.length;
+	    }
+
+	    for (let i = 0; i < allChildren.length; i++) {
+	      const c = allChildren[i];
+	      c.x(0);
+	      c.y(i * step + 4);
+	      c.height(step);
+	      c.width(this.width());
+	    }
+
+	    return super.add(...children);
+	  }
+
+	}
+	LayoutGroup.prototype.nodeType = 'LayoutGroup';
+
+	_registerNode(LayoutGroup);
 
 	var now = function () {
 	  if (glob$1.performance && glob$1.performance.now) {
@@ -14786,6 +14825,7 @@
 	  Layer: Layer$1,
 	  FastLayer,
 	  Group,
+	  LayoutGroup,
 	  DD,
 	  Shape,
 	  shapes,
@@ -14824,33 +14864,23 @@
 	  }
 
 	  getSelfRect() {
-	    const radius = this.outerRadius();
-	    const DEG_TO_RAD = Math.PI / 180;
-	    const angle = this.angle() * DEG_TO_RAD;
-	    const inc = 1 * DEG_TO_RAD;
-	    let end = angle + inc;
-
-	    if (this.clockwise()) {
-	      end = 360;
-	    }
-
-	    const xs = [];
-	    const ys = [];
-
-	    for (let i = 0; i < end; i += inc) {
-	      xs.push(Math.cos(i));
-	      ys.push(Math.sin(i));
-	    }
-
-	    const minX = Math.round(radius * Math.min(...xs));
-	    const maxX = Math.round(radius * Math.max(...xs));
-	    const minY = Math.round(radius * Math.min(...ys));
-	    const maxY = Math.round(radius * Math.max(...ys));
+	    const innerRadius = this.innerRadius();
+	    const outerRadius = this.outerRadius();
+	    const clockwise = this.clockwise();
+	    const angle = Konva$2.getAngle(clockwise ? 360 - this.angle() : this.angle());
+	    const boundLeftRatio = Math.cos(Math.min(angle, Math.PI));
+	    const boundRightRatio = 1;
+	    const boundTopRatio = Math.sin(Math.min(Math.max(Math.PI, angle), 3 * Math.PI / 2));
+	    const boundBottomRatio = Math.sin(Math.min(angle, Math.PI / 2));
+	    const boundLeft = boundLeftRatio * (boundLeftRatio > 0 ? innerRadius : outerRadius);
+	    const boundRight = boundRightRatio * (outerRadius );
+	    const boundTop = boundTopRatio * (boundTopRatio > 0 ? innerRadius : outerRadius);
+	    const boundBottom = boundBottomRatio * (boundBottomRatio > 0 ? outerRadius : innerRadius);
 	    return {
-	      x: minX || 0,
-	      y: minY || 0,
-	      width: maxX - minX,
-	      height: maxY - minY
+	      x: Math.round(boundLeft),
+	      y: Math.round(clockwise ? -1 * boundBottom : boundTop),
+	      width: Math.round(boundRight - boundLeft),
+	      height: Math.round(boundBottom - boundTop)
 	    };
 	  }
 
@@ -16051,7 +16081,7 @@
 	    return (_a = this.attrs.height) !== null && _a !== void 0 ? _a : (_b = this.image()) === null || _b === void 0 ? void 0 : _b.height;
 	  }
 
-	  static fromURL(url, callback) {
+	  static fromURL(url, callback, onError = null) {
 	    var img = Util.createImageElement();
 
 	    img.onload = function () {
@@ -16061,6 +16091,7 @@
 	      callback(image);
 	    };
 
+	    img.onerror = onError;
 	    img.crossOrigin = 'Anonymous';
 	    img.src = url;
 	  }
@@ -22573,7 +22604,7 @@
 	const glob = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof WorkerGlobalScope !== 'undefined' ? self : {};
 	const Konva = {
 	  _global: glob,
-	  version: '8.3.1',
+	  version: '8.3.2',
 	  isBrowser: detectBrowser(),
 	  isUnminified: /param/.test(function (param) {}.toString()),
 	  dblClickWindow: 400,
@@ -23069,10 +23100,10 @@
 	            console.error("There are multiple mapped props in the ccomponent which is not allowed!", config, $props, mappedProps);
 	        }
 	    }
-	    var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
 	    return function () {
 	        // If there is a mapped prop then return a group with one component per item in the mapped prop
 	        if (mappedProps.length === 0) {
+	            var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
 	            return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
 	        }
 	        else {
@@ -23081,10 +23112,11 @@
 	            if (mappedProp.length === 0) {
 	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
 	            }
-	            return react.exports.createElement("Group", {}, mappedProp.map(function (item, i) {
+	            var children_1 = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
+	            return mappedProp.map(function (item, i) {
 	                var _a;
-	                return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children);
-	            }));
+	                return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
+	            });
 	        }
 	    };
 	}
@@ -23155,17 +23187,17 @@
 	        nodes.push(drawingbox);
 	    }
 	    function handleMouseDown(ev) {
-	        var _a, _b, _c;
 	        var parent = ev.target;
 	        if (parent.attrs.id !== "stage") {
 	            var parentFound = false;
 	            while (!parentFound) {
 	                parent = parent.getParent();
-	                if (props.selectedTool === "rect" || props.selectedTool === "group") {
-	                    parentFound = parent.attrs.id === "stage" || ((_a = parent.attrs.id) === null || _a === void 0 ? void 0 : _a.endsWith("group"));
+	                var className = parent.getClassName();
+	                if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
+	                    parentFound = ["Stage", "Group", "LayoutGroup"].includes(className);
 	                }
 	                else if (props.selectedTool === "text") {
-	                    parentFound = parent.attrs.id === "stage" || ((_b = parent.attrs.id) === null || _b === void 0 ? void 0 : _b.endsWith("group")) || ((_c = parent.attrs.id) === null || _c === void 0 ? void 0 : _c.endsWith("rect"));
+	                    parentFound = ["Stage", "Group", "LayoutGroup", "Rect"].includes(className);
 	                }
 	            }
 	            setParentId(parent.attrs.id);
@@ -23181,66 +23213,113 @@
 	            setParentRect(parentrect_1);
 	        }
 	    }
+	    function emitRect() {
+	        if (mouseAt && mouseDownAt) {
+	            var conf = {
+	                id: Date.now().toString() + "-rect",
+	                type: "Rect",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    width: mouseAt.x - mouseDownAt.x,
+	                    height: mouseAt.y - mouseDownAt.y,
+	                    fill: "#c4c4c4",
+	                    onClick: {
+	                        expr: "$props.onClick",
+	                        default: function () { return alert("clicked!"); },
+	                        map: false
+	                    }
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitGroup() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                id: newid + "-group",
+	                type: "Group",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y
+	                },
+	                children: [{
+	                        id: newid + "-rect",
+	                        type: "Rect",
+	                        props: {
+	                            x: 0,
+	                            y: 0,
+	                            width: mouseAt.x - mouseDownAt.x,
+	                            height: mouseAt.y - mouseDownAt.y,
+	                            fill: "white"
+	                        },
+	                        children: []
+	                    }]
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitLayoutGroup() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                id: newid + "-layoutgroup",
+	                type: "LayoutGroup",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    width: mouseAt.x - mouseDownAt.x,
+	                    height: mouseAt.y - mouseDownAt.y,
+	                    fill: "white"
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitText() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                id: newid + "-text",
+	                type: "Text",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    text: "placeholder",
+	                    fill: "black"
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function resetMouse() {
+	        setMouseAt(null);
+	        setMouseDownAt(null);
+	    }
 	    function handleMouseUp(ev) {
 	        if (mouseDownAt && mouseAt) {
-	            if (props.selectedTool === "rect") {
-	                var conf = {
-	                    id: Date.now().toString() + "-rect",
-	                    type: "Rect",
-	                    props: {
-	                        x: mouseDownAt.x,
-	                        y: mouseDownAt.y,
-	                        width: mouseAt.x - mouseDownAt.x,
-	                        height: mouseAt.y - mouseDownAt.y,
-	                        fill: "#c4c4c4",
-	                        onClick: {
-	                            expr: "$props.onClick",
-	                            default: function () { return alert("clicked!"); },
-	                            map: false
-	                        }
-	                    },
-	                    children: []
-	                };
-	                props.onAddItem(conf, parentid);
-	            }
-	            else if (props.selectedTool === "group") {
-	                var newid = Date.now().toString();
-	                var conf = {
-	                    id: newid + "-group",
-	                    type: "Group",
-	                    props: {
-	                        x: mouseDownAt.x,
-	                        y: mouseDownAt.y
-	                    },
-	                    children: [{
-	                            id: newid + "-rect",
-	                            type: "Rect",
-	                            props: {
-	                                x: 0,
-	                                y: 0,
-	                                width: mouseAt.x - mouseDownAt.x,
-	                                height: mouseAt.y - mouseDownAt.y,
-	                                fill: "white"
-	                            },
-	                            children: []
-	                        }]
-	                };
-	                props.onAddItem(conf, parentid);
-	            }
-	            else if (props.selectedTool === "text") {
-	                var newid = Date.now().toString();
-	                var conf = {
-	                    id: newid + "-text",
-	                    type: "Text",
-	                    props: {
-	                        x: mouseDownAt.x,
-	                        y: mouseDownAt.y,
-	                        text: "placeholder",
-	                        fill: "black"
-	                    },
-	                    children: []
-	                };
-	                props.onAddItem(conf, parentid);
+	            switch (props.selectedTool) {
+	                case "rect":
+	                    emitRect();
+	                    break;
+	                case "group":
+	                    emitGroup();
+	                    break;
+	                case "text":
+	                    emitText();
+	                    break;
+	                case "layoutgroup":
+	                    emitLayoutGroup();
+	                    break;
+	                case "arrow":
+	                    resetMouse();
+	                    break;
+	                default:
+	                    assertNever(props.selectedTool);
 	            }
 	        }
 	        setMouseDownAt(null);
@@ -23271,17 +23350,17 @@
 	}
 
 	function Menubar (props) {
-	    function createClass(key) {
+	    function createCssClass(key) {
 	        return key === props.selectedTool ? "tool selected" : "tool";
 	    }
-	    var tools = ["arrow", "rect", "text", "group"];
+	    var tools = ["arrow", "rect", "text", "group", "layoutgroup"];
 	    return react.exports.createElement("div", {
 	        className: "menubar",
 	        key: "menubar"
 	    }, tools.map(function (it) {
 	        return react.exports.createElement("div", {
 	            key: it,
-	            className: createClass(it),
+	            className: createCssClass(it),
 	            onClick: function () { return props.onSelectTool(it); }
 	        }, it[0].toUpperCase());
 	    }));
@@ -23327,6 +23406,54 @@
 	            height: 100
 	        },
 	        children: []
+	    }
+	};
+	var LayoutExample = {
+	    name: "LayoutExample",
+	    config: {
+	        type: "LayoutGroup",
+	        id: "grouproot",
+	        props: {
+	            x: 50,
+	            y: 50,
+	            width: 200,
+	            height: 200
+	        },
+	        children: [
+	            {
+	                id: "rect1",
+	                type: "Text",
+	                props: {
+	                    x: 0,
+	                    y: 0,
+	                    fill: "rgba(0, 0, 255, 0.5)",
+	                    text: "Line 1"
+	                },
+	                children: []
+	            },
+	            {
+	                id: "rect2",
+	                type: "Text",
+	                props: {
+	                    x: 0,
+	                    y: 0,
+	                    fill: "rgba(0, 255, 0, 0.5)",
+	                    text: "Line 2"
+	                },
+	                children: []
+	            },
+	            {
+	                id: "rect3",
+	                type: "Text",
+	                props: {
+	                    x: 0,
+	                    y: 0,
+	                    fill: "rgba(255, 255, 0, 0.5)",
+	                    text: "Line 3"
+	                },
+	                children: []
+	            }
+	        ]
 	    }
 	};
 
@@ -23485,6 +23612,9 @@
 	    }, body);
 	}
 
+	function assertNever(arg) {
+	    throw new Error("arg should never happen!");
+	}
 	function traverse(cursor, id) {
 	    if (cursor.id === id) {
 	        return cursor;
@@ -23507,7 +23637,7 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf]), components = _e[0], setComponents = _e[1];
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    react.exports.useEffect(function () {
 	        var handleKeyDown = function (ev) {
@@ -23583,14 +23713,17 @@
 	        }
 	    }
 	    function pointerType(selectedTool) {
-	        if (selectedTool === "rect" || selectedTool === "group") {
-	            return "crosshair";
-	        }
-	        else if (selectedTool === "text") {
-	            return "text";
-	        }
-	        else {
-	            return "default";
+	        switch (selectedTool) {
+	            case "rect":
+	            case "group":
+	            case "layoutgroup":
+	                return "crosshair";
+	            case "text":
+	                return "text";
+	            case "arrow":
+	                return "default";
+	            default:
+	                assertNever();
 	        }
 	    }
 	    var sidebar = react.exports.createElement(Sidebar, {
@@ -23603,7 +23736,7 @@
 	        components: components
 	    });
 	    function addChildToNode(node, cursor, parent) {
-	        if (cursor.id === parent && cursor.type === "Group") {
+	        if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type)) {
 	            cursor.children.push(node);
 	            return true;
 	        }
@@ -23625,6 +23758,9 @@
 	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); },
 	        onAddItem: function (config, parent) {
+	            if (selectedConf) {
+	                parent = selectedConf;
+	            }
 	            var newconfig = [config];
 	            if (conf && !parent) {
 	                newconfig = __spreadArray(__spreadArray([], conf, true), [config], false);

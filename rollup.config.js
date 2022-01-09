@@ -18,8 +18,10 @@ export default {
     css(),
     alias({
       entries: [
-        { find: /konva\/(.*)/, replacement: './node_modules/konva/$1.js' },
-        { find: "konva", replacement: './node_modules/konva/lib/index.js' }
+        // { find: /konva\/(.*)/, replacement: './node_modules/konva/$1.js' },
+        // { find: "konva", replacement: './node_modules/konva/lib/index.js' }
+        { find: /konva\/(.*)/, replacement: '../konva/$1.js' },
+        { find: "konva", replacement: '../konva/lib/index.js' }
       ]
     }),
     nodeResolve({
