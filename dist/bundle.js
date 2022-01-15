@@ -12120,877 +12120,6 @@
 	  }
 	}
 
-	var STAGE = 'Stage',
-	    STRING = 'string',
-	    PX = 'px',
-	    MOUSEOUT = 'mouseout',
-	    MOUSELEAVE = 'mouseleave',
-	    MOUSEOVER = 'mouseover',
-	    MOUSEENTER = 'mouseenter',
-	    MOUSEMOVE = 'mousemove',
-	    MOUSEDOWN = 'mousedown',
-	    MOUSEUP = 'mouseup',
-	    POINTERMOVE = 'pointermove',
-	    POINTERDOWN = 'pointerdown',
-	    POINTERUP = 'pointerup',
-	    POINTERCANCEL = 'pointercancel',
-	    LOSTPOINTERCAPTURE = 'lostpointercapture',
-	    POINTEROUT = 'pointerout',
-	    POINTERLEAVE = 'pointerleave',
-	    POINTEROVER = 'pointerover',
-	    POINTERENTER = 'pointerenter',
-	    CONTEXTMENU = 'contextmenu',
-	    TOUCHSTART = 'touchstart',
-	    TOUCHEND = 'touchend',
-	    TOUCHMOVE = 'touchmove',
-	    TOUCHCANCEL = 'touchcancel',
-	    WHEEL = 'wheel',
-	    MAX_LAYERS_NUMBER = 5,
-	    EVENTS = [[MOUSEENTER, '_pointerenter'], [MOUSEDOWN, '_pointerdown'], [MOUSEMOVE, '_pointermove'], [MOUSEUP, '_pointerup'], [MOUSELEAVE, '_pointerleave'], [TOUCHSTART, '_pointerdown'], [TOUCHMOVE, '_pointermove'], [TOUCHEND, '_pointerup'], [TOUCHCANCEL, '_pointercancel'], [MOUSEOVER, '_pointerover'], [WHEEL, '_wheel'], [CONTEXTMENU, '_contextmenu'], [POINTERDOWN, '_pointerdown'], [POINTERMOVE, '_pointermove'], [POINTERUP, '_pointerup'], [POINTERCANCEL, '_pointercancel'], [LOSTPOINTERCAPTURE, '_lostpointercapture']];
-	const EVENTS_MAP = {
-	  mouse: {
-	    [POINTEROUT]: MOUSEOUT,
-	    [POINTERLEAVE]: MOUSELEAVE,
-	    [POINTEROVER]: MOUSEOVER,
-	    [POINTERENTER]: MOUSEENTER,
-	    [POINTERMOVE]: MOUSEMOVE,
-	    [POINTERDOWN]: MOUSEDOWN,
-	    [POINTERUP]: MOUSEUP,
-	    [POINTERCANCEL]: 'mousecancel',
-	    pointerclick: 'click',
-	    pointerdblclick: 'dblclick'
-	  },
-	  touch: {
-	    [POINTEROUT]: 'touchout',
-	    [POINTERLEAVE]: 'touchleave',
-	    [POINTEROVER]: 'touchover',
-	    [POINTERENTER]: 'touchenter',
-	    [POINTERMOVE]: TOUCHMOVE,
-	    [POINTERDOWN]: TOUCHSTART,
-	    [POINTERUP]: TOUCHEND,
-	    [POINTERCANCEL]: TOUCHCANCEL,
-	    pointerclick: 'tap',
-	    pointerdblclick: 'dbltap'
-	  },
-	  pointer: {
-	    [POINTEROUT]: POINTEROUT,
-	    [POINTERLEAVE]: POINTERLEAVE,
-	    [POINTEROVER]: POINTEROVER,
-	    [POINTERENTER]: POINTERENTER,
-	    [POINTERMOVE]: POINTERMOVE,
-	    [POINTERDOWN]: POINTERDOWN,
-	    [POINTERUP]: POINTERUP,
-	    [POINTERCANCEL]: POINTERCANCEL,
-	    pointerclick: 'pointerclick',
-	    pointerdblclick: 'pointerdblclick'
-	  }
-	};
-
-	const getEventType = type => {
-	  if (type.indexOf('pointer') >= 0) {
-	    return 'pointer';
-	  }
-
-	  if (type.indexOf('touch') >= 0) {
-	    return 'touch';
-	  }
-
-	  return 'mouse';
-	};
-
-	const getEventsMap = eventType => {
-	  const type = getEventType(eventType);
-
-	  if (type === 'pointer') {
-	    return Konva$2.pointerEventsEnabled && EVENTS_MAP.pointer;
-	  }
-
-	  if (type === 'touch') {
-	    return EVENTS_MAP.touch;
-	  }
-
-	  if (type === 'mouse') {
-	    return EVENTS_MAP.mouse;
-	  }
-	};
-
-	function checkNoClip(attrs = {}) {
-	  if (attrs.clipFunc || attrs.clipWidth || attrs.clipHeight) {
-	    Util.warn('Stage does not support clipping. Please use clip for Layers or Groups.');
-	  }
-
-	  return attrs;
-	}
-
-	const NO_POINTERS_MESSAGE = `Pointer position is missing and not registered by the stage. Looks like it is outside of the stage container. You can set it manually from event: stage.setPointersPositions(event);`;
-	const stages = [];
-	class Stage$1 extends Container {
-	  constructor(config) {
-	    super(checkNoClip(config));
-	    this._pointerPositions = [];
-	    this._changedPointerPositions = [];
-
-	    this._buildDOM();
-
-	    this._bindContentEvents();
-
-	    stages.push(this);
-	    this.on('widthChange.konva heightChange.konva', this._resizeDOM);
-	    this.on('visibleChange.konva', this._checkVisibility);
-	    this.on('clipWidthChange.konva clipHeightChange.konva clipFuncChange.konva', () => {
-	      checkNoClip(this.attrs);
-	    });
-
-	    this._checkVisibility();
-	  }
-
-	  _validateAdd(child) {
-	    const isLayer = child.getType() === 'Layer';
-	    const isFastLayer = child.getType() === 'FastLayer';
-	    const valid = isLayer || isFastLayer;
-
-	    if (!valid) {
-	      Util.throw('You may only add layers to the stage.');
-	    }
-	  }
-
-	  _checkVisibility() {
-	    if (!this.content) {
-	      return;
-	    }
-
-	    const style = this.visible() ? '' : 'none';
-	    this.content.style.display = style;
-	  }
-
-	  setContainer(container) {
-	    if (typeof container === STRING) {
-	      if (container.charAt(0) === '.') {
-	        var className = container.slice(1);
-	        container = document.getElementsByClassName(className)[0];
-	      } else {
-	        var id;
-
-	        if (container.charAt(0) !== '#') {
-	          id = container;
-	        } else {
-	          id = container.slice(1);
-	        }
-
-	        container = document.getElementById(id);
-	      }
-
-	      if (!container) {
-	        throw 'Can not find container in document with id ' + id;
-	      }
-	    }
-
-	    this._setAttr('container', container);
-
-	    if (this.content) {
-	      if (this.content.parentElement) {
-	        this.content.parentElement.removeChild(this.content);
-	      }
-
-	      container.appendChild(this.content);
-	    }
-
-	    return this;
-	  }
-
-	  shouldDrawHit() {
-	    return true;
-	  }
-
-	  clear() {
-	    var layers = this.children,
-	        len = layers.length,
-	        n;
-
-	    for (n = 0; n < len; n++) {
-	      layers[n].clear();
-	    }
-
-	    return this;
-	  }
-
-	  clone(obj) {
-	    if (!obj) {
-	      obj = {};
-	    }
-
-	    obj.container = typeof document !== 'undefined' && document.createElement('div');
-	    return Container.prototype.clone.call(this, obj);
-	  }
-
-	  destroy() {
-	    super.destroy();
-	    var content = this.content;
-
-	    if (content && Util._isInDocument(content)) {
-	      this.container().removeChild(content);
-	    }
-
-	    var index = stages.indexOf(this);
-
-	    if (index > -1) {
-	      stages.splice(index, 1);
-	    }
-
-	    return this;
-	  }
-
-	  getPointerPosition() {
-	    const pos = this._pointerPositions[0] || this._changedPointerPositions[0];
-
-	    if (!pos) {
-	      Util.warn(NO_POINTERS_MESSAGE);
-	      return null;
-	    }
-
-	    return {
-	      x: pos.x,
-	      y: pos.y
-	    };
-	  }
-
-	  _getPointerById(id) {
-	    return this._pointerPositions.find(p => p.id === id);
-	  }
-
-	  getPointersPositions() {
-	    return this._pointerPositions;
-	  }
-
-	  getStage() {
-	    return this;
-	  }
-
-	  getContent() {
-	    return this.content;
-	  }
-
-	  _toKonvaCanvas(config) {
-	    config = config || {};
-	    config.x = config.x || 0;
-	    config.y = config.y || 0;
-	    config.width = config.width || this.width();
-	    config.height = config.height || this.height();
-	    var canvas = new SceneCanvas({
-	      width: config.width,
-	      height: config.height,
-	      pixelRatio: config.pixelRatio || 1
-	    });
-
-	    var _context = canvas.getContext()._context;
-
-	    var layers = this.children;
-
-	    if (config.x || config.y) {
-	      _context.translate(-1 * config.x, -1 * config.y);
-	    }
-
-	    layers.forEach(function (layer) {
-	      if (!layer.isVisible()) {
-	        return;
-	      }
-
-	      var layerCanvas = layer._toKonvaCanvas(config);
-
-	      _context.drawImage(layerCanvas._canvas, config.x, config.y, layerCanvas.getWidth() / layerCanvas.getPixelRatio(), layerCanvas.getHeight() / layerCanvas.getPixelRatio());
-	    });
-	    return canvas;
-	  }
-
-	  getIntersection(pos) {
-	    if (!pos) {
-	      return null;
-	    }
-
-	    var layers = this.children,
-	        len = layers.length,
-	        end = len - 1,
-	        n;
-
-	    for (n = end; n >= 0; n--) {
-	      const shape = layers[n].getIntersection(pos);
-
-	      if (shape) {
-	        return shape;
-	      }
-	    }
-
-	    return null;
-	  }
-
-	  _resizeDOM() {
-	    var width = this.width();
-	    var height = this.height();
-
-	    if (this.content) {
-	      this.content.style.width = width + PX;
-	      this.content.style.height = height + PX;
-	    }
-
-	    this.bufferCanvas.setSize(width, height);
-	    this.bufferHitCanvas.setSize(width, height);
-	    this.children.forEach(layer => {
-	      layer.setSize({
-	        width,
-	        height
-	      });
-	      layer.draw();
-	    });
-	  }
-
-	  add(layer, ...rest) {
-	    if (arguments.length > 1) {
-	      for (var i = 0; i < arguments.length; i++) {
-	        this.add(arguments[i]);
-	      }
-
-	      return this;
-	    }
-
-	    super.add(layer);
-	    var length = this.children.length;
-
-	    if (length > MAX_LAYERS_NUMBER) {
-	      Util.warn('The stage has ' + length + ' layers. Recommended maximum number of layers is 3-5. Adding more layers into the stage may drop the performance. Rethink your tree structure, you can use Konva.Group.');
-	    }
-
-	    layer.setSize({
-	      width: this.width(),
-	      height: this.height()
-	    });
-	    layer.draw();
-
-	    if (Konva$2.isBrowser) {
-	      this.content.appendChild(layer.canvas._canvas);
-	    }
-
-	    return this;
-	  }
-
-	  getParent() {
-	    return null;
-	  }
-
-	  getLayer() {
-	    return null;
-	  }
-
-	  hasPointerCapture(pointerId) {
-	    return hasPointerCapture(pointerId, this);
-	  }
-
-	  setPointerCapture(pointerId) {
-	    setPointerCapture(pointerId, this);
-	  }
-
-	  releaseCapture(pointerId) {
-	    releaseCapture(pointerId);
-	  }
-
-	  getLayers() {
-	    return this.children;
-	  }
-
-	  _bindContentEvents() {
-	    if (!Konva$2.isBrowser) {
-	      return;
-	    }
-
-	    EVENTS.forEach(([event, methodName]) => {
-	      this.content.addEventListener(event, evt => {
-	        this[methodName](evt);
-	      });
-	    });
-	  }
-
-	  _pointerenter(evt) {
-	    this.setPointersPositions(evt);
-	    const events = getEventsMap(evt.type);
-
-	    this._fire(events.pointerenter, {
-	      evt: evt,
-	      target: this,
-	      currentTarget: this
-	    });
-	  }
-
-	  _pointerover(evt) {
-	    this.setPointersPositions(evt);
-	    const events = getEventsMap(evt.type);
-
-	    this._fire(events.pointerover, {
-	      evt: evt,
-	      target: this,
-	      currentTarget: this
-	    });
-	  }
-
-	  _getTargetShape(evenType) {
-	    let shape = this[evenType + 'targetShape'];
-
-	    if (shape && !shape.getStage()) {
-	      shape = null;
-	    }
-
-	    return shape;
-	  }
-
-	  _pointerleave(evt) {
-	    const events = getEventsMap(evt.type);
-	    const eventType = getEventType(evt.type);
-
-	    if (!events) {
-	      return;
-	    }
-
-	    this.setPointersPositions(evt);
-
-	    var targetShape = this._getTargetShape(eventType);
-
-	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
-
-	    if (targetShape && eventsEnabled) {
-	      targetShape._fireAndBubble(events.pointerout, {
-	        evt: evt
-	      });
-
-	      targetShape._fireAndBubble(events.pointerleave, {
-	        evt: evt
-	      });
-
-	      this._fire(events.pointerleave, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this
-	      });
-
-	      this[eventType + 'targetShape'] = null;
-	    } else if (eventsEnabled) {
-	      this._fire(events.pointerleave, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this
-	      });
-
-	      this._fire(events.pointerout, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this
-	      });
-	    }
-
-	    this.pointerPos = undefined;
-	    this._pointerPositions = [];
-	  }
-
-	  _pointerdown(evt) {
-	    const events = getEventsMap(evt.type);
-	    const eventType = getEventType(evt.type);
-
-	    if (!events) {
-	      return;
-	    }
-
-	    this.setPointersPositions(evt);
-	    var triggeredOnShape = false;
-
-	    this._changedPointerPositions.forEach(pos => {
-	      var shape = this.getIntersection(pos);
-	      DD.justDragged = false;
-	      Konva$2['_' + eventType + 'ListenClick'] = true;
-	      const hasShape = shape && shape.isListening();
-
-	      if (!hasShape) {
-	        return;
-	      }
-
-	      if (Konva$2.capturePointerEventsEnabled) {
-	        shape.setPointerCapture(pos.id);
-	      }
-
-	      this[eventType + 'ClickStartShape'] = shape;
-
-	      shape._fireAndBubble(events.pointerdown, {
-	        evt: evt,
-	        pointerId: pos.id
-	      });
-
-	      triggeredOnShape = true;
-	      const isTouch = evt.type.indexOf('touch') >= 0;
-
-	      if (shape.preventDefault() && evt.cancelable && isTouch) {
-	        evt.preventDefault();
-	      }
-	    });
-
-	    if (!triggeredOnShape) {
-	      this._fire(events.pointerdown, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this,
-	        pointerId: this._pointerPositions[0].id
-	      });
-	    }
-	  }
-
-	  _pointermove(evt) {
-	    const events = getEventsMap(evt.type);
-	    const eventType = getEventType(evt.type);
-
-	    if (!events) {
-	      return;
-	    }
-
-	    if (DD.isDragging && DD.node.preventDefault() && evt.cancelable) {
-	      evt.preventDefault();
-	    }
-
-	    this.setPointersPositions(evt);
-	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
-
-	    if (!eventsEnabled) {
-	      return;
-	    }
-
-	    var processedShapesIds = {};
-	    let triggeredOnShape = false;
-
-	    var targetShape = this._getTargetShape(eventType);
-
-	    this._changedPointerPositions.forEach(pos => {
-	      const shape = getCapturedShape(pos.id) || this.getIntersection(pos);
-	      const pointerId = pos.id;
-	      const event = {
-	        evt: evt,
-	        pointerId
-	      };
-	      var differentTarget = targetShape !== shape;
-
-	      if (differentTarget && targetShape) {
-	        targetShape._fireAndBubble(events.pointerout, Object.assign({}, event), shape);
-
-	        targetShape._fireAndBubble(events.pointerleave, Object.assign({}, event), shape);
-	      }
-
-	      if (shape) {
-	        if (processedShapesIds[shape._id]) {
-	          return;
-	        }
-
-	        processedShapesIds[shape._id] = true;
-	      }
-
-	      if (shape && shape.isListening()) {
-	        triggeredOnShape = true;
-
-	        if (differentTarget) {
-	          shape._fireAndBubble(events.pointerover, Object.assign({}, event), targetShape);
-
-	          shape._fireAndBubble(events.pointerenter, Object.assign({}, event), targetShape);
-
-	          this[eventType + 'targetShape'] = shape;
-	        }
-
-	        shape._fireAndBubble(events.pointermove, Object.assign({}, event));
-	      } else {
-	        if (targetShape) {
-	          this._fire(events.pointerover, {
-	            evt: evt,
-	            target: this,
-	            currentTarget: this,
-	            pointerId
-	          });
-
-	          this[eventType + 'targetShape'] = null;
-	        }
-	      }
-	    });
-
-	    if (!triggeredOnShape) {
-	      this._fire(events.pointermove, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this,
-	        pointerId: this._changedPointerPositions[0].id
-	      });
-	    }
-	  }
-
-	  _pointerup(evt) {
-	    const events = getEventsMap(evt.type);
-	    const eventType = getEventType(evt.type);
-
-	    if (!events) {
-	      return;
-	    }
-
-	    this.setPointersPositions(evt);
-	    const clickStartShape = this[eventType + 'ClickStartShape'];
-	    const clickEndShape = this[eventType + 'ClickEndShape'];
-	    var processedShapesIds = {};
-	    let triggeredOnShape = false;
-
-	    this._changedPointerPositions.forEach(pos => {
-	      const shape = getCapturedShape(pos.id) || this.getIntersection(pos);
-
-	      if (shape) {
-	        shape.releaseCapture(pos.id);
-
-	        if (processedShapesIds[shape._id]) {
-	          return;
-	        }
-
-	        processedShapesIds[shape._id] = true;
-	      }
-
-	      const pointerId = pos.id;
-	      const event = {
-	        evt: evt,
-	        pointerId
-	      };
-	      let fireDblClick = false;
-
-	      if (Konva$2['_' + eventType + 'InDblClickWindow']) {
-	        fireDblClick = true;
-	        clearTimeout(this[eventType + 'DblTimeout']);
-	      } else if (!DD.justDragged) {
-	        Konva$2['_' + eventType + 'InDblClickWindow'] = true;
-	        clearTimeout(this[eventType + 'DblTimeout']);
-	      }
-
-	      this[eventType + 'DblTimeout'] = setTimeout(function () {
-	        Konva$2['_' + eventType + 'InDblClickWindow'] = false;
-	      }, Konva$2.dblClickWindow);
-
-	      if (shape && shape.isListening()) {
-	        triggeredOnShape = true;
-	        this[eventType + 'ClickEndShape'] = shape;
-
-	        shape._fireAndBubble(events.pointerup, Object.assign({}, event));
-
-	        if (Konva$2['_' + eventType + 'ListenClick'] && clickStartShape && clickStartShape === shape) {
-	          shape._fireAndBubble(events.pointerclick, Object.assign({}, event));
-
-	          if (fireDblClick && clickEndShape && clickEndShape === shape) {
-	            shape._fireAndBubble(events.pointerdblclick, Object.assign({}, event));
-	          }
-	        }
-	      } else {
-	        this[eventType + 'ClickEndShape'] = null;
-
-	        if (Konva$2['_' + eventType + 'ListenClick']) {
-	          this._fire(events.pointerclick, {
-	            evt: evt,
-	            target: this,
-	            currentTarget: this,
-	            pointerId
-	          });
-	        }
-
-	        if (fireDblClick) {
-	          this._fire(events.pointerdblclick, {
-	            evt: evt,
-	            target: this,
-	            currentTarget: this,
-	            pointerId
-	          });
-	        }
-	      }
-	    });
-
-	    if (!triggeredOnShape) {
-	      this._fire(events.pointerup, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this,
-	        pointerId: this._changedPointerPositions[0].id
-	      });
-	    }
-
-	    Konva$2['_' + eventType + 'ListenClick'] = false;
-
-	    if (evt.cancelable) {
-	      evt.preventDefault();
-	    }
-	  }
-
-	  _contextmenu(evt) {
-	    this.setPointersPositions(evt);
-	    var shape = this.getIntersection(this.getPointerPosition());
-
-	    if (shape && shape.isListening()) {
-	      shape._fireAndBubble(CONTEXTMENU, {
-	        evt: evt
-	      });
-	    } else {
-	      this._fire(CONTEXTMENU, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this
-	      });
-	    }
-	  }
-
-	  _wheel(evt) {
-	    this.setPointersPositions(evt);
-	    var shape = this.getIntersection(this.getPointerPosition());
-
-	    if (shape && shape.isListening()) {
-	      shape._fireAndBubble(WHEEL, {
-	        evt: evt
-	      });
-	    } else {
-	      this._fire(WHEEL, {
-	        evt: evt,
-	        target: this,
-	        currentTarget: this
-	      });
-	    }
-	  }
-
-	  _pointercancel(evt) {
-	    this.setPointersPositions(evt);
-	    const shape = getCapturedShape(evt.pointerId) || this.getIntersection(this.getPointerPosition());
-
-	    if (shape) {
-	      shape._fireAndBubble(POINTERUP, createEvent(evt));
-	    }
-
-	    releaseCapture(evt.pointerId);
-	  }
-
-	  _lostpointercapture(evt) {
-	    releaseCapture(evt.pointerId);
-	  }
-
-	  setPointersPositions(evt) {
-	    var contentPosition = this._getContentPosition(),
-	        x = null,
-	        y = null;
-
-	    evt = evt ? evt : window.event;
-
-	    if (evt.touches !== undefined) {
-	      this._pointerPositions = [];
-	      this._changedPointerPositions = [];
-	      Array.prototype.forEach.call(evt.touches, touch => {
-	        this._pointerPositions.push({
-	          id: touch.identifier,
-	          x: (touch.clientX - contentPosition.left) / contentPosition.scaleX,
-	          y: (touch.clientY - contentPosition.top) / contentPosition.scaleY
-	        });
-	      });
-	      Array.prototype.forEach.call(evt.changedTouches || evt.touches, touch => {
-	        this._changedPointerPositions.push({
-	          id: touch.identifier,
-	          x: (touch.clientX - contentPosition.left) / contentPosition.scaleX,
-	          y: (touch.clientY - contentPosition.top) / contentPosition.scaleY
-	        });
-	      });
-	    } else {
-	      x = (evt.clientX - contentPosition.left) / contentPosition.scaleX;
-	      y = (evt.clientY - contentPosition.top) / contentPosition.scaleY;
-	      this.pointerPos = {
-	        x: x,
-	        y: y
-	      };
-	      this._pointerPositions = [{
-	        x,
-	        y,
-	        id: Util._getFirstPointerId(evt)
-	      }];
-	      this._changedPointerPositions = [{
-	        x,
-	        y,
-	        id: Util._getFirstPointerId(evt)
-	      }];
-	    }
-	  }
-
-	  _setPointerPosition(evt) {
-	    Util.warn('Method _setPointerPosition is deprecated. Use "stage.setPointersPositions(event)" instead.');
-	    this.setPointersPositions(evt);
-	  }
-
-	  _getContentPosition() {
-	    if (!this.content || !this.content.getBoundingClientRect) {
-	      return {
-	        top: 0,
-	        left: 0,
-	        scaleX: 1,
-	        scaleY: 1
-	      };
-	    }
-
-	    var rect = this.content.getBoundingClientRect();
-	    return {
-	      top: rect.top,
-	      left: rect.left,
-	      scaleX: rect.width / this.content.clientWidth || 1,
-	      scaleY: rect.height / this.content.clientHeight || 1
-	    };
-	  }
-
-	  _buildDOM() {
-	    this.bufferCanvas = new SceneCanvas({
-	      width: this.width(),
-	      height: this.height()
-	    });
-	    this.bufferHitCanvas = new HitCanvas({
-	      pixelRatio: 1,
-	      width: this.width(),
-	      height: this.height()
-	    });
-
-	    if (!Konva$2.isBrowser) {
-	      return;
-	    }
-
-	    var container = this.container();
-
-	    if (!container) {
-	      throw 'Stage has no container. A container is required.';
-	    }
-
-	    container.innerHTML = '';
-	    this.content = document.createElement('div');
-	    this.content.style.position = 'relative';
-	    this.content.style.userSelect = 'none';
-	    this.content.className = 'konvajs-content';
-	    this.content.setAttribute('role', 'presentation');
-	    container.appendChild(this.content);
-
-	    this._resizeDOM();
-	  }
-
-	  cache() {
-	    Util.warn('Cache function is not allowed for stage. You may use cache only for layers, groups and shapes.');
-	    return this;
-	  }
-
-	  clearCache() {
-	    return this;
-	  }
-
-	  batchDraw() {
-	    this.getChildren().forEach(function (layer) {
-	      layer.batchDraw();
-	    });
-	    return this;
-	  }
-
-	}
-	Stage$1.prototype.nodeType = STAGE;
-
-	_registerNode(Stage$1);
-
-	Factory.addGetterSetter(Stage$1, 'container');
-
 	var HAS_SHADOW = 'hasShadow';
 	var SHADOW_RGBA = 'shadowRGBA';
 	var patternImage = 'patternImage';
@@ -13577,6 +12706,911 @@
 	  getDrawHitFunc: 'getHitFunc',
 	  setDrawHitFunc: 'setHitFunc'
 	});
+
+	var STAGE = 'Stage',
+	    STRING = 'string',
+	    PX = 'px',
+	    MOUSEOUT = 'mouseout',
+	    MOUSELEAVE = 'mouseleave',
+	    MOUSEOVER = 'mouseover',
+	    MOUSEENTER = 'mouseenter',
+	    MOUSEMOVE = 'mousemove',
+	    MOUSEDOWN = 'mousedown',
+	    MOUSEUP = 'mouseup',
+	    POINTERMOVE = 'pointermove',
+	    POINTERDOWN = 'pointerdown',
+	    POINTERUP = 'pointerup',
+	    POINTERCANCEL = 'pointercancel',
+	    LOSTPOINTERCAPTURE = 'lostpointercapture',
+	    POINTEROUT = 'pointerout',
+	    POINTERLEAVE = 'pointerleave',
+	    POINTEROVER = 'pointerover',
+	    POINTERENTER = 'pointerenter',
+	    CONTEXTMENU = 'contextmenu',
+	    TOUCHSTART = 'touchstart',
+	    TOUCHEND = 'touchend',
+	    TOUCHMOVE = 'touchmove',
+	    TOUCHCANCEL = 'touchcancel',
+	    WHEEL = 'wheel',
+	    KEYDOWN = 'keydown',
+	    MAX_LAYERS_NUMBER = 5,
+	    EVENTS = [[MOUSEENTER, '_pointerenter'], [MOUSEDOWN, '_pointerdown'], [MOUSEMOVE, '_pointermove'], [MOUSEUP, '_pointerup'], [MOUSELEAVE, '_pointerleave'], [TOUCHSTART, '_pointerdown'], [TOUCHMOVE, '_pointermove'], [TOUCHEND, '_pointerup'], [TOUCHCANCEL, '_pointercancel'], [MOUSEOVER, '_pointerover'], [WHEEL, '_wheel'], [CONTEXTMENU, '_contextmenu'], [POINTERDOWN, '_pointerdown'], [POINTERMOVE, '_pointermove'], [POINTERUP, '_pointerup'], [POINTERCANCEL, '_pointercancel'], [LOSTPOINTERCAPTURE, '_lostpointercapture'], [KEYDOWN, '_keydown']];
+	const EVENTS_MAP = {
+	  mouse: {
+	    [POINTEROUT]: MOUSEOUT,
+	    [POINTERLEAVE]: MOUSELEAVE,
+	    [POINTEROVER]: MOUSEOVER,
+	    [POINTERENTER]: MOUSEENTER,
+	    [POINTERMOVE]: MOUSEMOVE,
+	    [POINTERDOWN]: MOUSEDOWN,
+	    [POINTERUP]: MOUSEUP,
+	    [POINTERCANCEL]: 'mousecancel',
+	    pointerclick: 'click',
+	    pointerdblclick: 'dblclick'
+	  },
+	  touch: {
+	    [POINTEROUT]: 'touchout',
+	    [POINTERLEAVE]: 'touchleave',
+	    [POINTEROVER]: 'touchover',
+	    [POINTERENTER]: 'touchenter',
+	    [POINTERMOVE]: TOUCHMOVE,
+	    [POINTERDOWN]: TOUCHSTART,
+	    [POINTERUP]: TOUCHEND,
+	    [POINTERCANCEL]: TOUCHCANCEL,
+	    pointerclick: 'tap',
+	    pointerdblclick: 'dbltap'
+	  },
+	  pointer: {
+	    [POINTEROUT]: POINTEROUT,
+	    [POINTERLEAVE]: POINTERLEAVE,
+	    [POINTEROVER]: POINTEROVER,
+	    [POINTERENTER]: POINTERENTER,
+	    [POINTERMOVE]: POINTERMOVE,
+	    [POINTERDOWN]: POINTERDOWN,
+	    [POINTERUP]: POINTERUP,
+	    [POINTERCANCEL]: POINTERCANCEL,
+	    pointerclick: 'pointerclick',
+	    pointerdblclick: 'pointerdblclick'
+	  },
+	  keyboard: {
+	    [KEYDOWN]: 'keydown'
+	  }
+	};
+
+	const getEventType = type => {
+	  if (type.indexOf('pointer') >= 0) {
+	    return 'pointer';
+	  }
+
+	  if (type.indexOf('touch') >= 0) {
+	    return 'touch';
+	  }
+
+	  if (type.indexOf('key') >= 0) {
+	    return 'keyboard';
+	  }
+
+	  return 'mouse';
+	};
+
+	const getEventsMap = eventType => {
+	  const type = getEventType(eventType);
+
+	  if (type === 'pointer') {
+	    return Konva$2.pointerEventsEnabled && EVENTS_MAP.pointer;
+	  }
+
+	  if (type === 'touch') {
+	    return EVENTS_MAP.touch;
+	  }
+
+	  if (type === 'mouse') {
+	    return EVENTS_MAP.mouse;
+	  }
+
+	  if (type === 'keyboard') {
+	    return EVENTS_MAP.keyboard;
+	  }
+	};
+
+	function checkNoClip(attrs = {}) {
+	  if (attrs.clipFunc || attrs.clipWidth || attrs.clipHeight) {
+	    Util.warn('Stage does not support clipping. Please use clip for Layers or Groups.');
+	  }
+
+	  return attrs;
+	}
+
+	const NO_POINTERS_MESSAGE = `Pointer position is missing and not registered by the stage. Looks like it is outside of the stage container. You can set it manually from event: stage.setPointersPositions(event);`;
+	const stages = [];
+	class Stage$1 extends Container {
+	  constructor(config) {
+	    super(checkNoClip(config));
+	    this._pointerPositions = [];
+	    this._changedPointerPositions = [];
+
+	    this._buildDOM();
+
+	    this._bindContentEvents();
+
+	    stages.push(this);
+	    this.on('widthChange.konva heightChange.konva', this._resizeDOM);
+	    this.on('visibleChange.konva', this._checkVisibility);
+	    this.on('clipWidthChange.konva clipHeightChange.konva clipFuncChange.konva', () => {
+	      checkNoClip(this.attrs);
+	    });
+
+	    this._checkVisibility();
+	  }
+
+	  _validateAdd(child) {
+	    const isLayer = child.getType() === 'Layer';
+	    const isFastLayer = child.getType() === 'FastLayer';
+	    const valid = isLayer || isFastLayer;
+
+	    if (!valid) {
+	      Util.throw('You may only add layers to the stage.');
+	    }
+	  }
+
+	  _checkVisibility() {
+	    if (!this.content) {
+	      return;
+	    }
+
+	    const style = this.visible() ? '' : 'none';
+	    this.content.style.display = style;
+	  }
+
+	  setContainer(container) {
+	    if (typeof container === STRING) {
+	      if (container.charAt(0) === '.') {
+	        var className = container.slice(1);
+	        container = document.getElementsByClassName(className)[0];
+	      } else {
+	        var id;
+
+	        if (container.charAt(0) !== '#') {
+	          id = container;
+	        } else {
+	          id = container.slice(1);
+	        }
+
+	        container = document.getElementById(id);
+	      }
+
+	      if (!container) {
+	        throw 'Can not find container in document with id ' + id;
+	      }
+	    }
+
+	    this._setAttr('container', container);
+
+	    if (this.content) {
+	      if (this.content.parentElement) {
+	        this.content.parentElement.removeChild(this.content);
+	      }
+
+	      container.appendChild(this.content);
+	    }
+
+	    return this;
+	  }
+
+	  shouldDrawHit() {
+	    return true;
+	  }
+
+	  clear() {
+	    var layers = this.children,
+	        len = layers.length,
+	        n;
+
+	    for (n = 0; n < len; n++) {
+	      layers[n].clear();
+	    }
+
+	    return this;
+	  }
+
+	  clone(obj) {
+	    if (!obj) {
+	      obj = {};
+	    }
+
+	    obj.container = typeof document !== 'undefined' && document.createElement('div');
+	    return Container.prototype.clone.call(this, obj);
+	  }
+
+	  destroy() {
+	    super.destroy();
+	    var content = this.content;
+
+	    if (content && Util._isInDocument(content)) {
+	      this.container().removeChild(content);
+	    }
+
+	    var index = stages.indexOf(this);
+
+	    if (index > -1) {
+	      stages.splice(index, 1);
+	    }
+
+	    return this;
+	  }
+
+	  getPointerPosition() {
+	    const pos = this._pointerPositions[0] || this._changedPointerPositions[0];
+
+	    if (!pos) {
+	      Util.warn(NO_POINTERS_MESSAGE);
+	      return null;
+	    }
+
+	    return {
+	      x: pos.x,
+	      y: pos.y
+	    };
+	  }
+
+	  _getPointerById(id) {
+	    return this._pointerPositions.find(p => p.id === id);
+	  }
+
+	  getPointersPositions() {
+	    return this._pointerPositions;
+	  }
+
+	  getStage() {
+	    return this;
+	  }
+
+	  getContent() {
+	    return this.content;
+	  }
+
+	  _toKonvaCanvas(config) {
+	    config = config || {};
+	    config.x = config.x || 0;
+	    config.y = config.y || 0;
+	    config.width = config.width || this.width();
+	    config.height = config.height || this.height();
+	    var canvas = new SceneCanvas({
+	      width: config.width,
+	      height: config.height,
+	      pixelRatio: config.pixelRatio || 1
+	    });
+
+	    var _context = canvas.getContext()._context;
+
+	    var layers = this.children;
+
+	    if (config.x || config.y) {
+	      _context.translate(-1 * config.x, -1 * config.y);
+	    }
+
+	    layers.forEach(function (layer) {
+	      if (!layer.isVisible()) {
+	        return;
+	      }
+
+	      var layerCanvas = layer._toKonvaCanvas(config);
+
+	      _context.drawImage(layerCanvas._canvas, config.x, config.y, layerCanvas.getWidth() / layerCanvas.getPixelRatio(), layerCanvas.getHeight() / layerCanvas.getPixelRatio());
+	    });
+	    return canvas;
+	  }
+
+	  getIntersection(pos) {
+	    if (!pos) {
+	      return null;
+	    }
+
+	    var layers = this.children,
+	        len = layers.length,
+	        end = len - 1,
+	        n;
+
+	    for (n = end; n >= 0; n--) {
+	      const shape = layers[n].getIntersection(pos);
+
+	      if (shape) {
+	        return shape;
+	      }
+	    }
+
+	    return null;
+	  }
+
+	  _resizeDOM() {
+	    var width = this.width();
+	    var height = this.height();
+
+	    if (this.content) {
+	      this.content.style.width = width + PX;
+	      this.content.style.height = height + PX;
+	    }
+
+	    this.bufferCanvas.setSize(width, height);
+	    this.bufferHitCanvas.setSize(width, height);
+	    this.children.forEach(layer => {
+	      layer.setSize({
+	        width,
+	        height
+	      });
+	      layer.draw();
+	    });
+	  }
+
+	  add(layer, ...rest) {
+	    if (arguments.length > 1) {
+	      for (var i = 0; i < arguments.length; i++) {
+	        this.add(arguments[i]);
+	      }
+
+	      return this;
+	    }
+
+	    super.add(layer);
+	    var length = this.children.length;
+
+	    if (length > MAX_LAYERS_NUMBER) {
+	      Util.warn('The stage has ' + length + ' layers. Recommended maximum number of layers is 3-5. Adding more layers into the stage may drop the performance. Rethink your tree structure, you can use Konva.Group.');
+	    }
+
+	    layer.setSize({
+	      width: this.width(),
+	      height: this.height()
+	    });
+	    layer.draw();
+
+	    if (Konva$2.isBrowser) {
+	      this.content.appendChild(layer.canvas._canvas);
+	    }
+
+	    return this;
+	  }
+
+	  getParent() {
+	    return null;
+	  }
+
+	  getLayer() {
+	    return null;
+	  }
+
+	  hasPointerCapture(pointerId) {
+	    return hasPointerCapture(pointerId, this);
+	  }
+
+	  setPointerCapture(pointerId) {
+	    setPointerCapture(pointerId, this);
+	  }
+
+	  releaseCapture(pointerId) {
+	    releaseCapture(pointerId);
+	  }
+
+	  getLayers() {
+	    return this.children;
+	  }
+
+	  _bindContentEvents() {
+	    if (!Konva$2.isBrowser) {
+	      return;
+	    }
+
+	    EVENTS.forEach(([event, methodName]) => {
+	      this.content.addEventListener(event, evt => {
+	        this[methodName](evt);
+	      });
+	    });
+	  }
+
+	  _keydown(evt) {
+	    const events = getEventsMap(evt.type);
+	    const targetShapes = this.find("#" + this.keyboardTargetId);
+
+	    if (targetShapes.length > 0) {
+	      const targetShape = targetShapes[0];
+
+	      if (targetShape instanceof Shape) {
+	        targetShape._fireAndBubble(events.keydown, {
+	          evt: evt
+	        });
+	      } else {
+	        console.error("Tried to fire an event on a node that is not a shape: ", targetShape);
+	      }
+	    } else {
+	      console.error("No shapes found for the id: " + this.keyboardTargetId);
+	    }
+	  }
+
+	  _pointerenter(evt) {
+	    this.setPointersPositions(evt);
+	    const events = getEventsMap(evt.type);
+
+	    this._fire(events.pointerenter, {
+	      evt: evt,
+	      target: this,
+	      currentTarget: this
+	    });
+	  }
+
+	  _pointerover(evt) {
+	    this.setPointersPositions(evt);
+	    const events = getEventsMap(evt.type);
+
+	    this._fire(events.pointerover, {
+	      evt: evt,
+	      target: this,
+	      currentTarget: this
+	    });
+	  }
+
+	  _getTargetShape(evenType) {
+	    let shape = this[evenType + 'targetShape'];
+
+	    if (shape && !shape.getStage()) {
+	      shape = null;
+	    }
+
+	    return shape;
+	  }
+
+	  _pointerleave(evt) {
+	    const events = getEventsMap(evt.type);
+	    const eventType = getEventType(evt.type);
+
+	    if (!events) {
+	      return;
+	    }
+
+	    this.setPointersPositions(evt);
+
+	    var targetShape = this._getTargetShape(eventType);
+
+	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
+
+	    if (targetShape && eventsEnabled) {
+	      targetShape._fireAndBubble(events.pointerout, {
+	        evt: evt
+	      });
+
+	      targetShape._fireAndBubble(events.pointerleave, {
+	        evt: evt
+	      });
+
+	      this._fire(events.pointerleave, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+
+	      this[eventType + 'targetShape'] = null;
+	    } else if (eventsEnabled) {
+	      this._fire(events.pointerleave, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+
+	      this._fire(events.pointerout, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+	    }
+
+	    this.pointerPos = undefined;
+	    this._pointerPositions = [];
+	  }
+
+	  _pointerdown(evt) {
+	    const events = getEventsMap(evt.type);
+	    const eventType = getEventType(evt.type);
+
+	    if (!events) {
+	      return;
+	    }
+
+	    this.setPointersPositions(evt);
+	    var triggeredOnShape = false;
+
+	    this._changedPointerPositions.forEach(pos => {
+	      var shape = this.getIntersection(pos);
+	      DD.justDragged = false;
+	      Konva$2['_' + eventType + 'ListenClick'] = true;
+	      const hasShape = shape && shape.isListening();
+
+	      if (!hasShape) {
+	        return;
+	      }
+
+	      if (Konva$2.capturePointerEventsEnabled) {
+	        shape.setPointerCapture(pos.id);
+	      }
+
+	      this[eventType + 'ClickStartShape'] = shape;
+
+	      shape._fireAndBubble(events.pointerdown, {
+	        evt: evt,
+	        pointerId: pos.id
+	      });
+
+	      triggeredOnShape = true;
+	      const isTouch = evt.type.indexOf('touch') >= 0;
+
+	      if (shape.preventDefault() && evt.cancelable && isTouch) {
+	        evt.preventDefault();
+	      }
+	    });
+
+	    if (!triggeredOnShape) {
+	      this._fire(events.pointerdown, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this,
+	        pointerId: this._pointerPositions[0].id
+	      });
+	    }
+	  }
+
+	  _pointermove(evt) {
+	    const events = getEventsMap(evt.type);
+	    const eventType = getEventType(evt.type);
+
+	    if (!events) {
+	      return;
+	    }
+
+	    if (DD.isDragging && DD.node.preventDefault() && evt.cancelable) {
+	      evt.preventDefault();
+	    }
+
+	    this.setPointersPositions(evt);
+	    var eventsEnabled = !DD.isDragging || Konva$2.hitOnDragEnabled;
+
+	    if (!eventsEnabled) {
+	      return;
+	    }
+
+	    var processedShapesIds = {};
+	    let triggeredOnShape = false;
+
+	    var targetShape = this._getTargetShape(eventType);
+
+	    this._changedPointerPositions.forEach(pos => {
+	      const shape = getCapturedShape(pos.id) || this.getIntersection(pos);
+	      const pointerId = pos.id;
+	      const event = {
+	        evt: evt,
+	        pointerId
+	      };
+	      var differentTarget = targetShape !== shape;
+
+	      if (differentTarget && targetShape) {
+	        targetShape._fireAndBubble(events.pointerout, Object.assign({}, event), shape);
+
+	        targetShape._fireAndBubble(events.pointerleave, Object.assign({}, event), shape);
+	      }
+
+	      if (shape) {
+	        if (processedShapesIds[shape._id]) {
+	          return;
+	        }
+
+	        processedShapesIds[shape._id] = true;
+	      }
+
+	      if (shape && shape.isListening()) {
+	        triggeredOnShape = true;
+
+	        if (differentTarget) {
+	          shape._fireAndBubble(events.pointerover, Object.assign({}, event), targetShape);
+
+	          shape._fireAndBubble(events.pointerenter, Object.assign({}, event), targetShape);
+
+	          this[eventType + 'targetShape'] = shape;
+	        }
+
+	        shape._fireAndBubble(events.pointermove, Object.assign({}, event));
+	      } else {
+	        if (targetShape) {
+	          this._fire(events.pointerover, {
+	            evt: evt,
+	            target: this,
+	            currentTarget: this,
+	            pointerId
+	          });
+
+	          this[eventType + 'targetShape'] = null;
+	        }
+	      }
+	    });
+
+	    if (!triggeredOnShape) {
+	      this._fire(events.pointermove, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this,
+	        pointerId: this._changedPointerPositions[0].id
+	      });
+	    }
+	  }
+
+	  _pointerup(evt) {
+	    const events = getEventsMap(evt.type);
+	    const eventType = getEventType(evt.type);
+
+	    if (!events) {
+	      return;
+	    }
+
+	    this.setPointersPositions(evt);
+	    const clickStartShape = this[eventType + 'ClickStartShape'];
+	    const clickEndShape = this[eventType + 'ClickEndShape'];
+	    var processedShapesIds = {};
+	    let triggeredOnShape = false;
+
+	    this._changedPointerPositions.forEach(pos => {
+	      const shape = getCapturedShape(pos.id) || this.getIntersection(pos);
+
+	      if (shape) {
+	        shape.releaseCapture(pos.id);
+
+	        if (processedShapesIds[shape._id]) {
+	          return;
+	        }
+
+	        processedShapesIds[shape._id] = true;
+	      }
+
+	      const pointerId = pos.id;
+	      const event = {
+	        evt: evt,
+	        pointerId
+	      };
+	      let fireDblClick = false;
+
+	      if (Konva$2['_' + eventType + 'InDblClickWindow']) {
+	        fireDblClick = true;
+	        clearTimeout(this[eventType + 'DblTimeout']);
+	      } else if (!DD.justDragged) {
+	        Konva$2['_' + eventType + 'InDblClickWindow'] = true;
+	        clearTimeout(this[eventType + 'DblTimeout']);
+	      }
+
+	      this[eventType + 'DblTimeout'] = setTimeout(function () {
+	        Konva$2['_' + eventType + 'InDblClickWindow'] = false;
+	      }, Konva$2.dblClickWindow);
+
+	      if (shape && shape.isListening()) {
+	        triggeredOnShape = true;
+	        this[eventType + 'ClickEndShape'] = shape;
+
+	        shape._fireAndBubble(events.pointerup, Object.assign({}, event));
+
+	        this.keyboardTargetId = shape.id();
+
+	        if (Konva$2['_' + eventType + 'ListenClick'] && clickStartShape && clickStartShape === shape) {
+	          shape._fireAndBubble(events.pointerclick, Object.assign({}, event));
+
+	          if (fireDblClick && clickEndShape && clickEndShape === shape) {
+	            shape._fireAndBubble(events.pointerdblclick, Object.assign({}, event));
+	          }
+	        }
+	      } else {
+	        this[eventType + 'ClickEndShape'] = null;
+
+	        if (Konva$2['_' + eventType + 'ListenClick']) {
+	          this._fire(events.pointerclick, {
+	            evt: evt,
+	            target: this,
+	            currentTarget: this,
+	            pointerId
+	          });
+	        }
+
+	        if (fireDblClick) {
+	          this._fire(events.pointerdblclick, {
+	            evt: evt,
+	            target: this,
+	            currentTarget: this,
+	            pointerId
+	          });
+	        }
+	      }
+	    });
+
+	    if (!triggeredOnShape) {
+	      this._fire(events.pointerup, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this,
+	        pointerId: this._changedPointerPositions[0].id
+	      });
+	    }
+
+	    Konva$2['_' + eventType + 'ListenClick'] = false;
+
+	    if (evt.cancelable) {
+	      evt.preventDefault();
+	    }
+	  }
+
+	  _contextmenu(evt) {
+	    this.setPointersPositions(evt);
+	    var shape = this.getIntersection(this.getPointerPosition());
+
+	    if (shape && shape.isListening()) {
+	      shape._fireAndBubble(CONTEXTMENU, {
+	        evt: evt
+	      });
+	    } else {
+	      this._fire(CONTEXTMENU, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+	    }
+	  }
+
+	  _wheel(evt) {
+	    this.setPointersPositions(evt);
+	    var shape = this.getIntersection(this.getPointerPosition());
+
+	    if (shape && shape.isListening()) {
+	      shape._fireAndBubble(WHEEL, {
+	        evt: evt
+	      });
+	    } else {
+	      this._fire(WHEEL, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+	    }
+	  }
+
+	  _pointercancel(evt) {
+	    this.setPointersPositions(evt);
+	    const shape = getCapturedShape(evt.pointerId) || this.getIntersection(this.getPointerPosition());
+
+	    if (shape) {
+	      shape._fireAndBubble(POINTERUP, createEvent(evt));
+	    }
+
+	    releaseCapture(evt.pointerId);
+	  }
+
+	  _lostpointercapture(evt) {
+	    releaseCapture(evt.pointerId);
+	  }
+
+	  setPointersPositions(evt) {
+	    var contentPosition = this._getContentPosition(),
+	        x = null,
+	        y = null;
+
+	    evt = evt ? evt : window.event;
+
+	    if (evt.touches !== undefined) {
+	      this._pointerPositions = [];
+	      this._changedPointerPositions = [];
+	      Array.prototype.forEach.call(evt.touches, touch => {
+	        this._pointerPositions.push({
+	          id: touch.identifier,
+	          x: (touch.clientX - contentPosition.left) / contentPosition.scaleX,
+	          y: (touch.clientY - contentPosition.top) / contentPosition.scaleY
+	        });
+	      });
+	      Array.prototype.forEach.call(evt.changedTouches || evt.touches, touch => {
+	        this._changedPointerPositions.push({
+	          id: touch.identifier,
+	          x: (touch.clientX - contentPosition.left) / contentPosition.scaleX,
+	          y: (touch.clientY - contentPosition.top) / contentPosition.scaleY
+	        });
+	      });
+	    } else {
+	      x = (evt.clientX - contentPosition.left) / contentPosition.scaleX;
+	      y = (evt.clientY - contentPosition.top) / contentPosition.scaleY;
+	      this.pointerPos = {
+	        x: x,
+	        y: y
+	      };
+	      this._pointerPositions = [{
+	        x,
+	        y,
+	        id: Util._getFirstPointerId(evt)
+	      }];
+	      this._changedPointerPositions = [{
+	        x,
+	        y,
+	        id: Util._getFirstPointerId(evt)
+	      }];
+	    }
+	  }
+
+	  _setPointerPosition(evt) {
+	    Util.warn('Method _setPointerPosition is deprecated. Use "stage.setPointersPositions(event)" instead.');
+	    this.setPointersPositions(evt);
+	  }
+
+	  _getContentPosition() {
+	    if (!this.content || !this.content.getBoundingClientRect) {
+	      return {
+	        top: 0,
+	        left: 0,
+	        scaleX: 1,
+	        scaleY: 1
+	      };
+	    }
+
+	    var rect = this.content.getBoundingClientRect();
+	    return {
+	      top: rect.top,
+	      left: rect.left,
+	      scaleX: rect.width / this.content.clientWidth || 1,
+	      scaleY: rect.height / this.content.clientHeight || 1
+	    };
+	  }
+
+	  _buildDOM() {
+	    this.bufferCanvas = new SceneCanvas({
+	      width: this.width(),
+	      height: this.height()
+	    });
+	    this.bufferHitCanvas = new HitCanvas({
+	      pixelRatio: 1,
+	      width: this.width(),
+	      height: this.height()
+	    });
+
+	    if (!Konva$2.isBrowser) {
+	      return;
+	    }
+
+	    var container = this.container();
+
+	    if (!container) {
+	      throw 'Stage has no container. A container is required.';
+	    }
+
+	    container.innerHTML = '';
+	    this.content = document.createElement('div');
+	    this.content.style.position = 'relative';
+	    this.content.style.userSelect = 'none';
+	    this.content.className = 'konvajs-content';
+	    this.content.setAttribute('role', 'presentation');
+	    this.content.setAttribute('tabindex', "-1");
+	    container.appendChild(this.content);
+
+	    this._resizeDOM();
+	  }
+
+	  cache() {
+	    Util.warn('Cache function is not allowed for stage. You may use cache only for layers, groups and shapes.');
+	    return this;
+	  }
+
+	  clearCache() {
+	    return this;
+	  }
+
+	  batchDraw() {
+	    this.getChildren().forEach(function (layer) {
+	      layer.batchDraw();
+	    });
+	    return this;
+	  }
+
+	}
+	Stage$1.prototype.nodeType = STAGE;
+
+	_registerNode(Stage$1);
+
+	Factory.addGetterSetter(Stage$1, 'container');
 
 	var HASH = '#',
 	    BEFORE_DRAW = 'beforeDraw',
@@ -23192,12 +23226,17 @@
 	            var parentFound = false;
 	            while (!parentFound) {
 	                parent = parent.getParent();
-	                var className = parent.getClassName();
-	                if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
-	                    parentFound = ["Stage", "Group", "LayoutGroup"].includes(className);
+	                if (parent) {
+	                    var className = parent.getClassName();
+	                    if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
+	                        parentFound = ["Stage", "Group", "LayoutGroup"].includes(className);
+	                    }
+	                    else if (props.selectedTool === "text") {
+	                        parentFound = ["Stage", "Group", "LayoutGroup", "Rect"].includes(className);
+	                    }
 	                }
-	                else if (props.selectedTool === "text") {
-	                    parentFound = ["Stage", "Group", "LayoutGroup", "Rect"].includes(className);
+	                else {
+	                    console.log("Parent not found!");
 	                }
 	            }
 	            setParentId(parent.attrs.id);
@@ -23456,6 +23495,163 @@
 	        ]
 	    }
 	};
+	var EditText = {
+	    name: "EditText",
+	    config: {
+	        type: "Group",
+	        id: "root",
+	        props: {
+	            x: 50,
+	            y: 50,
+	            width: 150,
+	            height: 50,
+	            onClick: {
+	                expr: "$props.onActive",
+	                default: "",
+	                map: false
+	            },
+	            onKeydown: {
+	                expr: "$props.onKeydown",
+	                default: "",
+	                map: false
+	            }
+	        },
+	        children: [
+	            {
+	                id: "containerbox",
+	                type: "Rect",
+	                props: {
+	                    x: 50,
+	                    y: 50,
+	                    width: 150,
+	                    height: 50,
+	                    stroke: "black",
+	                    visible: {
+	                        expr: "$props.active",
+	                        default: true,
+	                        map: false
+	                    }
+	                },
+	                children: []
+	            },
+	            {
+	                id: "text",
+	                type: "Text",
+	                props: {
+	                    x: 50,
+	                    y: 50,
+	                    width: 150,
+	                    height: 50,
+	                    text: {
+	                        expr: "$props.value",
+	                        default: "default text",
+	                        map: false
+	                    }
+	                },
+	                children: []
+	            }
+	        ]
+	    }
+	};
+	var ChatBox = {
+	    name: "ChatBox",
+	    config: {
+	        type: "Group",
+	        id: "root",
+	        props: {
+	            onClick: {
+	                expr: "$props.onActive",
+	                default: "",
+	                map: false
+	            },
+	            onKeydown: {
+	                expr: "$props.onKeydown",
+	                default: "",
+	                map: false
+	            }
+	        },
+	        children: [
+	            {
+	                type: "Rect",
+	                id: "background",
+	                props: {
+	                    x: 50,
+	                    y: 50,
+	                    width: 300,
+	                    height: 450,
+	                    fill: "white"
+	                },
+	                children: []
+	            },
+	            {
+	                type: "Rect",
+	                id: "inputbox",
+	                props: {
+	                    x: 58,
+	                    y: 462,
+	                    width: 216,
+	                    height: 30,
+	                    stroke: "black",
+	                    visible: true
+	                },
+	                children: []
+	            },
+	            {
+	                type: "Rect",
+	                id: "sendbutton",
+	                props: {
+	                    x: 281,
+	                    y: 462,
+	                    width: 62,
+	                    height: 30,
+	                    fill: "blue",
+	                    onClick: "$props.sendMessage"
+	                },
+	                children: []
+	            },
+	            {
+	                type: "Text",
+	                id: "btntext",
+	                props: {
+	                    x: 296,
+	                    y: 472,
+	                    width: 62,
+	                    height: 30,
+	                    fill: "white",
+	                    text: "Send",
+	                },
+	                children: []
+	            },
+	            {
+	                type: "LayoutGroup",
+	                id: "grouproot",
+	                props: {
+	                    x: 50,
+	                    y: 50,
+	                    width: 200,
+	                    height: 200
+	                },
+	                children: [
+	                    {
+	                        id: "rect1",
+	                        type: "Text",
+	                        props: {
+	                            x: 50,
+	                            y: 50,
+	                            fill: "black",
+	                            text: {
+	                                expr: "$props.messages",
+	                                map: true,
+	                                default: ["Line1", "Line2", "Line3"]
+	                            }
+	                        },
+	                        children: []
+	                    }
+	                ]
+	            }
+	        ]
+	    }
+	};
 
 	function editNumber(props) {
 	    return react.exports.createElement("div", {
@@ -23637,7 +23833,7 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample]), components = _e[0], setComponents = _e[1];
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    react.exports.useEffect(function () {
 	        var handleKeyDown = function (ev) {
@@ -23694,7 +23890,9 @@
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
 	        console.log("dropping: ", dropEv, component);
-	        if (component === null || component === void 0 ? void 0 : component.config) {
+	        if ((component === null || component === void 0 ? void 0 : component.config) && component.config.props) {
+	            component.config.props.x = dropEv.x;
+	            component.config.props.y = dropEv.y;
 	            setConf([component.config]);
 	            setSelectedConf(component.config.id);
 	        }

@@ -4,8 +4,7 @@ import { Config } from "./utils";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
-import { RectangleConf, GroupConf, TextConf, LayoutExample } from "./KonvaPrimitives";
-import { KonvaEventObject } from 'konva/lib/Node';
+import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
 
 export function assertNever(arg: never): never {
@@ -36,7 +35,7 @@ export default function() {
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample ]);
+  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox ]);
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
 
   useEffect(() => {
@@ -92,7 +91,9 @@ export default function() {
     const component = components.find(cmp => cmp.name === dropEv.id);
     // Add it to existing confs to get new confs
     console.log("dropping: ", dropEv, component);
-    if (component?.config) {
+    if (component?.config && component.config.props) {
+      component.config.props.x = dropEv.x;
+      component.config.props.y = dropEv.y;
       setConf([component.config]);
       setSelectedConf(component.config.id);
     }

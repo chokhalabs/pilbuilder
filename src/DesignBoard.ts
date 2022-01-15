@@ -93,11 +93,15 @@ export default function(props: Props) {
       let parentFound = false;
       while (!parentFound) {
         parent = parent.getParent();
-        const className = parent.getClassName();
-        if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
-          parentFound = [ "Stage", "Group", "LayoutGroup" ].includes(className);
-        } else if (props.selectedTool === "text") {
-          parentFound = [ "Stage", "Group", "LayoutGroup", "Rect" ].includes(className)
+        if (parent) {
+          const className = parent.getClassName();
+          if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
+            parentFound = [ "Stage", "Group", "LayoutGroup" ].includes(className);
+          } else if (props.selectedTool === "text") {
+            parentFound = [ "Stage", "Group", "LayoutGroup", "Rect" ].includes(className)
+          }
+        } else {
+          console.log("Parent not found!")
         }
       }
       setParentId(parent.attrs.id);

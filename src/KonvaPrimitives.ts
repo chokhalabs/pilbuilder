@@ -93,3 +93,163 @@ export const LayoutExample: Component = {
     ]
   }
 }
+
+export const EditText: Component = {
+  name: "EditText",
+  config: {
+    type: "Group",
+    id: "root",
+    props: {
+      x: 50,
+      y: 50,
+      width: 150,
+      height: 50,
+      onClick: {
+        expr: "$props.onActive",
+        default: "",
+        map: false
+      },
+      onKeydown: {
+        expr: "$props.onKeydown",
+        default: "",
+        map: false
+      }
+    },
+    children: [
+      {
+        id: "containerbox",
+        type: "Rect",
+        props: {
+          x: 50,
+          y: 50,
+          width: 150,
+          height: 50,
+          stroke: "black",
+          visible: {
+            expr: "$props.active",
+            default: true,
+            map: false
+          }
+        },
+        children: []
+      },
+      {
+        id: "text",
+        type: "Text",
+        props: {
+          x: 50,
+          y: 50,
+          width: 150,
+          height: 50, 
+          text: {
+            expr: "$props.value",
+            default: "default text",
+            map: false
+          }
+        },
+        children: []
+      }
+    ]
+  }
+}
+
+export const ChatBox: Component = {
+  name: "ChatBox",
+  config: {
+    type: "Group",
+    id: "root",
+    props: {
+      onClick: {
+        expr: "$props.onActive",
+        default: "",
+        map: false
+      },
+      onKeydown: {
+        expr: "$props.onKeydown",
+        default: "",
+        map: false
+      }
+    },
+    children: [
+      {
+        type: "Rect",
+        id: "background",
+        props: {
+          x: 50,
+          y: 50,
+          width: 300,
+          height: 450,
+          fill: "white"
+        },
+        children: []
+      },
+      {
+        type: "Rect",
+        id: "inputbox",
+        props: {
+          x: 58,
+          y: 462,
+          width: 216,
+          height: 30,
+          stroke: "black",
+          visible: true
+        },
+        children: []
+      },
+      {
+        type: "Rect",
+        id: "sendbutton",
+        props: {
+          x: 281,
+          y: 462,
+          width: 62,
+          height: 30,
+          fill: "blue",
+          onClick: "$props.sendMessage"
+        },
+        children: []
+      },
+      {
+        type: "Text",
+        id: "btntext",
+        props: {
+          x: 296,
+          y: 472,
+          width: 62,
+          height: 30,
+          fill: "white",
+          text: "Send",
+
+        },
+        children: []
+      },
+      {
+        type: "LayoutGroup",
+        id: "grouproot",
+        props: {
+          x: 50,
+          y: 50,
+          width: 200,
+          height: 200
+        },
+        children: [
+          {
+            id: "rect1",
+            type: "Text",
+            props: {
+              x: 50,
+              y: 50,
+              fill: "black",
+              text: {
+                expr: "$props.messages",
+                map: true,
+                default: ["Line1", "Line2", "Line3"]
+              }
+            },
+            children: []
+          }
+        ]
+      }
+    ]
+  }
+}
