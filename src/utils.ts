@@ -37,7 +37,7 @@ function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   return evaluated;
 }
 
-export function tranformToVDOM(config: Config, $props: PropExprs): any {
+export function transformToVDOM(config: Config, $props: PropExprs): any {
   let props: PropExprs|null = null;
   let mappedProps: string[] = [];
   if (config.props) {
@@ -55,7 +55,7 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
   return function() {
     // If there is a mapped prop then return a group with one component per item in the mapped prop
     if (mappedProps.length === 0) {
-      const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
+      const children = config.children.map(child => h(transformToVDOM(child, $props), { key: child.id }));
       return h(
         config.type,
         { 
@@ -70,7 +70,7 @@ export function tranformToVDOM(config: Config, $props: PropExprs): any {
       if (mappedProp.length === 0) {
         console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey);
       }
-      const children = config.children.map(child => h(tranformToVDOM(child, $props), { key: child.id }));
+      const children = config.children.map(child => h(transformToVDOM(child, $props), { key: child.id }));
       return mappedProp.map((item, i) => h(
         config.type,
         {

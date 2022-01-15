@@ -2,7 +2,7 @@ import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import Konva from "konva";
 import { ToolType, assertNever } from "./KonvaBuilder";
-import { Config, tranformToVDOM } from "./utils";
+import { Config, transformToVDOM } from "./utils";
 import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
@@ -24,7 +24,7 @@ export default function(props: Props) {
   const [ parentid, setParentId ] = useState(null as string | null);
   const [ parentrect, setParentRect ] = useState(null as null | { x: number; y: number; });
 
-  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(tranformToVDOM(config, 
+  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(transformToVDOM(config, 
     { 
       key: props.selectedTool + "-" + i, 
       // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {

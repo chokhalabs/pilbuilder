@@ -23119,7 +23119,7 @@
 	    });
 	    return evaluated;
 	}
-	function tranformToVDOM(config, $props) {
+	function transformToVDOM(config, $props) {
 	    var props = null;
 	    var mappedProps = [];
 	    if (config.props) {
@@ -23137,7 +23137,7 @@
 	    return function () {
 	        // If there is a mapped prop then return a group with one component per item in the mapped prop
 	        if (mappedProps.length === 0) {
-	            var children = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
+	            var children = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
 	            return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
 	        }
 	        else {
@@ -23146,7 +23146,7 @@
 	            if (mappedProp.length === 0) {
 	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
 	            }
-	            var children_1 = config.children.map(function (child) { return react.exports.createElement(tranformToVDOM(child, $props), { key: child.id }); });
+	            var children_1 = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
 	            return mappedProp.map(function (item, i) {
 	                var _a;
 	                return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
@@ -23162,7 +23162,7 @@
 	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
 	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
 	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
-	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(tranformToVDOM(config, {
+	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(transformToVDOM(config, {
 	        key: props.selectedTool + "-" + i,
 	        // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
 	        //   console.log("Drawing in group: ", ev);
@@ -23597,6 +23597,23 @@
 	                children: []
 	            },
 	            {
+	                type: "Text",
+	                id: "inputelement",
+	                props: {
+	                    x: 58,
+	                    y: 462,
+	                    width: 216,
+	                    height: 30,
+	                    fill: "black",
+	                    text: {
+	                        expr: "$props.value",
+	                        default: "type here...",
+	                        map: false
+	                    }
+	                },
+	                children: []
+	            },
+	            {
 	                type: "Rect",
 	                id: "sendbutton",
 	                props: {
@@ -23605,7 +23622,11 @@
 	                    width: 62,
 	                    height: 30,
 	                    fill: "blue",
-	                    onClick: "$props.sendMessage"
+	                    onClick: {
+	                        expr: "$props.onSend",
+	                        default: "",
+	                        map: false
+	                    }
 	                },
 	                children: []
 	            },

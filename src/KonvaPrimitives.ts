@@ -197,6 +197,23 @@ export const ChatBox: Component = {
         children: []
       },
       {
+        type: "Text",
+        id: "inputelement",
+        props: {
+          x: 58,
+          y: 462,
+          width: 216,
+          height: 30,
+          fill: "black",
+          text: {
+            expr: "$props.value",
+            default: "type here...",
+            map: false
+          }
+        },
+        children: []
+      },
+      {
         type: "Rect",
         id: "sendbutton",
         props: {
@@ -205,7 +222,11 @@ export const ChatBox: Component = {
           width: 62,
           height: 30,
           fill: "blue",
-          onClick: "$props.sendMessage"
+          onClick: {
+            expr: "$props.onSend",
+            default: "",
+            map: false
+          }
         },
         children: []
       },
