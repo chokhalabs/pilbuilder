@@ -29,7 +29,10 @@ export default {
     }),
     typescript(),
     replace({
-      'process.env.NODE_ENV': JSON.stringify( 'development' )
+      values: {
+        'process.env.NODE_ENV': JSON.stringify( 'development' )
+      },
+      preventAssignment: true
     }),
     babel({
       presets: ["@babel/preset-react"],

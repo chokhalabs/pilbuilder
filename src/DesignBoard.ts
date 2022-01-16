@@ -1,8 +1,6 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
-import Konva from "konva";
-import { ToolType, assertNever } from "./KonvaBuilder";
-import { Config, transformToVDOM } from "./utils";
+import { Config, transformToVDOM, ToolType, assertNever } from "./utils";
 import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
@@ -26,16 +24,7 @@ export default function(props: Props) {
 
   const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(transformToVDOM(config, 
     { 
-      key: props.selectedTool + "-" + i, 
-      // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
-      //   console.log("Drawing in group: ", ev);
-      //   setGroupBeingDrawinIn(ev.target.id)
-      //   const clientRect = ev.target.getClientRect();
-      //   const mdownAt = ev.target.getRelativePointerPosition();
-      //   mdownAt.x += clientRect.x;
-      //   mdownAt.y += clientRect.y;
-      //   setMouseDownAt(mdownAt);
-      // } 
+      key: props.selectedTool + "-" + i 
     })));
   
   useEffect(() => {

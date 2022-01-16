@@ -23103,6 +23103,9 @@
 	  }));
 	});
 
+	function assertNever(arg) {
+	    throw new Error("arg should never happen!");
+	}
 	function evaluateProps($props, propsExprs) {
 	    var evaluated = __assign({}, propsExprs);
 	    Object.keys(propsExprs).forEach(function (key) {
@@ -23163,16 +23166,7 @@
 	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
 	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(transformToVDOM(config, {
-	        key: props.selectedTool + "-" + i,
-	        // onDrawInGroup: (ev: KonvaEventObject<MouseEvent>) => {
-	        //   console.log("Drawing in group: ", ev);
-	        //   setGroupBeingDrawinIn(ev.target.id)
-	        //   const clientRect = ev.target.getClientRect();
-	        //   const mdownAt = ev.target.getRelativePointerPosition();
-	        //   mdownAt.x += clientRect.x;
-	        //   mdownAt.y += clientRect.y;
-	        //   setMouseDownAt(mdownAt);
-	        // } 
+	        key: props.selectedTool + "-" + i
 	    })); });
 	    react.exports.useEffect(function () {
 	        if (stageNode.current) {
@@ -23829,9 +23823,6 @@
 	    }, body);
 	}
 
-	function assertNever(arg) {
-	    throw new Error("arg should never happen!");
-	}
 	function traverse(cursor, id) {
 	    if (cursor.id === id) {
 	        return cursor;

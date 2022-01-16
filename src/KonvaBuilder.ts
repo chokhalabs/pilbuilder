@@ -1,17 +1,11 @@
 import { createElement as h, useEffect, useState } from 'react';
 import "./KonvaBuilder.css";
-import { Config } from "./utils";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
-
-export function assertNever(arg: never): never {
-  throw new Error("arg should never happen!")
-}
-
-export type ToolType = "arrow" | "rect" | "text" | "group" | "layoutgroup";
+import { Config, transformToVDOM, ToolType, assertNever } from "./utils";
 
 function traverse(cursor: Config, id: string): Config|undefined {
   if (cursor.id === id) {

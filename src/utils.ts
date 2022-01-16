@@ -21,6 +21,12 @@ export interface Component {
   config: Config;
 }
 
+export function assertNever(arg: never): never {
+  throw new Error("arg should never happen!")
+}
+
+export type ToolType = "arrow" | "rect" | "text" | "group" | "layoutgroup";
+
 function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   const evaluated: Record<string, any> = {...propsExprs};
   Object.keys(propsExprs).forEach(key => {
