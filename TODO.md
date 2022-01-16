@@ -1,23 +1,16 @@
-- Add tree in sidebar
-- Allow saving a component and using it directly from tools
-- Allow downloading an app with a component
-
-
-- Fix draw location inside group
-- Allow drawing textnode
-- Allow editing selected node
-- Allow wiring up event emitters
-- Generate a stub file for event handlers in exported projects
-+ Allow mapping data to components
-  - scalars like text, number etc
-  + array or object
 + Allow conditional components
-+ Allow components to have internal states 
++ Allow scrolling
++ When saving components extract props to top and don't expand the tree
++ Make all id's unique
++ Draw Chatbox
++ Allow dragging/resizing components on designboard 
++ Allow deleting nodes
++ Add sidebar controls to modify layout
++ Add the strech option to make a child take its parent's size
++ Add animated cursor to typer
++ Allow dropping multiple saved components on the board
++ Allow dropping a component into a group
 
 MVP
 ===
-
-+ Draw a chatbox and an input area
-+ Sending messages from the chat area makes them appear in the chatbox
 + Change the layout of the chatbox to show all own messages on the right and others on the left
-+ Deploy without code change

@@ -23143,7 +23143,7 @@
 	        else {
 	            var mappedPropKey_1 = mappedProps[0];
 	            var mappedProp = (props && props[mappedPropKey_1] || []);
-	            if (mappedProp.length === 0) {
+	            if (!Array.isArray(mappedProp)) {
 	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
 	            }
 	            var children_1 = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });

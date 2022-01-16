@@ -67,7 +67,7 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
     } else {
       const mappedPropKey = mappedProps[0];
       const mappedProp: any[] = (props && props[mappedPropKey] || []) as any[];
-      if (mappedProp.length === 0) {
+      if (!Array.isArray(mappedProp)) {
         console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey);
       }
       const children = config.children.map(child => h(transformToVDOM(child, $props), { key: child.id }));
