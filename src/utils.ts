@@ -70,6 +70,23 @@ function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   return evaluated;
 }
 
+export function findNodeById(id: string, forest: Config[]) {
+  for (let i = 0; i < forest.length; i++) {
+    const tree = forest[i];
+    const node = traverse(tree, id);
+    if (node) return node;
+  }
+}
+
+function traverse(cursor: Config, id: string): Config|undefined {
+  if (cursor.id === id) {
+    return cursor;
+  } else {
+    const candidates = cursor.children.map(child => traverse(child, id));
+    return candidates.find(c => !!c)
+  }
+}
+
 export function transformToVDOM(config: Config, $props: PropExprs): any {
   let props: PropExprs|null = null;
   let mappedProps: string[] = [];

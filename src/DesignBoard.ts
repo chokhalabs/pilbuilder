@@ -1,6 +1,6 @@
 import React, { createElement as h, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
-import { Config, transformToVDOM, ToolType, assertNever } from "./utils";
+import { Config, transformToVDOM, ToolType, assertNever, findNodeById } from "./utils";
 import { KonvaEventObject } from "konva/lib/Node";
 
 type Props = { 
@@ -12,6 +12,7 @@ type Props = {
   cursor: string;
   onAddItem: (node: Config, parent: null | string) => void;
   selectedTool: ToolType;
+  selectedConf: string;
 }
 
 export default function(props: Props) {
@@ -21,11 +22,16 @@ export default function(props: Props) {
   const [ mouseAt, setMouseAt ] = useState(null as { x: number; y: number; } | null);
   const [ parentid, setParentId ] = useState(null as string | null);
   const [ parentrect, setParentRect ] = useState(null as null | { x: number; y: number; });
+  const [ selectionBox, setSelectionBox ] = useState(null as null | { x: number; y: number; width: number; height: number; });
 
-  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(transformToVDOM(config, 
-    { 
-      key: props.selectedTool + "-" + i 
-    })));
+  const nodes: Array<ReturnType<typeof h>> = props.conf.map((config, i) => h(
+    transformToVDOM(
+      config, 
+      { 
+        key: props.selectedTool + "-" + i 
+      }
+    )
+  ));
   
   useEffect(() => {
     if (stageNode.current) {
@@ -56,6 +62,19 @@ export default function(props: Props) {
     }
   }, [stageNode, props.components]);
 
+  // Draw red box around the selected conf
+  useEffect(() => {
+    if (stageNode.current) {
+      const [n] = stageNode.current.find(`#${props.selectedConf}`);
+      if (n) {
+        const clientRect = n.getClientRect();
+        setSelectionBox(clientRect);
+      } else {
+        setSelectionBox(null);
+      }
+    }
+  }, [props.selectedConf]);
+
   if (mouseAt && mouseDownAt) {
     let x = mouseDownAt.x;
     let y = mouseDownAt.y;
@@ -65,6 +84,7 @@ export default function(props: Props) {
       y = y + parentrect.y;
     } 
 
+    // Drawingbox is the temporary box drawn on the screen when you are drawing a shape
     const drawingbox = h(Rect, {
       x,
       y,
@@ -74,6 +94,22 @@ export default function(props: Props) {
     });
     nodes.push(drawingbox);
   } 
+
+  if (selectionBox) {
+    nodes.push(
+      h(
+        Rect,
+        {
+          x: selectionBox.x,
+          y: selectionBox.y,
+          width: selectionBox.width,
+          height: selectionBox.height,
+          stroke: "#FF0000",
+          lineWidth: 1
+        }
+      )
+    );
+  }
 
   function handleMouseDown(ev: KonvaEventObject<MouseEvent>) {
     let parent = ev.target; 
@@ -247,7 +283,8 @@ export default function(props: Props) {
       onMouseMove: handleMouseMove
     },
     [
-      h(Layer,
+      h(
+        Layer,
         {
           key: "layer1"
         },

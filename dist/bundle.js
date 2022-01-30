@@ -23156,6 +23156,23 @@
 	    });
 	    return evaluated;
 	}
+	function findNodeById(id, forest) {
+	    for (var i = 0; i < forest.length; i++) {
+	        var tree = forest[i];
+	        var node = traverse(tree, id);
+	        if (node)
+	            return node;
+	    }
+	}
+	function traverse(cursor, id) {
+	    if (cursor.id === id) {
+	        return cursor;
+	    }
+	    else {
+	        var candidates = cursor.children.map(function (child) { return traverse(child, id); });
+	        return candidates.find(function (c) { return !!c; });
+	    }
+	}
 	function transformToVDOM(config, $props) {
 	    var props = null;
 	    var mappedProps = [];
@@ -23199,6 +23216,7 @@
 	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
 	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
 	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
+	    var _f = react.exports.useState(null), selectionBox = _f[0], setSelectionBox = _f[1];
 	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(transformToVDOM(config, {
 	        key: props.selectedTool + "-" + i
 	    })); });
@@ -23232,6 +23250,19 @@
 	            console.error("Could not attach drop listener");
 	        }
 	    }, [stageNode, props.components]);
+	    // Draw red box around the selected conf
+	    react.exports.useEffect(function () {
+	        if (stageNode.current) {
+	            var n = stageNode.current.find("#".concat(props.selectedConf))[0];
+	            if (n) {
+	                var clientRect = n.getClientRect();
+	                setSelectionBox(clientRect);
+	            }
+	            else {
+	                setSelectionBox(null);
+	            }
+	        }
+	    }, [props.selectedConf]);
 	    if (mouseAt && mouseDownAt) {
 	        var x = mouseDownAt.x;
 	        var y = mouseDownAt.y;
@@ -23239,6 +23270,7 @@
 	            x = x + parentrect.x;
 	            y = y + parentrect.y;
 	        }
+	        // Drawingbox is the temporary box drawn on the screen when you are drawing a shape
 	        var drawingbox = react.exports.createElement(Rect, {
 	            x: x,
 	            y: y,
@@ -23247,6 +23279,16 @@
 	            fill: "#c4c4c4"
 	        });
 	        nodes.push(drawingbox);
+	    }
+	    if (selectionBox) {
+	        nodes.push(react.exports.createElement(Rect, {
+	            x: selectionBox.x,
+	            y: selectionBox.y,
+	            width: selectionBox.width,
+	            height: selectionBox.height,
+	            stroke: "#FF0000",
+	            lineWidth: 1
+	        }));
 	    }
 	    function handleMouseDown(ev) {
 	        var parent = ev.target;
@@ -23293,6 +23335,7 @@
 	                    fill: "#c4c4c4",
 	                    onClick: {
 	                        expr: "$props.onClick",
+	                        evaluator: "pickSuppliedProp",
 	                        default: function () { return alert("clicked!"); },
 	                        map: false
 	                    }
@@ -23806,7 +23849,12 @@
 	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
 	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
 	        type: "text",
-	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue, map: false } : ev.target.value); }
+	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? {
+	            expr: "$props." + ev.target.value,
+	            default: props.defaultValue,
+	            map: false,
+	            evaluator: "pickSuppliedProp"
+	        } : ev.target.value); }
 	    }), react.exports.createElement("input", {
 	        type: "checkbox",
 	        checked: props.isProvided,
@@ -23815,7 +23863,12 @@
 	                if (!props.defaultValue) {
 	                    props.defaultValue = "default " + props.value.substring("$props.".length);
 	                }
-	                props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue, map: false });
+	                props.onChange(props.label, {
+	                    expr: "$props." + props.value,
+	                    default: props.defaultValue,
+	                    evaluator: "pickSuppliedProp",
+	                    map: false
+	                });
 	            }
 	            else {
 	                props.onChange(props.label, props.value);
@@ -23826,7 +23879,12 @@
 	        placeholder: "Default value",
 	        value: props.defaultValue,
 	        onChange: function (ev) {
-	            props.onChange(props.label, { expr: props.value, default: ev.target.value, map: false });
+	            props.onChange(props.label, {
+	                expr: props.value,
+	                default: ev.target.value,
+	                map: false,
+	                evaluator: "pickSuppliedProp"
+	            });
 	        }
 	    });
 	    if (Array.isArray(props.defaultValue)) {
@@ -23840,7 +23898,12 @@
 	                        newDefaults = __spreadArray([], props.defaultValue, true);
 	                        newDefaults.splice(i, 1, ev.target.value);
 	                    }
-	                    props.onChange(props.label, { expr: props.value, default: newDefaults, map: true });
+	                    props.onChange(props.label, {
+	                        expr: props.value,
+	                        default: newDefaults,
+	                        map: true,
+	                        evaluator: "pickSuppliedProp"
+	                    });
 	                }
 	            });
 	        });
@@ -23863,7 +23926,12 @@
 	                defaultValues.push(props.defaultValue);
 	            }
 	            defaultValues.push("new");
-	            props.onChange(props.label, { expr: props.value, default: defaultValues, map: true });
+	            props.onChange(props.label, {
+	                expr: props.value,
+	                default: defaultValues,
+	                map: true,
+	                evaluator: "pickSuppliedProp"
+	            });
 	        }
 	    }, "+")));
 	    return react.exports.createElement("div", {
@@ -23925,35 +23993,18 @@
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
 	        var node = props.node;
-	        var propEditors_1 = [];
-	        makePropEditors(node, propEditors_1, props);
-	        node.children.forEach(function (child) {
-	            makePropEditors(child, propEditors_1, props);
-	        });
-	        body = react.exports.createElement("div", {}, propEditors_1);
+	        var propEditors = [];
+	        makePropEditors(node, propEditors, props);
+	        // node.children.forEach(child => {
+	        //   makePropEditors(child, propEditors, props);
+	        // }) 
+	        body = react.exports.createElement("div", {}, propEditors);
 	    }
 	    return react.exports.createElement("div", {
 	        className: "detailsbar"
 	    }, body);
 	}
 
-	function traverse(cursor, id) {
-	    if (cursor.id === id) {
-	        return cursor;
-	    }
-	    else {
-	        var candidates = cursor.children.map(function (child) { return traverse(child, id); });
-	        return candidates.find(function (c) { return !!c; });
-	    }
-	}
-	function findNodeById(id, forest) {
-	    for (var i = 0; i < forest.length; i++) {
-	        var tree = forest[i];
-	        var node = traverse(tree, id);
-	        if (node)
-	            return node;
-	    }
-	}
 	function App () {
 	    var _a = react.exports.useState([]), conf = _a[0], setConf = _a[1];
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
@@ -24079,6 +24130,7 @@
 	        conf: conf,
 	        components: components,
 	        selectedTool: selectedTool,
+	        selectedConf: selectedConf,
 	        cursor: pointerType(selectedTool),
 	        onDrop: function (ev) { return addNodeToStage(ev); },
 	        onAddItem: function (config, parent) {

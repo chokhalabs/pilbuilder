@@ -1,3 +1,4 @@
++ Show box around selected component
 + Allow conditional components
 + Allow scrolling
 + When saving components extract props to top and don't expand the tree

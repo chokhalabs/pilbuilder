@@ -5,24 +5,7 @@ import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox, ScrollExample } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
-import { Config, ToolType, assertNever } from "./utils";
-
-function traverse(cursor: Config, id: string): Config|undefined {
-  if (cursor.id === id) {
-    return cursor;
-  } else {
-    const candidates = cursor.children.map(child => traverse(child, id));
-    return candidates.find(c => !!c)
-  }
-}
-
-function findNodeById(id: string, forest: Config[]) {
-  for (let i = 0; i < forest.length; i++) {
-    const tree = forest[i];
-    const node = traverse(tree, id);
-    if (node) return node;
-  }
-}
+import { Config, ToolType, assertNever, findNodeById } from "./utils";
 
 export default function() {
   const [ conf, setConf ] = useState([] as Config[]);
@@ -155,6 +138,7 @@ export default function() {
       conf,
       components,
       selectedTool,
+      selectedConf,
       cursor: pointerType(selectedTool),
       onDrop: (ev) => addNodeToStage(ev),
       onAddItem: (config: Config, parent: string | null) => {
