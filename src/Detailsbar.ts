@@ -70,7 +70,15 @@ function editText(props: { label: string; value: string; defaultValue: string | 
       {
         value: props.isProvided ? props.value.substring("$props.".length) : props.value,
         type: "text",
-        onChange: ev => props.onChange(props.label, props.isProvided ? { expr: "$props." + ev.target.value, default: props.defaultValue, map: false } : ev.target.value)
+        onChange: ev => props.onChange(
+          props.label, 
+          props.isProvided ? { 
+            expr: "$props." + ev.target.value, 
+            default: props.defaultValue, 
+            map: false,
+            evaluator: "pickSuppliedProp"
+          } : ev.target.value
+        )
       }
     ),
     h(
@@ -83,7 +91,12 @@ function editText(props: { label: string; value: string; defaultValue: string | 
             if (!props.defaultValue) {
               props.defaultValue = "default " + props.value.substring("$props.".length);
             }
-            props.onChange(props.label, { expr: "$props." + props.value, default: props.defaultValue, map: false })
+            props.onChange(props.label, { 
+              expr: "$props." + props.value, 
+              default: props.defaultValue, 
+              evaluator: "pickSuppliedProp",
+              map: false 
+            })
           } else {
             props.onChange(props.label, props.value)
           }
@@ -98,7 +111,12 @@ function editText(props: { label: string; value: string; defaultValue: string | 
       placeholder: "Default value",
       value: props.defaultValue,
       onChange: ev => {
-        props.onChange(props.label, { expr: props.value, default: ev.target.value, map: false })
+        props.onChange(props.label, { 
+          expr: props.value, 
+          default: ev.target.value, 
+          map: false,
+          evaluator: "pickSuppliedProp"
+        })
       }
     }
   );
@@ -116,7 +134,12 @@ function editText(props: { label: string; value: string; defaultValue: string | 
               newDefaults = [...props.defaultValue]
               newDefaults.splice(i, 1, ev.target.value);
             }
-            props.onChange(props.label, { expr: props.value, default: newDefaults, map: true })
+            props.onChange(props.label, { 
+              expr: props.value, 
+              default: newDefaults, 
+              map: true,
+              evaluator: "pickSuppliedProp"
+            })
           }
         }
       )
@@ -158,7 +181,12 @@ function editText(props: { label: string; value: string; defaultValue: string | 
               defaultValues.push(props.defaultValue);
             }
             defaultValues.push("new")
-            props.onChange(props.label, { expr: props.value, default: defaultValues, map: true })
+            props.onChange(props.label, { 
+              expr: props.value, 
+              default: defaultValues, 
+              map: true,
+              evaluator: "pickSuppliedProp"
+            })
           }
         },
         "+"
@@ -231,9 +259,9 @@ export default function (props: DetailsProps) {
     let propEditors: Array<ReturnType<typeof h>> = [];
 
     makePropEditors(node, propEditors, props);
-    node.children.forEach(child => {
-      makePropEditors(child, propEditors, props);
-    }) 
+    // node.children.forEach(child => {
+    //   makePropEditors(child, propEditors, props);
+    // }) 
 
     body = h(
       "div",

@@ -120,6 +120,7 @@ export default function(props: Props) {
           fill: "#c4c4c4",
           onClick: {
             expr: "$props.onClick",
+            evaluator: "pickSuppliedProp",
             default: () => alert("clicked!"),
             map: false
           }
