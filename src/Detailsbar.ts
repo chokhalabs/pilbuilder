@@ -177,56 +177,63 @@ function editText(props: { label: string; value: string; defaultValue: string | 
   );
 }
 
+function makePropEditors(node: Config, propEditors: Array<ReturnType<typeof h>>, props: DetailsProps) {
+  if (node.props) {
+    Object.keys(node.props).forEach(propkey => {
+      const propval = node.props && node.props[propkey];
+      if (propkey === "fill") {
+        propEditors.push(editColor({ 
+          label: propkey, 
+          value: propval as string, // fill is always string
+          onChange: props.onNodeUpdate,
+          isProvided: false
+        }));
+      } else if (typeof propval === "number") {
+        propEditors.push(editNumber({
+          label: propkey,
+          value: propval,
+          onChange: props.onNodeUpdate,
+          isProvided: false
+        }));
+      } else if (typeof propval === "string") {
+        propEditors.push(editText({
+          label: propkey,
+          value: propval,
+          defaultValue: "", 
+          onChange: props.onNodeUpdate,
+          isProvided: false
+        }));
+      } else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
+        let defaultValue: string|string[];
+        if (typeof propval.default === "string") {
+          defaultValue = propval.default;
+        } else if (Array.isArray(propval.default)) {
+          defaultValue = propval.default as string[];
+        } else {
+          defaultValue = (propval.default || "").toString();
+        }
+        propEditors.push(editText({
+          label: propkey,
+          value: propval.expr,
+          defaultValue,
+          onChange: props.onNodeUpdate,
+          isProvided: true
+        }));
+      }
+    });
+  }
+}
+
 export default function (props: DetailsProps) {
   let body = h("div", {}, "Select a node to edit its properties!");
   if (props.node) {
     const node = props.node;
     let propEditors: Array<ReturnType<typeof h>> = [];
 
-    if (node.props) {
-      Object.keys(node.props).forEach(propkey => {
-        const propval = node.props && node.props[propkey];
-        if (propkey === "fill") {
-          propEditors.push(editColor({ 
-            label: propkey, 
-            value: propval as string, // fill is always string
-            onChange: props.onNodeUpdate,
-            isProvided: false
-          }));
-        } else if (typeof propval === "number") {
-          propEditors.push(editNumber({
-            label: propkey,
-            value: propval,
-            onChange: props.onNodeUpdate,
-            isProvided: false
-          }));
-        } else if (typeof propval === "string") {
-          propEditors.push(editText({
-            label: propkey,
-            value: propval,
-            defaultValue: "", 
-            onChange: props.onNodeUpdate,
-            isProvided: false
-          }));
-        } else if (typeof propval === "object" && propval) {
-          let defaultValue: string|string[];
-          if (typeof propval.default === "string") {
-            defaultValue = propval.default;
-          } else if (Array.isArray(propval.default)) {
-            defaultValue = propval.default as string[];
-          } else {
-            defaultValue = (propval.default || "").toString();
-          }
-          propEditors.push(editText({
-            label: propkey,
-            value: propval.expr,
-            defaultValue,
-            onChange: props.onNodeUpdate,
-            isProvided: true
-          }));
-        }
-      })
-    }
+    makePropEditors(node, propEditors, props);
+    node.children.forEach(child => {
+      makePropEditors(child, propEditors, props);
+    }) 
 
     body = h(
       "div",

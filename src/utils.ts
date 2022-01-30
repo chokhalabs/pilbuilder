@@ -1,11 +1,21 @@
 // import { Rect, Text, Group } from 'react-konva';
 import { createElement as h } from 'react';
 
-export type BindingExpression = {
+type SimpleValueBinding = {
   expr: string;
+  evaluator: "pickSuppliedProp";
   default: string | number | boolean | Record<string, string|number|boolean> | ((...args: any[]) => any) | Array<string|number|boolean|Record<string, string|number|boolean>>;
   map: boolean;
 };
+
+type GeneratedFuncBinding = {
+  expr: Array<any>;
+  evaluator: "makeClipFunc";
+  default: string | number | boolean | Record<string, string|number|boolean> | ((...args: any[]) => any) | Array<string|number|boolean|Record<string, string|number|boolean>>;
+  map: boolean;
+}
+
+export type BindingExpression = SimpleValueBinding | GeneratedFuncBinding;
 
 type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|BindingExpression>;
 
@@ -32,11 +42,28 @@ function evaluateProps($props: Record<string, any>, propsExprs: PropExprs) {
   Object.keys(propsExprs).forEach(key => {
     const propval = propsExprs[key];
     if (typeof propval === "object") {
-      if ($props[propval.expr.substring("$props.".length)]) {
-        // evaluated[key] = eval(propval.expr);
-        evaluated[key] = $props[propval.expr.substring("$props.".length)];
-      } else {
-        evaluated[key] = propval.default;
+      switch(propval.evaluator) {
+        case "makeClipFunc":
+          const functionBodySpec = propval.expr;
+          evaluated[key] = (ctx: CanvasRenderingContext2D) => {
+            functionBodySpec.forEach((shapeConfig: { shape: "Rect", props: { x: number; y: number; width: number; height: number; } }) => {
+              ctx.rect(shapeConfig.props.x, shapeConfig.props.y, shapeConfig.props.width, shapeConfig.props.height);
+            })
+          }
+          break;
+        case "pickSuppliedProp":
+          {
+            let suppliedVal = $props[propval.expr.substring("$props.".length)];
+            if (suppliedVal === undefined) {
+              console.error("Value not supplied for " + propval.expr);
+              suppliedVal = propval.default;
+            }
+            evaluated[key] = suppliedVal;
+          }
+          break;
+        default:
+          console.error("Unrecognized prop setting: ", propval);
+          assertNever(propval);
       }
     }
   });

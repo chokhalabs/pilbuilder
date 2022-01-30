@@ -106,11 +106,13 @@ export const EditText: Component = {
       height: 50,
       onClick: {
         expr: "$props.onActive",
+        evaluator: "pickSuppliedProp",
         default: "",
         map: false
       },
       onKeydown: {
         expr: "$props.onKeydown",
+        evaluator: "pickSuppliedProp",
         default: "",
         map: false
       }
@@ -127,6 +129,7 @@ export const EditText: Component = {
           stroke: "black",
           visible: {
             expr: "$props.active",
+            evaluator: "pickSuppliedProp",
             default: true,
             map: false
           }
@@ -143,6 +146,7 @@ export const EditText: Component = {
           height: 50, 
           text: {
             expr: "$props.value",
+            evaluator: "pickSuppliedProp",
             default: "default text",
             map: false
           }
@@ -161,11 +165,13 @@ export const ChatBox: Component = {
     props: {
       onClick: {
         expr: "$props.onActive",
+        evaluator: "pickSuppliedProp",
         default: "",
         map: false
       },
       onKeydown: {
         expr: "$props.onKeydown",
+        evaluator: "pickSuppliedProp",
         default: "",
         map: false
       }
@@ -207,6 +213,7 @@ export const ChatBox: Component = {
           fill: "black",
           text: {
             expr: "$props.value",
+            evaluator: "pickSuppliedProp",
             default: "type here...",
             map: false
           }
@@ -224,6 +231,7 @@ export const ChatBox: Component = {
           fill: "blue",
           onClick: {
             expr: "$props.onSend",
+            evaluator: "pickSuppliedProp",
             default: "",
             map: false
           }
@@ -263,6 +271,7 @@ export const ChatBox: Component = {
               fill: "black",
               text: {
                 expr: "$props.messages",
+                evaluator: "pickSuppliedProp",
                 map: true,
                 default: ["Line1", "Line2", "Line3"]
               }
@@ -270,6 +279,72 @@ export const ChatBox: Component = {
             children: []
           }
         ]
+      }
+    ]
+  }
+}
+
+export const ScrollExample: Component = {
+  name: "ScrollExample",
+  config: {
+    id: "root",
+    type: "Group",
+    props: {
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 200,
+      onWheel: {
+        expr: "$props.onScroll",
+        evaluator: "pickSuppliedProp",
+        default: "",
+        map: false
+      },
+      clipFunc: {
+        expr: [
+          {
+            shape: "Rect",
+            props: {
+              x: 50,
+              y: 50,
+              width: 100,
+              height: 200
+            }
+          }
+        ],
+        evaluator: "makeClipFunc",
+        default: "",
+        map: false
+      }
+    },
+    children: [
+      {
+        id: "container",
+        type: "Rect",
+        props: {
+          x: 50,
+          y: 50,
+          width: 100,
+          height: 200,
+          stroke: "red"
+        },
+        children: []
+      },
+      {
+        id: "text",
+        type: "Text",
+        props: {
+          x: 50,
+          y: {
+            expr: "$props.scrollTop",
+            evaluator: "pickSuppliedProp",
+            default: 10,
+            map: false
+          },
+          width: 100,
+          text: "Some text goes here and well we just keep typing from there on out! Just fill up the box jimbo! And don't forget the shotgun."
+        },
+        children: []
       }
     ]
   }

@@ -12732,9 +12732,10 @@
 	    TOUCHMOVE = 'touchmove',
 	    TOUCHCANCEL = 'touchcancel',
 	    WHEEL = 'wheel',
+	    SCROLL = 'scroll',
 	    KEYDOWN = 'keydown',
 	    MAX_LAYERS_NUMBER = 5,
-	    EVENTS = [[MOUSEENTER, '_pointerenter'], [MOUSEDOWN, '_pointerdown'], [MOUSEMOVE, '_pointermove'], [MOUSEUP, '_pointerup'], [MOUSELEAVE, '_pointerleave'], [TOUCHSTART, '_pointerdown'], [TOUCHMOVE, '_pointermove'], [TOUCHEND, '_pointerup'], [TOUCHCANCEL, '_pointercancel'], [MOUSEOVER, '_pointerover'], [WHEEL, '_wheel'], [CONTEXTMENU, '_contextmenu'], [POINTERDOWN, '_pointerdown'], [POINTERMOVE, '_pointermove'], [POINTERUP, '_pointerup'], [POINTERCANCEL, '_pointercancel'], [LOSTPOINTERCAPTURE, '_lostpointercapture'], [KEYDOWN, '_keydown']];
+	    EVENTS = [[MOUSEENTER, '_pointerenter'], [MOUSEDOWN, '_pointerdown'], [MOUSEMOVE, '_pointermove'], [MOUSEUP, '_pointerup'], [MOUSELEAVE, '_pointerleave'], [TOUCHSTART, '_pointerdown'], [TOUCHMOVE, '_pointermove'], [TOUCHEND, '_pointerup'], [TOUCHCANCEL, '_pointercancel'], [MOUSEOVER, '_pointerover'], [WHEEL, '_wheel'], [SCROLL, '_scroll'], [CONTEXTMENU, '_contextmenu'], [POINTERDOWN, '_pointerdown'], [POINTERMOVE, '_pointermove'], [POINTERUP, '_pointerup'], [POINTERCANCEL, '_pointercancel'], [LOSTPOINTERCAPTURE, '_lostpointercapture'], [KEYDOWN, '_keydown']];
 	const EVENTS_MAP = {
 	  mouse: {
 	    [POINTEROUT]: MOUSEOUT,
@@ -13466,6 +13467,23 @@
 	      });
 	    } else {
 	      this._fire(WHEEL, {
+	        evt: evt,
+	        target: this,
+	        currentTarget: this
+	      });
+	    }
+	  }
+
+	  _scroll(evt) {
+	    this.setPointersPositions(evt);
+	    var shape = this.getIntersection(this.getPointerPosition());
+
+	    if (shape && shape.isListening()) {
+	      shape._fireAndBubble(SCROLL, {
+	        evt: evt
+	      });
+	    } else {
+	      this._fire(SCROLL, {
 	        evt: evt,
 	        target: this,
 	        currentTarget: this
@@ -23111,12 +23129,28 @@
 	    Object.keys(propsExprs).forEach(function (key) {
 	        var propval = propsExprs[key];
 	        if (typeof propval === "object") {
-	            if ($props[propval.expr.substring("$props.".length)]) {
-	                // evaluated[key] = eval(propval.expr);
-	                evaluated[key] = $props[propval.expr.substring("$props.".length)];
-	            }
-	            else {
-	                evaluated[key] = propval.default;
+	            switch (propval.evaluator) {
+	                case "makeClipFunc":
+	                    var functionBodySpec_1 = propval.expr;
+	                    evaluated[key] = function (ctx) {
+	                        functionBodySpec_1.forEach(function (shapeConfig) {
+	                            ctx.rect(shapeConfig.props.x, shapeConfig.props.y, shapeConfig.props.width, shapeConfig.props.height);
+	                        });
+	                    };
+	                    break;
+	                case "pickSuppliedProp":
+	                    {
+	                        var suppliedVal = $props[propval.expr.substring("$props.".length)];
+	                        if (suppliedVal === undefined) {
+	                            console.error("Value not supplied for " + propval.expr);
+	                            suppliedVal = propval.default;
+	                        }
+	                        evaluated[key] = suppliedVal;
+	                    }
+	                    break;
+	                default:
+	                    console.error("Unrecognized prop setting: ", propval);
+	                    assertNever();
 	            }
 	        }
 	    });
@@ -23501,11 +23535,13 @@
 	            height: 50,
 	            onClick: {
 	                expr: "$props.onActive",
+	                evaluator: "pickSuppliedProp",
 	                default: "",
 	                map: false
 	            },
 	            onKeydown: {
 	                expr: "$props.onKeydown",
+	                evaluator: "pickSuppliedProp",
 	                default: "",
 	                map: false
 	            }
@@ -23522,6 +23558,7 @@
 	                    stroke: "black",
 	                    visible: {
 	                        expr: "$props.active",
+	                        evaluator: "pickSuppliedProp",
 	                        default: true,
 	                        map: false
 	                    }
@@ -23538,6 +23575,7 @@
 	                    height: 50,
 	                    text: {
 	                        expr: "$props.value",
+	                        evaluator: "pickSuppliedProp",
 	                        default: "default text",
 	                        map: false
 	                    }
@@ -23555,11 +23593,13 @@
 	        props: {
 	            onClick: {
 	                expr: "$props.onActive",
+	                evaluator: "pickSuppliedProp",
 	                default: "",
 	                map: false
 	            },
 	            onKeydown: {
 	                expr: "$props.onKeydown",
+	                evaluator: "pickSuppliedProp",
 	                default: "",
 	                map: false
 	            }
@@ -23601,6 +23641,7 @@
 	                    fill: "black",
 	                    text: {
 	                        expr: "$props.value",
+	                        evaluator: "pickSuppliedProp",
 	                        default: "type here...",
 	                        map: false
 	                    }
@@ -23618,6 +23659,7 @@
 	                    fill: "blue",
 	                    onClick: {
 	                        expr: "$props.onSend",
+	                        evaluator: "pickSuppliedProp",
 	                        default: "",
 	                        map: false
 	                    }
@@ -23656,6 +23698,7 @@
 	                            fill: "black",
 	                            text: {
 	                                expr: "$props.messages",
+	                                evaluator: "pickSuppliedProp",
 	                                map: true,
 	                                default: ["Line1", "Line2", "Line3"]
 	                            }
@@ -23663,6 +23706,71 @@
 	                        children: []
 	                    }
 	                ]
+	            }
+	        ]
+	    }
+	};
+	var ScrollExample = {
+	    name: "ScrollExample",
+	    config: {
+	        id: "root",
+	        type: "Group",
+	        props: {
+	            x: 50,
+	            y: 50,
+	            width: 100,
+	            height: 200,
+	            onWheel: {
+	                expr: "$props.onScroll",
+	                evaluator: "pickSuppliedProp",
+	                default: "",
+	                map: false
+	            },
+	            clipFunc: {
+	                expr: [
+	                    {
+	                        shape: "Rect",
+	                        props: {
+	                            x: 50,
+	                            y: 50,
+	                            width: 100,
+	                            height: 200
+	                        }
+	                    }
+	                ],
+	                evaluator: "makeClipFunc",
+	                default: "",
+	                map: false
+	            }
+	        },
+	        children: [
+	            {
+	                id: "container",
+	                type: "Rect",
+	                props: {
+	                    x: 50,
+	                    y: 50,
+	                    width: 100,
+	                    height: 200,
+	                    stroke: "red"
+	                },
+	                children: []
+	            },
+	            {
+	                id: "text",
+	                type: "Text",
+	                props: {
+	                    x: 50,
+	                    y: {
+	                        expr: "$props.scrollTop",
+	                        evaluator: "pickSuppliedProp",
+	                        default: 10,
+	                        map: false
+	                    },
+	                    width: 100,
+	                    text: "Some text goes here and well we just keep typing from there on out! Just fill up the box jimbo! And don't forget the shotgun."
+	                },
+	                children: []
 	            }
 	        ]
 	    }
@@ -23762,60 +23870,66 @@
 	        className: "textfield"
 	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
 	}
+	function makePropEditors(node, propEditors, props) {
+	    if (node.props) {
+	        Object.keys(node.props).forEach(function (propkey) {
+	            var propval = node.props && node.props[propkey];
+	            if (propkey === "fill") {
+	                propEditors.push(editColor({
+	                    label: propkey,
+	                    value: propval,
+	                    onChange: props.onNodeUpdate,
+	                    isProvided: false
+	                }));
+	            }
+	            else if (typeof propval === "number") {
+	                propEditors.push(editNumber({
+	                    label: propkey,
+	                    value: propval,
+	                    onChange: props.onNodeUpdate,
+	                    isProvided: false
+	                }));
+	            }
+	            else if (typeof propval === "string") {
+	                propEditors.push(editText({
+	                    label: propkey,
+	                    value: propval,
+	                    defaultValue: "",
+	                    onChange: props.onNodeUpdate,
+	                    isProvided: false
+	                }));
+	            }
+	            else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
+	                var defaultValue = void 0;
+	                if (typeof propval.default === "string") {
+	                    defaultValue = propval.default;
+	                }
+	                else if (Array.isArray(propval.default)) {
+	                    defaultValue = propval.default;
+	                }
+	                else {
+	                    defaultValue = (propval.default || "").toString();
+	                }
+	                propEditors.push(editText({
+	                    label: propkey,
+	                    value: propval.expr,
+	                    defaultValue: defaultValue,
+	                    onChange: props.onNodeUpdate,
+	                    isProvided: true
+	                }));
+	            }
+	        });
+	    }
+	}
 	function Detailsbar (props) {
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
-	        var node_1 = props.node;
+	        var node = props.node;
 	        var propEditors_1 = [];
-	        if (node_1.props) {
-	            Object.keys(node_1.props).forEach(function (propkey) {
-	                var propval = node_1.props && node_1.props[propkey];
-	                if (propkey === "fill") {
-	                    propEditors_1.push(editColor({
-	                        label: propkey,
-	                        value: propval,
-	                        onChange: props.onNodeUpdate,
-	                        isProvided: false
-	                    }));
-	                }
-	                else if (typeof propval === "number") {
-	                    propEditors_1.push(editNumber({
-	                        label: propkey,
-	                        value: propval,
-	                        onChange: props.onNodeUpdate,
-	                        isProvided: false
-	                    }));
-	                }
-	                else if (typeof propval === "string") {
-	                    propEditors_1.push(editText({
-	                        label: propkey,
-	                        value: propval,
-	                        defaultValue: "",
-	                        onChange: props.onNodeUpdate,
-	                        isProvided: false
-	                    }));
-	                }
-	                else if (typeof propval === "object" && propval) {
-	                    var defaultValue = void 0;
-	                    if (typeof propval.default === "string") {
-	                        defaultValue = propval.default;
-	                    }
-	                    else if (Array.isArray(propval.default)) {
-	                        defaultValue = propval.default;
-	                    }
-	                    else {
-	                        defaultValue = (propval.default || "").toString();
-	                    }
-	                    propEditors_1.push(editText({
-	                        label: propkey,
-	                        value: propval.expr,
-	                        defaultValue: defaultValue,
-	                        onChange: props.onNodeUpdate,
-	                        isProvided: true
-	                    }));
-	                }
-	            });
-	        }
+	        makePropEditors(node, propEditors_1, props);
+	        node.children.forEach(function (child) {
+	            makePropEditors(child, propEditors_1, props);
+	        });
 	        body = react.exports.createElement("div", {}, propEditors_1);
 	    }
 	    return react.exports.createElement("div", {
@@ -23845,7 +23959,7 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox]), components = _e[0], setComponents = _e[1];
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    react.exports.useEffect(function () {
 	        var handleKeyDown = function (ev) {

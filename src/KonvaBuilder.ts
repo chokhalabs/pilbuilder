@@ -3,9 +3,9 @@ import "./KonvaBuilder.css";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
-import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox } from "./KonvaPrimitives";
+import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox, ScrollExample } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
-import { Config, transformToVDOM, ToolType, assertNever } from "./utils";
+import { Config, ToolType, assertNever } from "./utils";
 
 function traverse(cursor: Config, id: string): Config|undefined {
   if (cursor.id === id) {
@@ -29,7 +29,7 @@ export default function() {
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox ]);
+  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample ]);
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
 
   useEffect(() => {
