@@ -23249,7 +23249,7 @@
 	        else {
 	            console.error("Could not attach drop listener");
 	        }
-	    }, [stageNode, props.components]);
+	    }, [stageNode, props.components, props.conf]);
 	    // Draw red box around the selected conf
 	    react.exports.useEffect(function () {
 	        if (stageNode.current) {
@@ -24070,8 +24070,9 @@
 	        if ((component === null || component === void 0 ? void 0 : component.config) && component.config.props) {
 	            component.config.props.x = dropEv.x;
 	            component.config.props.y = dropEv.y;
-	            setConf([component.config]);
-	            setSelectedConf(component.config.id);
+	            var confToDrop = __assign(__assign({}, component.config), { id: Date.now().toString() + component.name });
+	            setConf(__spreadArray(__spreadArray([], conf, true), [confToDrop], false));
+	            setSelectedConf(confToDrop.id);
 	        }
 	        // The next render cycle will update the vdom to render both
 	    }

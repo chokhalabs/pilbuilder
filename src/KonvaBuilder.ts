@@ -71,8 +71,9 @@ export default function() {
     if (component?.config && component.config.props) {
       component.config.props.x = dropEv.x;
       component.config.props.y = dropEv.y;
-      setConf([component.config]);
-      setSelectedConf(component.config.id);
+      const confToDrop = { ...component.config, id: Date.now().toString() + component.name };
+      setConf([...conf, confToDrop]);
+      setSelectedConf(confToDrop.id);
     }
     // The next render cycle will update the vdom to render both
   }

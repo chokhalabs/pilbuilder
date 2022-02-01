@@ -60,7 +60,7 @@ export default function(props: Props) {
     } else {
       console.error("Could not attach drop listener");
     }
-  }, [stageNode, props.components]);
+  }, [stageNode, props.components, props.conf]);
 
   // Draw red box around the selected conf
   useEffect(() => {
