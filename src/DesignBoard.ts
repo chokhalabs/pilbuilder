@@ -8,7 +8,7 @@ type Props = {
   menubarHeight: number; 
   conf: Config[]; 
   onDrop: (arg: { x: number; y: number; id: string|undefined; }) => void;
-  components: Array<{ name: string }>;
+  components: Array<{ name: string|null }>;
   cursor: string;
   onAddItem: (node: Config, parent: null | string) => void;
   selectedTool: ToolType;
@@ -146,6 +146,7 @@ export default function(props: Props) {
   function emitRect() {
     if (mouseAt && mouseDownAt) {
       const conf: Config = {
+        name: null,
         id: Date.now().toString() + "-rect",
         type: "Rect",
         props: {
@@ -171,6 +172,7 @@ export default function(props: Props) {
     if (mouseAt && mouseDownAt) {
       const newid = Date.now().toString();
       const conf: Config = {
+        name: null,
         id: newid + "-group",
         type: "Group",
         props: {
@@ -178,6 +180,7 @@ export default function(props: Props) {
           y: mouseDownAt.y
         },
         children: [{
+          name: null,
           id: newid + "-rect",
           type: "Rect",
           props: {
@@ -198,6 +201,7 @@ export default function(props: Props) {
     if (mouseAt && mouseDownAt) {
       const newid = Date.now().toString();
       const conf: Config = {
+        name: null,
         id: newid + "-layoutgroup",
         type: "LayoutGroup",
         props: {
@@ -217,16 +221,17 @@ export default function(props: Props) {
     if (mouseAt && mouseDownAt) {
       const newid = Date.now().toString();
       const conf: Config = {
-            id: newid + "-text",
-            type: "Text",
-            props: {
-              x: mouseDownAt.x,
-              y: mouseDownAt.y,
-              text: "placeholder",
-              fill: "black"
-            },
-            children: []
-          };
+        name: null,
+        id: newid + "-text",
+        type: "Text",
+        props: {
+          x: mouseDownAt.x,
+          y: mouseDownAt.y,
+          text: "placeholder",
+          fill: "black"
+        },
+        children: []
+      };
       props.onAddItem(conf, parentid);
     }
   }

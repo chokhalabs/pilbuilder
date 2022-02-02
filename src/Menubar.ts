@@ -1,6 +1,6 @@
 import { createElement as h } from 'react';
 
-import { ToolType } from "./KonvaBuilder";
+import { ToolType } from "./utils";
 
 export default function( props: { selectedTool: string; onSelectTool: (key: ToolType) => void } ) {
   function createCssClass(key: string) {

@@ -7716,7 +7716,20 @@
 
 	function traversePreOrder(config, selectedNode) {
 	    var traversal = [];
-	    var stack = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
+	    var stack = [
+	        {
+	            step: 0,
+	            label: config.type,
+	            children: config.children,
+	            selected: config.id === selectedNode,
+	            id: config.id
+	        }
+	    ];
+	    // Stop traversing if root is a named component
+	    if (config.name) {
+	        stack[0].label = config.name;
+	        stack[0].children = [];
+	    }
 	    while (stack.length > 0) {
 	        // Pop item out
 	        var node = stack.pop();
@@ -7727,13 +7740,25 @@
 	        traversal.push(node);
 	        // Push right child and then left child
 	        for (var i = node.children.length - 1; i >= 0; i--) {
-	            stack.push({
-	                step: node.step + 1,
-	                label: node.children[i].type,
-	                children: node.children[i].children,
-	                id: node.children[i].id,
-	                selected: node.children[i].id === selectedNode
-	            });
+	            if (node.children[i].name === null) {
+	                stack.push({
+	                    step: node.step + 1,
+	                    label: node.children[i].type,
+	                    children: node.children[i].children,
+	                    id: node.children[i].id,
+	                    selected: node.children[i].id === selectedNode
+	                });
+	            }
+	            else {
+	                var name = node.children[i].name;
+	                stack.push({
+	                    step: node.step + 1,
+	                    label: name,
+	                    children: [],
+	                    id: node.children[i].id,
+	                    selected: node.children[i].id === selectedNode
+	                });
+	            }
 	        }
 	    }
 	    return traversal;
@@ -7772,16 +7797,23 @@
 	        return react.exports.createElement("div", {
 	            draggable: true,
 	            onDragStart: function (ev) {
-	                ev.dataTransfer.setData("text", component.name);
+	                ev.dataTransfer.setData("text", component);
 	            },
-	            key: component.name
-	        }, component.name);
+	            key: component
+	        }, component);
 	    }));
 	}
 	function Sidebar (props) {
 	    var _a = react.exports.useState(["Layers", "Assets"]), tabs = _a[0]; _a[1];
 	    var _b = react.exports.useState("Layers"), selectedTab = _b[0], setSelectedTab = _b[1];
-	    var tabBody = react.exports.createElement(Assets, { components: props.components, key: "tabbody" });
+	    var namedComponents = [];
+	    for (var _i = 0, _c = props.components; _i < _c.length; _i++) {
+	        var component = _c[_i];
+	        if (component.name !== null) {
+	            namedComponents.push(component.name);
+	        }
+	    }
+	    var tabBody = react.exports.createElement(Assets, { components: namedComponents, key: "tabbody" });
 	    if (selectedTab === "Layers") {
 	        var subtrees = props.tree.map(function (config) { return makeNodeTree(config, props.selectedNode, props.onNodeSelect); });
 	        // tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
@@ -23164,6 +23196,8 @@
 	            return node;
 	    }
 	}
+	// Traverse the children of a node and find the childnode with the 
+	// required id, or look at its children recursively for the same
 	function traverse(cursor, id) {
 	    if (cursor.id === id) {
 	        return cursor;
@@ -23325,6 +23359,7 @@
 	    function emitRect() {
 	        if (mouseAt && mouseDownAt) {
 	            var conf = {
+	                name: null,
 	                id: Date.now().toString() + "-rect",
 	                type: "Rect",
 	                props: {
@@ -23349,6 +23384,7 @@
 	        if (mouseAt && mouseDownAt) {
 	            var newid = Date.now().toString();
 	            var conf = {
+	                name: null,
 	                id: newid + "-group",
 	                type: "Group",
 	                props: {
@@ -23356,6 +23392,7 @@
 	                    y: mouseDownAt.y
 	                },
 	                children: [{
+	                        name: null,
 	                        id: newid + "-rect",
 	                        type: "Rect",
 	                        props: {
@@ -23375,6 +23412,7 @@
 	        if (mouseAt && mouseDownAt) {
 	            var newid = Date.now().toString();
 	            var conf = {
+	                name: null,
 	                id: newid + "-layoutgroup",
 	                type: "LayoutGroup",
 	                props: {
@@ -23393,6 +23431,7 @@
 	        if (mouseAt && mouseDownAt) {
 	            var newid = Date.now().toString();
 	            var conf = {
+	                name: null,
 	                id: newid + "-text",
 	                type: "Text",
 	                props: {
@@ -23478,345 +23517,345 @@
 
 	var RectangleConf = {
 	    name: "Rectangle",
-	    config: {
-	        type: "Rect",
-	        id: "rectroot",
-	        props: {
-	            x: 0,
-	            y: 0,
-	            width: 50,
-	            height: 50,
-	            fill: "#c4c4c4"
-	        },
-	        children: []
-	    }
+	    type: "Rect",
+	    id: "rectroot",
+	    props: {
+	        x: 0,
+	        y: 0,
+	        width: 50,
+	        height: 50,
+	        fill: "#c4c4c4"
+	    },
+	    children: []
 	};
 	var TextConf = {
 	    name: "Text",
-	    config: {
-	        type: "Text",
-	        id: "textroot",
-	        props: {
-	            x: 0,
-	            y: 0,
-	            text: "text"
-	        },
-	        children: []
-	    }
+	    type: "Text",
+	    id: "textroot",
+	    props: {
+	        x: 0,
+	        y: 0,
+	        text: "text"
+	    },
+	    children: []
 	};
 	var GroupConf = {
 	    name: "Group",
-	    config: {
-	        type: "Group",
-	        id: "grouproot",
-	        props: {
-	            x: 0,
-	            y: 0,
-	            width: 100,
-	            height: 100
-	        },
-	        children: []
-	    }
+	    type: "Group",
+	    id: "grouproot",
+	    props: {
+	        x: 0,
+	        y: 0,
+	        width: 100,
+	        height: 100
+	    },
+	    children: []
 	};
 	var LayoutExample = {
 	    name: "LayoutExample",
-	    config: {
-	        type: "LayoutGroup",
-	        id: "grouproot",
-	        props: {
-	            x: 50,
-	            y: 50,
-	            width: 200,
-	            height: 200
+	    type: "LayoutGroup",
+	    id: "grouproot",
+	    props: {
+	        x: 50,
+	        y: 50,
+	        width: 200,
+	        height: 200
+	    },
+	    children: [
+	        {
+	            name: null,
+	            id: "rect1",
+	            type: "Text",
+	            props: {
+	                x: 0,
+	                y: 0,
+	                fill: "rgba(0, 0, 255, 0.5)",
+	                text: "Line 1"
+	            },
+	            children: []
 	        },
-	        children: [
-	            {
-	                id: "rect1",
-	                type: "Text",
-	                props: {
-	                    x: 0,
-	                    y: 0,
-	                    fill: "rgba(0, 0, 255, 0.5)",
-	                    text: "Line 1"
-	                },
-	                children: []
+	        {
+	            name: null,
+	            id: "rect2",
+	            type: "Text",
+	            props: {
+	                x: 0,
+	                y: 0,
+	                fill: "rgba(0, 255, 0, 0.5)",
+	                text: "Line 2"
 	            },
-	            {
-	                id: "rect2",
-	                type: "Text",
-	                props: {
-	                    x: 0,
-	                    y: 0,
-	                    fill: "rgba(0, 255, 0, 0.5)",
-	                    text: "Line 2"
-	                },
-	                children: []
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "rect3",
+	            type: "Text",
+	            props: {
+	                x: 0,
+	                y: 0,
+	                fill: "rgba(255, 255, 0, 0.5)",
+	                text: "Line 3"
 	            },
-	            {
-	                id: "rect3",
-	                type: "Text",
-	                props: {
-	                    x: 0,
-	                    y: 0,
-	                    fill: "rgba(255, 255, 0, 0.5)",
-	                    text: "Line 3"
-	                },
-	                children: []
-	            }
-	        ]
-	    }
+	            children: []
+	        }
+	    ]
 	};
 	var EditText = {
 	    name: "EditText",
-	    config: {
-	        type: "Group",
-	        id: "root",
-	        props: {
-	            x: 50,
-	            y: 50,
-	            width: 150,
-	            height: 50,
-	            onClick: {
-	                expr: "$props.onActive",
-	                evaluator: "pickSuppliedProp",
-	                default: "",
-	                map: false
-	            },
-	            onKeydown: {
-	                expr: "$props.onKeydown",
-	                evaluator: "pickSuppliedProp",
-	                default: "",
-	                map: false
-	            }
+	    type: "Group",
+	    id: "root",
+	    props: {
+	        x: 50,
+	        y: 50,
+	        width: 150,
+	        height: 50,
+	        onClick: {
+	            expr: "$props.onActive",
+	            evaluator: "pickSuppliedProp",
+	            default: "",
+	            map: false
 	        },
-	        children: [
-	            {
-	                id: "containerbox",
-	                type: "Rect",
-	                props: {
-	                    x: 50,
-	                    y: 50,
-	                    width: 150,
-	                    height: 50,
-	                    stroke: "black",
-	                    visible: {
-	                        expr: "$props.active",
-	                        evaluator: "pickSuppliedProp",
-	                        default: true,
-	                        map: false
-	                    }
-	                },
-	                children: []
+	        onKeydown: {
+	            expr: "$props.onKeydown",
+	            evaluator: "pickSuppliedProp",
+	            default: "",
+	            map: false
+	        }
+	    },
+	    children: [
+	        {
+	            name: null,
+	            id: "containerbox",
+	            type: "Rect",
+	            props: {
+	                x: 50,
+	                y: 50,
+	                width: 150,
+	                height: 50,
+	                stroke: "black",
+	                visible: {
+	                    expr: "$props.active",
+	                    evaluator: "pickSuppliedProp",
+	                    default: true,
+	                    map: false
+	                }
 	            },
-	            {
-	                id: "text",
-	                type: "Text",
-	                props: {
-	                    x: 50,
-	                    y: 50,
-	                    width: 150,
-	                    height: 50,
-	                    text: {
-	                        expr: "$props.value",
-	                        evaluator: "pickSuppliedProp",
-	                        default: "default text",
-	                        map: false
-	                    }
-	                },
-	                children: []
-	            }
-	        ]
-	    }
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "text",
+	            type: "Text",
+	            props: {
+	                x: 50,
+	                y: 50,
+	                width: 150,
+	                height: 50,
+	                text: {
+	                    expr: "$props.value",
+	                    evaluator: "pickSuppliedProp",
+	                    default: "default text",
+	                    map: false
+	                }
+	            },
+	            children: []
+	        }
+	    ]
 	};
 	var ChatBox = {
 	    name: "ChatBox",
-	    config: {
-	        type: "Group",
-	        id: "root",
-	        props: {
-	            onClick: {
-	                expr: "$props.onActive",
-	                evaluator: "pickSuppliedProp",
-	                default: "",
-	                map: false
-	            },
-	            onKeydown: {
-	                expr: "$props.onKeydown",
-	                evaluator: "pickSuppliedProp",
-	                default: "",
-	                map: false
-	            }
+	    type: "Group",
+	    id: "root",
+	    props: {
+	        onClick: {
+	            expr: "$props.onActive",
+	            evaluator: "pickSuppliedProp",
+	            default: "",
+	            map: false
 	        },
-	        children: [
-	            {
-	                type: "Rect",
-	                id: "background",
-	                props: {
-	                    x: 50,
-	                    y: 50,
-	                    width: 300,
-	                    height: 450,
-	                    fill: "white"
-	                },
-	                children: []
+	        onKeydown: {
+	            expr: "$props.onKeydown",
+	            evaluator: "pickSuppliedProp",
+	            default: "",
+	            map: false
+	        }
+	    },
+	    children: [
+	        {
+	            name: null,
+	            type: "Rect",
+	            id: "background",
+	            props: {
+	                x: 50,
+	                y: 50,
+	                width: 300,
+	                height: 450,
+	                fill: "white"
 	            },
-	            {
-	                type: "Rect",
-	                id: "inputbox",
-	                props: {
-	                    x: 58,
-	                    y: 462,
-	                    width: 216,
-	                    height: 30,
-	                    stroke: "black",
-	                    visible: true
-	                },
-	                children: []
+	            children: []
+	        },
+	        {
+	            name: null,
+	            type: "Rect",
+	            id: "inputbox",
+	            props: {
+	                x: 58,
+	                y: 462,
+	                width: 216,
+	                height: 30,
+	                stroke: "black",
+	                visible: true
 	            },
-	            {
-	                type: "Text",
-	                id: "inputelement",
-	                props: {
-	                    x: 58,
-	                    y: 462,
-	                    width: 216,
-	                    height: 30,
-	                    fill: "black",
-	                    text: {
-	                        expr: "$props.value",
-	                        evaluator: "pickSuppliedProp",
-	                        default: "type here...",
-	                        map: false
-	                    }
-	                },
-	                children: []
+	            children: []
+	        },
+	        {
+	            name: null,
+	            type: "Text",
+	            id: "inputelement",
+	            props: {
+	                x: 58,
+	                y: 462,
+	                width: 216,
+	                height: 30,
+	                fill: "black",
+	                text: {
+	                    expr: "$props.value",
+	                    evaluator: "pickSuppliedProp",
+	                    default: "type here...",
+	                    map: false
+	                }
 	            },
-	            {
-	                type: "Rect",
-	                id: "sendbutton",
-	                props: {
-	                    x: 281,
-	                    y: 462,
-	                    width: 62,
-	                    height: 30,
-	                    fill: "blue",
-	                    onClick: {
-	                        expr: "$props.onSend",
-	                        evaluator: "pickSuppliedProp",
-	                        default: "",
-	                        map: false
-	                    }
-	                },
-	                children: []
+	            children: []
+	        },
+	        {
+	            name: null,
+	            type: "Rect",
+	            id: "sendbutton",
+	            props: {
+	                x: 281,
+	                y: 462,
+	                width: 62,
+	                height: 30,
+	                fill: "blue",
+	                onClick: {
+	                    expr: "$props.onSend",
+	                    evaluator: "pickSuppliedProp",
+	                    default: "",
+	                    map: false
+	                }
 	            },
-	            {
-	                type: "Text",
-	                id: "btntext",
-	                props: {
-	                    x: 296,
-	                    y: 472,
-	                    width: 62,
-	                    height: 30,
-	                    fill: "white",
-	                    text: "Send",
-	                },
-	                children: []
+	            children: []
+	        },
+	        {
+	            name: null,
+	            type: "Text",
+	            id: "btntext",
+	            props: {
+	                x: 296,
+	                y: 472,
+	                width: 62,
+	                height: 30,
+	                fill: "white",
+	                text: "Send",
 	            },
-	            {
-	                type: "LayoutGroup",
-	                id: "grouproot",
-	                props: {
-	                    x: 50,
-	                    y: 50,
-	                    width: 200,
-	                    height: 200
-	                },
-	                children: [
-	                    {
-	                        id: "rect1",
-	                        type: "Text",
-	                        props: {
-	                            x: 50,
-	                            y: 50,
-	                            fill: "black",
-	                            text: {
-	                                expr: "$props.messages",
-	                                evaluator: "pickSuppliedProp",
-	                                map: true,
-	                                default: ["Line1", "Line2", "Line3"]
-	                            }
-	                        },
-	                        children: []
-	                    }
-	                ]
-	            }
-	        ]
-	    }
+	            children: []
+	        },
+	        {
+	            name: null,
+	            type: "LayoutGroup",
+	            id: "grouproot",
+	            props: {
+	                x: 50,
+	                y: 50,
+	                width: 200,
+	                height: 200
+	            },
+	            children: [
+	                {
+	                    name: null,
+	                    id: "rect1",
+	                    type: "Text",
+	                    props: {
+	                        x: 50,
+	                        y: 50,
+	                        fill: "black",
+	                        text: {
+	                            expr: "$props.messages",
+	                            evaluator: "pickSuppliedProp",
+	                            map: true,
+	                            default: ["Line1", "Line2", "Line3"]
+	                        }
+	                    },
+	                    children: []
+	                }
+	            ]
+	        }
+	    ]
 	};
 	var ScrollExample = {
 	    name: "ScrollExample",
-	    config: {
-	        id: "root",
-	        type: "Group",
-	        props: {
-	            x: 50,
-	            y: 50,
-	            width: 100,
-	            height: 200,
-	            onWheel: {
-	                expr: "$props.onScroll",
-	                evaluator: "pickSuppliedProp",
-	                default: "",
-	                map: false
-	            },
-	            clipFunc: {
-	                expr: [
-	                    {
-	                        shape: "Rect",
-	                        props: {
-	                            x: 50,
-	                            y: 50,
-	                            width: 100,
-	                            height: 200
-	                        }
-	                    }
-	                ],
-	                evaluator: "makeClipFunc",
-	                default: "",
-	                map: false
-	            }
+	    id: "root",
+	    type: "Group",
+	    props: {
+	        x: 50,
+	        y: 50,
+	        width: 100,
+	        height: 200,
+	        onWheel: {
+	            expr: "$props.onScroll",
+	            evaluator: "pickSuppliedProp",
+	            default: "",
+	            map: false
 	        },
-	        children: [
-	            {
-	                id: "container",
-	                type: "Rect",
-	                props: {
-	                    x: 50,
-	                    y: 50,
-	                    width: 100,
-	                    height: 200,
-	                    stroke: "red"
-	                },
-	                children: []
+	        clipFunc: {
+	            expr: [
+	                {
+	                    shape: "Rect",
+	                    props: {
+	                        x: 50,
+	                        y: 50,
+	                        width: 100,
+	                        height: 200
+	                    }
+	                }
+	            ],
+	            evaluator: "makeClipFunc",
+	            default: "",
+	            map: false
+	        }
+	    },
+	    children: [
+	        {
+	            name: null,
+	            id: "container",
+	            type: "Rect",
+	            props: {
+	                x: 50,
+	                y: 50,
+	                width: 100,
+	                height: 200,
+	                stroke: "red"
 	            },
-	            {
-	                id: "text",
-	                type: "Text",
-	                props: {
-	                    x: 50,
-	                    y: {
-	                        expr: "$props.scrollTop",
-	                        evaluator: "pickSuppliedProp",
-	                        default: 10,
-	                        map: false
-	                    },
-	                    width: 100,
-	                    text: "Some text goes here and well we just keep typing from there on out! Just fill up the box jimbo! And don't forget the shotgun."
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "text",
+	            type: "Text",
+	            props: {
+	                x: 50,
+	                y: {
+	                    expr: "$props.scrollTop",
+	                    evaluator: "pickSuppliedProp",
+	                    default: 10,
+	                    map: false
 	                },
-	                children: []
-	            }
-	        ]
-	    }
+	                width: 100,
+	                text: "Some text goes here and well we just keep typing from there on out! Just fill up the box jimbo! And don't forget the shotgun."
+	            },
+	            children: []
+	        }
+	    ]
 	};
 
 	function editNumber(props) {
@@ -24019,7 +24058,7 @@
 	                var node = findNodeById(selectedConf, conf);
 	                // Add it to components 
 	                if (node) {
-	                    setComponents(__spreadArray(__spreadArray([], components, true), [{ name: node.id, config: node }], false));
+	                    setComponents(__spreadArray(__spreadArray([], components, true), [__assign(__assign({}, node), { name: node.id })], false));
 	                }
 	                else {
 	                    console.error("Could not find the node to create component");
@@ -24067,10 +24106,10 @@
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
 	        console.log("dropping: ", dropEv, component);
-	        if ((component === null || component === void 0 ? void 0 : component.config) && component.config.props) {
-	            component.config.props.x = dropEv.x;
-	            component.config.props.y = dropEv.y;
-	            var confToDrop = __assign(__assign({}, component.config), { id: Date.now().toString() + component.name });
+	        if (component && component.props) {
+	            component.props.x = dropEv.x;
+	            component.props.y = dropEv.y;
+	            var confToDrop = __assign(__assign({}, component), { id: Date.now().toString() + component.name });
 	            setConf(__spreadArray(__spreadArray([], conf, true), [confToDrop], false));
 	            setSelectedConf(confToDrop.id);
 	        }

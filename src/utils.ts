@@ -21,14 +21,10 @@ type PropExprs = Record<string, number|boolean|string|((...args: any[]) => any)|
 
 export interface Config {
   id: string;
+  name: string | null;
   type: "Group" | "Rect" | "Text" | "LayoutGroup";
-  props: PropExprs|null; 
+  props: PropExprs | null; 
   children: Config[];
-}
-
-export interface Component {
-  name: string;
-  config: Config;
 }
 
 export function assertNever(arg: never): never {
@@ -78,6 +74,8 @@ export function findNodeById(id: string, forest: Config[]) {
   }
 }
 
+// Traverse the children of a node and find the childnode with the 
+// required id, or look at its children recursively for the same
 function traverse(cursor: Config, id: string): Config|undefined {
   if (cursor.id === id) {
     return cursor;

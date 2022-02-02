@@ -22,7 +22,7 @@ export default function() {
         const node = findNodeById(selectedConf, conf);
         // Add it to components 
         if (node) {
-          setComponents( [ ...components, { name: node.id, config: node } ])
+          setComponents( [ ...components, { ...node, name: node.id } ])
         } else {
           console.error("Could not find the node to create component");
         }
@@ -68,10 +68,10 @@ export default function() {
     const component = components.find(cmp => cmp.name === dropEv.id);
     // Add it to existing confs to get new confs
     console.log("dropping: ", dropEv, component);
-    if (component?.config && component.config.props) {
-      component.config.props.x = dropEv.x;
-      component.config.props.y = dropEv.y;
-      const confToDrop = { ...component.config, id: Date.now().toString() + component.name };
+    if (component && component.props) {
+      component.props.x = dropEv.x;
+      component.props.y = dropEv.y;
+      const confToDrop = { ...component, id: Date.now().toString() + component.name };
       setConf([...conf, confToDrop]);
       setSelectedConf(confToDrop.id);
     }

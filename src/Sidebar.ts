@@ -4,7 +4,21 @@ import { Config } from "./utils";
 
 function traversePreOrder(config: Config, selectedNode: string): Array<{ step: number; label: string; children: Config[]; selected: boolean; id: string;}> {
   const traversal: ReturnType<typeof traversePreOrder> = [];
-  const stack: typeof traversal = [{ step: 0, label: config.type, children: config.children, selected: config.id === selectedNode, id: config.id }];
+  const stack: typeof traversal = [
+    { 
+      step: 0, 
+      label: config.type, 
+      children: config.children, 
+      selected: config.id === selectedNode, 
+      id: config.id 
+    }
+  ];
+
+  // Stop traversing if root is a named component
+  if (config.name) {
+    stack[0].label = config.name;
+    stack[0].children = [];
+  }
  
   while(stack.length > 0) {
     // Pop item out
@@ -16,13 +30,24 @@ function traversePreOrder(config: Config, selectedNode: string): Array<{ step: n
     traversal.push(node);
     // Push right child and then left child
     for (let i = node.children.length - 1; i >= 0; i --) {
-      stack.push({
-        step: node.step + 1,
-        label: node.children[i].type,
-        children: node.children[i].children,
-        id: node.children[i].id,
-        selected: node.children[i].id === selectedNode
-      })
+      if (node.children[i].name === null) {
+        stack.push({
+          step: node.step + 1,
+          label: node.children[i].type,
+          children: node.children[i].children,
+          id: node.children[i].id,
+          selected: node.children[i].id === selectedNode
+        });
+      } else {
+        const name: string = node.children[i].name as string;
+        stack.push({
+          step: node.step + 1,
+          label: name,
+          children: [],
+          id: node.children[i].id,
+          selected: node.children[i].id === selectedNode
+        });
+      }
     }
   }
 
@@ -74,7 +99,7 @@ function Tabs(props: { tabs: string[], selectedTab: string; onSelect: (p: string
   )
 }
 
-function Assets(props: { components: Array<{ config: Config; name: string; }> }) {
+function Assets(props: { components: string[] }) {
   return h(
     "div", 
     {
@@ -86,11 +111,11 @@ function Assets(props: { components: Array<{ config: Config; name: string; }> })
         {
           draggable: true,
           onDragStart: (ev: React.DragEvent) => {
-            ev.dataTransfer.setData("text", component.name)
+            ev.dataTransfer.setData("text", component)
           },
-          key: component.name
+          key: component
         },
-        component.name
+        component
       )
     })
   );
@@ -102,14 +127,19 @@ type SidebarProps = {
   height: number; 
   selectedNode: string; 
   onNodeSelect: (id: string) => void;
-  components: Array<{config: Config; name: string;}>
+  components: Config[]
 };
 export default function(props: SidebarProps) {
 
   const [tabs, setTabs] = useState([ "Layers", "Assets" ]);
   const [selectedTab, setSelectedTab] = useState("Layers");
-
-  let tabBody: ReturnType<typeof h> = h(Assets, { components: props.components, key: "tabbody" });
+  const namedComponents: string[] = [];
+  for (let component of props.components) {
+    if (component.name !== null) {
+      namedComponents.push(component.name)
+    }
+  }
+  let tabBody: ReturnType<typeof h> = h(Assets, { components: namedComponents, key: "tabbody" });
   if (selectedTab === "Layers") {
     const subtrees = props.tree.map(config => makeNodeTree(config, props.selectedNode, props.onNodeSelect))
     // tabBody = makeNodeTree(props.tree, props.selectedNode, props.onNodeSelect);
