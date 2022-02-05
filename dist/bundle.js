@@ -23977,66 +23977,96 @@
 	        className: "textfield"
 	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
 	}
-	function makePropEditors(node, propEditors, props) {
-	    if (node.props) {
-	        Object.keys(node.props).forEach(function (propkey) {
-	            var propval = node.props && node.props[propkey];
-	            if (propkey === "fill") {
-	                propEditors.push(editColor({
-	                    label: propkey,
-	                    value: propval,
-	                    onChange: props.onNodeUpdate,
-	                    isProvided: false
-	                }));
-	            }
-	            else if (typeof propval === "number") {
-	                propEditors.push(editNumber({
-	                    label: propkey,
-	                    value: propval,
-	                    onChange: props.onNodeUpdate,
-	                    isProvided: false
-	                }));
-	            }
-	            else if (typeof propval === "string") {
-	                propEditors.push(editText({
-	                    label: propkey,
-	                    value: propval,
-	                    defaultValue: "",
-	                    onChange: props.onNodeUpdate,
-	                    isProvided: false
-	                }));
-	            }
-	            else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
-	                var defaultValue = void 0;
-	                if (typeof propval.default === "string") {
-	                    defaultValue = propval.default;
-	                }
-	                else if (Array.isArray(propval.default)) {
-	                    defaultValue = propval.default;
-	                }
-	                else {
-	                    defaultValue = (propval.default || "").toString();
-	                }
-	                propEditors.push(editText({
-	                    label: propkey,
-	                    value: propval.expr,
-	                    defaultValue: defaultValue,
-	                    onChange: props.onNodeUpdate,
-	                    isProvided: true
-	                }));
-	            }
+	function resolveEditorType(propkey, propval, onNodeUpdate) {
+	    if (propkey === "fill") {
+	        return editColor({
+	            label: propkey,
+	            value: propval,
+	            onChange: onNodeUpdate,
+	            isProvided: false
 	        });
 	    }
+	    else if (typeof propval === "number") {
+	        return editNumber({
+	            label: propkey,
+	            value: propval,
+	            onChange: onNodeUpdate,
+	            isProvided: false
+	        });
+	    }
+	    else if (typeof propval === "string") {
+	        return editText({
+	            label: propkey,
+	            value: propval,
+	            defaultValue: "",
+	            onChange: onNodeUpdate,
+	            isProvided: false
+	        });
+	    }
+	    else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
+	        var defaultValue = void 0;
+	        if (typeof propval.default === "string") {
+	            defaultValue = propval.default;
+	        }
+	        else if (Array.isArray(propval.default)) {
+	            defaultValue = propval.default;
+	        }
+	        else {
+	            defaultValue = (propval.default || "").toString();
+	        }
+	        return editText({
+	            label: propkey,
+	            value: propval.expr,
+	            defaultValue: defaultValue,
+	            onChange: onNodeUpdate,
+	            isProvided: true
+	        });
+	    }
+	    else {
+	        console.error("Cannot make an editor for prop: ", propkey, propval);
+	        return react.exports.createElement("div", {}, "Cannot edit: " + propkey);
+	    }
+	}
+	function makePropEditors(props, propEditors, onNodeUpdate) {
+	    if (props) {
+	        Object.keys(props).forEach(function (propkey) {
+	            var propval = props[propkey];
+	            propEditors.push(resolveEditorType(propkey, propval, onNodeUpdate));
+	        });
+	    }
+	}
+	function getBindableProps(props) {
+	    if (props) {
+	        var bindablePropKeys = Object.keys(props).filter(function (key) { return props && props[key] && typeof props[key] === "object"; });
+	        var bindableProps = bindablePropKeys.reduce(function (bprops, key) {
+	            bprops[key] = props && props[key];
+	            return bprops;
+	        }, {});
+	        return bindableProps;
+	    }
+	    else {
+	        return null;
+	    }
+	}
+	function getBindablePropsInComponent(node, propEditors, onNodeUpdate) {
+	    var bindableProps = getBindableProps(node.props);
+	    makePropEditors(bindableProps, propEditors, onNodeUpdate);
+	    node.children.forEach(function (child) {
+	        getBindablePropsInComponent(child, propEditors, onNodeUpdate);
+	    });
 	}
 	function Detailsbar (props) {
 	    var body = react.exports.createElement("div", {}, "Select a node to edit its properties!");
 	    if (props.node) {
 	        var node = props.node;
 	        var propEditors = [];
-	        makePropEditors(node, propEditors, props);
-	        // node.children.forEach(child => {
-	        //   makePropEditors(child, propEditors, props);
-	        // }) 
+	        // If config is a named component only show props that are bindable expressions
+	        if (node.name) {
+	            getBindablePropsInComponent(node, propEditors, props.onNodeUpdate);
+	        }
+	        else {
+	            makePropEditors(node.props, propEditors, props.onNodeUpdate);
+	        }
 	        body = react.exports.createElement("div", {}, propEditors);
 	    }
 	    return react.exports.createElement("div", {

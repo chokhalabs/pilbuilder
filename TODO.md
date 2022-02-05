@@ -2,8 +2,10 @@
 - Allow scrolling
 - Make all id's unique
 - Allow dropping multiple saved components on the board
+- When dropping components don't expand the tree
+- When saving components extract props to top so rightsidebar is still configurable
++ Allow adding compoenents inside components
 + Allow conditional components
-+ When saving components extract props to top and don't expand the tree
 + Draw Chatbox
 + Allow dragging/resizing components on designboard 
 + Allow deleting nodes

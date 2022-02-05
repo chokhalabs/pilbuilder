@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { Config, BindingExpression } from "./utils";
+import { Config, BindingExpression, PropVal } from "./utils";
 
 type DetailsProps = {
   node: Config | null,
@@ -205,51 +205,79 @@ function editText(props: { label: string; value: string; defaultValue: string | 
   );
 }
 
-function makePropEditors(node: Config, propEditors: Array<ReturnType<typeof h>>, props: DetailsProps) {
-  if (node.props) {
-    Object.keys(node.props).forEach(propkey => {
-      const propval = node.props && node.props[propkey];
-      if (propkey === "fill") {
-        propEditors.push(editColor({ 
-          label: propkey, 
-          value: propval as string, // fill is always string
-          onChange: props.onNodeUpdate,
-          isProvided: false
-        }));
-      } else if (typeof propval === "number") {
-        propEditors.push(editNumber({
-          label: propkey,
-          value: propval,
-          onChange: props.onNodeUpdate,
-          isProvided: false
-        }));
-      } else if (typeof propval === "string") {
-        propEditors.push(editText({
-          label: propkey,
-          value: propval,
-          defaultValue: "", 
-          onChange: props.onNodeUpdate,
-          isProvided: false
-        }));
-      } else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
-        let defaultValue: string|string[];
-        if (typeof propval.default === "string") {
-          defaultValue = propval.default;
-        } else if (Array.isArray(propval.default)) {
-          defaultValue = propval.default as string[];
-        } else {
-          defaultValue = (propval.default || "").toString();
-        }
-        propEditors.push(editText({
-          label: propkey,
-          value: propval.expr,
-          defaultValue,
-          onChange: props.onNodeUpdate,
-          isProvided: true
-        }));
-      }
+function resolveEditorType(propkey: string, propval: PropVal | null, onNodeUpdate: DetailsProps["onNodeUpdate"]): ReturnType<typeof h> {
+  if (propkey === "fill") {
+    return editColor({ 
+      label: propkey, 
+      value: propval as any, // fill is always string
+      onChange: onNodeUpdate,
+      isProvided: false
+    });
+  } else if (typeof propval === "number") {
+    return editNumber({
+      label: propkey,
+      value: propval,
+      onChange: onNodeUpdate,
+      isProvided: false
+    });
+  } else if (typeof propval === "string") {
+    return editText({
+      label: propkey,
+      value: propval,
+      defaultValue: "", 
+      onChange: onNodeUpdate,
+      isProvided: false
+    });
+  } else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
+    let defaultValue: string|string[];
+    if (typeof propval.default === "string") {
+      defaultValue = propval.default;
+    } else if (Array.isArray(propval.default)) {
+      defaultValue = propval.default as string[];
+    } else {
+      defaultValue = (propval.default || "").toString();
+    }
+    return editText({
+      label: propkey,
+      value: propval.expr as any,
+      defaultValue,
+      onChange: onNodeUpdate,
+      isProvided: true
+    });
+  } else {
+    console.error("Cannot make an editor for prop: ", propkey, propval);
+    return h("div", {}, "Cannot edit: " + propkey);
+  }
+}
+
+function makePropEditors(props: Config["props"], propEditors: Array<ReturnType<typeof h>>, onNodeUpdate: DetailsProps["onNodeUpdate"]) {
+  if (props) {
+    Object.keys(props).forEach(propkey => {
+      const propval = props[propkey];
+      propEditors.push(resolveEditorType(propkey, propval, onNodeUpdate)) 
     });
   }
+}
+
+function getBindableProps(props: Config["props"]): Config["props"] {
+  if (props) {
+    const bindablePropKeys = Object.keys(props).filter(key => props && props[key] && typeof props[key] === "object");
+    const bindableProps = bindablePropKeys.reduce((bprops: any, key) => {
+      bprops[key] = props && props[key];
+      return bprops;
+    }, {});
+    return bindableProps;
+  } else {
+    return null;
+  }
+}
+
+function getBindablePropsInComponent(node: Config, propEditors: any[], onNodeUpdate: any) {
+  const bindableProps = getBindableProps(node.props);
+  makePropEditors(bindableProps, propEditors, onNodeUpdate);
+  node.children.forEach(child => {
+    getBindablePropsInComponent(child, propEditors, onNodeUpdate);
+  });
 }
 
 export default function (props: DetailsProps) {
@@ -258,10 +286,13 @@ export default function (props: DetailsProps) {
     const node = props.node;
     let propEditors: Array<ReturnType<typeof h>> = [];
 
-    makePropEditors(node, propEditors, props);
-    // node.children.forEach(child => {
-    //   makePropEditors(child, propEditors, props);
-    // }) 
+    // If config is a named component only show props that are bindable expressions
+    if (node.name) {
+      getBindablePropsInComponent(node, propEditors, props.onNodeUpdate); 
+    } else {
+      makePropEditors(node.props, propEditors, props.onNodeUpdate);
+    }
+     
 
     body = h(
       "div",
