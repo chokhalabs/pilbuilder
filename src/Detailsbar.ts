@@ -3,10 +3,10 @@ import { Config, BindingExpression, PropVal } from "./utils";
 
 type DetailsProps = {
   node: Config | null,
-  onNodeUpdate: (key: string, value: any) => void
+  onNodeUpdate: (id: string, key: string, value: any) => void
 };
 
-function editNumber(props: { label: string; value: number; onChange: (key: string, value: number) => void, isProvided: boolean }) {
+function editNumber(nodeId: string, props: { label: string; value: number; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean }) {
   return h(
     "div", 
     {
@@ -23,14 +23,14 @@ function editNumber(props: { label: string; value: number; onChange: (key: strin
         {
           value: props.value,
           type: "number",
-          onChange: ev => props.onChange(props.label, parseFloat(ev.target.value))
+          onChange: ev => props.onChange(nodeId, props.label, parseFloat(ev.target.value))
         }
       )
     ] 
   );
 }
 
-function editColor(props: { label: string; value: string; onChange: (key: string, value: string) => void, isProvided: boolean }) {
+function editColor(nodeId: string, props: { label: string; value: string; onChange: DetailsProps["onNodeUpdate"], isProvided: boolean }) {
   return h(
     "div", 
     {
@@ -47,14 +47,14 @@ function editColor(props: { label: string; value: string; onChange: (key: string
         {
           value: props.value,
           type: "color",
-          onChange: ev => props.onChange( props.label, ev.target.value)
+          onChange: ev => props.onChange(nodeId, props.label, ev.target.value)
         }
       )
     ] 
   );
 }
 
-function editText(props: { label: string; value: string; defaultValue: string | string[], onChange: (key: string, value: string | BindingExpression) => void; isProvided: boolean} ) {
+function editText(nodeId: string, props: { label: string; value: string; defaultValue: string | string[]; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean} ) {
   const editor = h(
     "div", 
     {
@@ -71,6 +71,7 @@ function editText(props: { label: string; value: string; defaultValue: string | 
         value: props.isProvided ? props.value.substring("$props.".length) : props.value,
         type: "text",
         onChange: ev => props.onChange(
+          nodeId,
           props.label, 
           props.isProvided ? { 
             expr: "$props." + ev.target.value, 
@@ -91,14 +92,14 @@ function editText(props: { label: string; value: string; defaultValue: string | 
             if (!props.defaultValue) {
               props.defaultValue = "default " + props.value.substring("$props.".length);
             }
-            props.onChange(props.label, { 
+            props.onChange(nodeId, props.label, { 
               expr: "$props." + props.value, 
               default: props.defaultValue, 
               evaluator: "pickSuppliedProp",
               map: false 
             })
           } else {
-            props.onChange(props.label, props.value)
+            props.onChange(nodeId, props.label, props.value)
           }
         } 
       }
@@ -111,7 +112,7 @@ function editText(props: { label: string; value: string; defaultValue: string | 
       placeholder: "Default value",
       value: props.defaultValue,
       onChange: ev => {
-        props.onChange(props.label, { 
+        props.onChange(nodeId, props.label, { 
           expr: props.value, 
           default: ev.target.value, 
           map: false,
@@ -134,7 +135,7 @@ function editText(props: { label: string; value: string; defaultValue: string | 
               newDefaults = [...props.defaultValue]
               newDefaults.splice(i, 1, ev.target.value);
             }
-            props.onChange(props.label, { 
+            props.onChange(nodeId, props.label, { 
               expr: props.value, 
               default: newDefaults, 
               map: true,
@@ -181,7 +182,7 @@ function editText(props: { label: string; value: string; defaultValue: string | 
               defaultValues.push(props.defaultValue);
             }
             defaultValues.push("new")
-            props.onChange(props.label, { 
+            props.onChange(nodeId, props.label, { 
               expr: props.value, 
               default: defaultValues, 
               map: true,
@@ -205,23 +206,23 @@ function editText(props: { label: string; value: string; defaultValue: string | 
   );
 }
 
-function resolveEditorType(propkey: string, propval: PropVal | null, onNodeUpdate: DetailsProps["onNodeUpdate"]): ReturnType<typeof h> {
+function resolveEditorType(nodeId: string, propkey: string, propval: PropVal | null, onNodeUpdate: DetailsProps["onNodeUpdate"]): ReturnType<typeof h> {
   if (propkey === "fill") {
-    return editColor({ 
+    return editColor(nodeId, { 
       label: propkey, 
       value: propval as any, // fill is always string
       onChange: onNodeUpdate,
       isProvided: false
     });
   } else if (typeof propval === "number") {
-    return editNumber({
+    return editNumber(nodeId, {
       label: propkey,
       value: propval,
       onChange: onNodeUpdate,
       isProvided: false
     });
   } else if (typeof propval === "string") {
-    return editText({
+    return editText(nodeId, {
       label: propkey,
       value: propval,
       defaultValue: "", 
@@ -237,7 +238,7 @@ function resolveEditorType(propkey: string, propval: PropVal | null, onNodeUpdat
     } else {
       defaultValue = (propval.default || "").toString();
     }
-    return editText({
+    return editText(nodeId, {
       label: propkey,
       value: propval.expr as any,
       defaultValue,
@@ -250,11 +251,11 @@ function resolveEditorType(propkey: string, propval: PropVal | null, onNodeUpdat
   }
 }
 
-function makePropEditors(props: Config["props"], propEditors: Array<ReturnType<typeof h>>, onNodeUpdate: DetailsProps["onNodeUpdate"]) {
+function makePropEditors(nodeId: string, props: Config["props"], propEditors: Array<ReturnType<typeof h>>, onNodeUpdate: DetailsProps["onNodeUpdate"]) {
   if (props) {
     Object.keys(props).forEach(propkey => {
       const propval = props[propkey];
-      propEditors.push(resolveEditorType(propkey, propval, onNodeUpdate)) 
+      propEditors.push(resolveEditorType(nodeId, propkey, propval, onNodeUpdate)) 
     });
   }
 }
@@ -274,7 +275,7 @@ function getBindableProps(props: Config["props"]): Config["props"] {
 
 function getBindablePropsInComponent(node: Config, propEditors: any[], onNodeUpdate: any) {
   const bindableProps = getBindableProps(node.props);
-  makePropEditors(bindableProps, propEditors, onNodeUpdate);
+  makePropEditors(node.id, bindableProps, propEditors, onNodeUpdate);
   node.children.forEach(child => {
     getBindablePropsInComponent(child, propEditors, onNodeUpdate);
   });
@@ -290,7 +291,7 @@ export default function (props: DetailsProps) {
     if (node.name) {
       getBindablePropsInComponent(node, propEditors, props.onNodeUpdate); 
     } else {
-      makePropEditors(node.props, propEditors, props.onNodeUpdate);
+      makePropEditors(node.id, node.props, propEditors, props.onNodeUpdate);
     }
      
 

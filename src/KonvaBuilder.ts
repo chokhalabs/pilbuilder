@@ -177,7 +177,7 @@ export default function() {
     {
       key: "detailsbar",
       node: findNodeById(selectedConf, conf) || null,
-      onNodeUpdate: (key: string, value: any) => updateNode(selectedConf, key, value)
+      onNodeUpdate: (id: string, key: string, value: any) => updateNode(id, key, value)
     }
   );
 

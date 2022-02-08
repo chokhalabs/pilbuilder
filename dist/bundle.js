@@ -23858,7 +23858,7 @@
 	    ]
 	};
 
-	function editNumber(props) {
+	function editNumber(nodeId, props) {
 	    return react.exports.createElement("div", {
 	        className: "numberfield"
 	    }, [
@@ -23866,11 +23866,11 @@
 	        react.exports.createElement("input", {
 	            value: props.value,
 	            type: "number",
-	            onChange: function (ev) { return props.onChange(props.label, parseFloat(ev.target.value)); }
+	            onChange: function (ev) { return props.onChange(nodeId, props.label, parseFloat(ev.target.value)); }
 	        })
 	    ]);
 	}
-	function editColor(props) {
+	function editColor(nodeId, props) {
 	    return react.exports.createElement("div", {
 	        className: "colorfield"
 	    }, [
@@ -23878,17 +23878,17 @@
 	        react.exports.createElement("input", {
 	            value: props.value,
 	            type: "color",
-	            onChange: function (ev) { return props.onChange(props.label, ev.target.value); }
+	            onChange: function (ev) { return props.onChange(nodeId, props.label, ev.target.value); }
 	        })
 	    ]);
 	}
-	function editText(props) {
+	function editText(nodeId, props) {
 	    var editor = react.exports.createElement("div", {
 	        className: "boundfield"
 	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
 	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
 	        type: "text",
-	        onChange: function (ev) { return props.onChange(props.label, props.isProvided ? {
+	        onChange: function (ev) { return props.onChange(nodeId, props.label, props.isProvided ? {
 	            expr: "$props." + ev.target.value,
 	            default: props.defaultValue,
 	            map: false,
@@ -23902,7 +23902,7 @@
 	                if (!props.defaultValue) {
 	                    props.defaultValue = "default " + props.value.substring("$props.".length);
 	                }
-	                props.onChange(props.label, {
+	                props.onChange(nodeId, props.label, {
 	                    expr: "$props." + props.value,
 	                    default: props.defaultValue,
 	                    evaluator: "pickSuppliedProp",
@@ -23910,7 +23910,7 @@
 	                });
 	            }
 	            else {
-	                props.onChange(props.label, props.value);
+	                props.onChange(nodeId, props.label, props.value);
 	            }
 	        }
 	    }));
@@ -23918,7 +23918,7 @@
 	        placeholder: "Default value",
 	        value: props.defaultValue,
 	        onChange: function (ev) {
-	            props.onChange(props.label, {
+	            props.onChange(nodeId, props.label, {
 	                expr: props.value,
 	                default: ev.target.value,
 	                map: false,
@@ -23937,7 +23937,7 @@
 	                        newDefaults = __spreadArray([], props.defaultValue, true);
 	                        newDefaults.splice(i, 1, ev.target.value);
 	                    }
-	                    props.onChange(props.label, {
+	                    props.onChange(nodeId, props.label, {
 	                        expr: props.value,
 	                        default: newDefaults,
 	                        map: true,
@@ -23965,7 +23965,7 @@
 	                defaultValues.push(props.defaultValue);
 	            }
 	            defaultValues.push("new");
-	            props.onChange(props.label, {
+	            props.onChange(nodeId, props.label, {
 	                expr: props.value,
 	                default: defaultValues,
 	                map: true,
@@ -23977,9 +23977,9 @@
 	        className: "textfield"
 	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
 	}
-	function resolveEditorType(propkey, propval, onNodeUpdate) {
+	function resolveEditorType(nodeId, propkey, propval, onNodeUpdate) {
 	    if (propkey === "fill") {
-	        return editColor({
+	        return editColor(nodeId, {
 	            label: propkey,
 	            value: propval,
 	            onChange: onNodeUpdate,
@@ -23987,7 +23987,7 @@
 	        });
 	    }
 	    else if (typeof propval === "number") {
-	        return editNumber({
+	        return editNumber(nodeId, {
 	            label: propkey,
 	            value: propval,
 	            onChange: onNodeUpdate,
@@ -23995,7 +23995,7 @@
 	        });
 	    }
 	    else if (typeof propval === "string") {
-	        return editText({
+	        return editText(nodeId, {
 	            label: propkey,
 	            value: propval,
 	            defaultValue: "",
@@ -24014,7 +24014,7 @@
 	        else {
 	            defaultValue = (propval.default || "").toString();
 	        }
-	        return editText({
+	        return editText(nodeId, {
 	            label: propkey,
 	            value: propval.expr,
 	            defaultValue: defaultValue,
@@ -24027,11 +24027,11 @@
 	        return react.exports.createElement("div", {}, "Cannot edit: " + propkey);
 	    }
 	}
-	function makePropEditors(props, propEditors, onNodeUpdate) {
+	function makePropEditors(nodeId, props, propEditors, onNodeUpdate) {
 	    if (props) {
 	        Object.keys(props).forEach(function (propkey) {
 	            var propval = props[propkey];
-	            propEditors.push(resolveEditorType(propkey, propval, onNodeUpdate));
+	            propEditors.push(resolveEditorType(nodeId, propkey, propval, onNodeUpdate));
 	        });
 	    }
 	}
@@ -24050,7 +24050,7 @@
 	}
 	function getBindablePropsInComponent(node, propEditors, onNodeUpdate) {
 	    var bindableProps = getBindableProps(node.props);
-	    makePropEditors(bindableProps, propEditors, onNodeUpdate);
+	    makePropEditors(node.id, bindableProps, propEditors, onNodeUpdate);
 	    node.children.forEach(function (child) {
 	        getBindablePropsInComponent(child, propEditors, onNodeUpdate);
 	    });
@@ -24065,7 +24065,7 @@
 	            getBindablePropsInComponent(node, propEditors, props.onNodeUpdate);
 	        }
 	        else {
-	            makePropEditors(node.props, propEditors, props.onNodeUpdate);
+	            makePropEditors(node.id, node.props, propEditors, props.onNodeUpdate);
 	        }
 	        body = react.exports.createElement("div", {}, propEditors);
 	    }
@@ -24232,7 +24232,7 @@
 	    var detailbar = react.exports.createElement(Detailsbar, {
 	        key: "detailsbar",
 	        node: findNodeById(selectedConf, conf) || null,
-	        onNodeUpdate: function (key, value) { return updateNode(selectedConf, key, value); }
+	        onNodeUpdate: function (id, key, value) { return updateNode(id, key, value); }
 	    });
 	    return (react.exports.createElement("div", {
 	        className: "konvaroot"
