@@ -23368,6 +23368,8 @@
 	                    width: mouseAt.x - mouseDownAt.x,
 	                    height: mouseAt.y - mouseDownAt.y,
 	                    fill: "#c4c4c4",
+	                    stroke: "#c4c4c4",
+	                    lineWidth: 1,
 	                    onClick: {
 	                        expr: "$props.onClick",
 	                        evaluator: "pickSuppliedProp",
@@ -23978,7 +23980,7 @@
 	    }, editor, react.exports.createElement("hr"), props.isProvided ? defaultValue : null);
 	}
 	function resolveEditorType(nodeId, propkey, propval, onNodeUpdate) {
-	    if (propkey === "fill") {
+	    if (propkey === "fill" || propkey === "stroke") {
 	        return editColor(nodeId, {
 	            label: propkey,
 	            value: propval,

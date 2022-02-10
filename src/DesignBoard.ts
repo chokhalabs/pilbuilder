@@ -155,6 +155,8 @@ export default function(props: Props) {
           width: mouseAt.x - mouseDownAt.x,
           height: mouseAt.y - mouseDownAt.y,
           fill: "#c4c4c4",
+          stroke: "#c4c4c4",
+          lineWidth: 1,
           onClick: {
             expr: "$props.onClick",
             evaluator: "pickSuppliedProp",

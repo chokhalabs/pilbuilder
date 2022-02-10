@@ -207,7 +207,7 @@ function editText(nodeId: string, props: { label: string; value: string; default
 }
 
 function resolveEditorType(nodeId: string, propkey: string, propval: PropVal | null, onNodeUpdate: DetailsProps["onNodeUpdate"]): ReturnType<typeof h> {
-  if (propkey === "fill") {
+  if (propkey === "fill" || propkey === "stroke") {
     return editColor(nodeId, { 
       label: propkey, 
       value: propval as any, // fill is always string
