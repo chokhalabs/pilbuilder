@@ -5,7 +5,7 @@ import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
 import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox, ScrollExample } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
-import { Config, ToolType, assertNever, findNodeById } from "./utils";
+import { Config, ToolType, assertNever, findNodeById, PropExprs } from "./utils";
 
 export default function() {
   const [ conf, setConf ] = useState([] as Config[]);
@@ -69,9 +69,21 @@ export default function() {
     // Add it to existing confs to get new confs
     console.log("dropping: ", dropEv, component);
     if (component && component.props) {
-      component.props.x = dropEv.x;
-      component.props.y = dropEv.y;
-      const confToDrop = { ...component, id: Date.now().toString() + component.name };
+      const confToDrop: Config & { props: PropExprs } = JSON.parse(JSON.stringify(component));
+      // confToDrop.id = Date.now().toString() + component.name;
+      confToDrop.props.x = dropEv.x;
+      confToDrop.props.y = dropEv.y;
+      updateIds: {
+        let nodeStack = [confToDrop];
+        const uniqueId = Date.now().toString();
+        while (nodeStack.length > 0) {
+          const node = nodeStack.pop();
+          if (node?.id) {
+            node.id = uniqueId + "-" + node.id;
+          }
+          nodeStack = nodeStack.concat(node?.children as any ?? [])
+        }
+      }
       setConf([...conf, confToDrop]);
       setSelectedConf(confToDrop.id);
     }

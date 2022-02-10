@@ -24134,14 +24134,27 @@
 	        return function () { return document.body.removeEventListener("keydown", handleKeyDown); };
 	    }, [selectedConf, conf]);
 	    function addNodeToStage(dropEv) {
+	        var _a;
 	        // Find the node
 	        var component = components.find(function (cmp) { return cmp.name === dropEv.id; });
 	        // Add it to existing confs to get new confs
 	        console.log("dropping: ", dropEv, component);
 	        if (component && component.props) {
-	            component.props.x = dropEv.x;
-	            component.props.y = dropEv.y;
-	            var confToDrop = __assign(__assign({}, component), { id: Date.now().toString() + component.name });
+	            var confToDrop = JSON.parse(JSON.stringify(component));
+	            // confToDrop.id = Date.now().toString() + component.name;
+	            confToDrop.props.x = dropEv.x;
+	            confToDrop.props.y = dropEv.y;
+	            {
+	                var nodeStack = [confToDrop];
+	                var uniqueId = Date.now().toString();
+	                while (nodeStack.length > 0) {
+	                    var node = nodeStack.pop();
+	                    if (node === null || node === void 0 ? void 0 : node.id) {
+	                        node.id = uniqueId + "-" + node.id;
+	                    }
+	                    nodeStack = nodeStack.concat((_a = node === null || node === void 0 ? void 0 : node.children) !== null && _a !== void 0 ? _a : []);
+	                }
+	            }
 	            setConf(__spreadArray(__spreadArray([], conf, true), [confToDrop], false));
 	            setSelectedConf(confToDrop.id);
 	        }

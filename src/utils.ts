@@ -17,7 +17,7 @@ type GeneratedFuncBinding = {
 
 export type BindingExpression = SimpleValueBinding | GeneratedFuncBinding;
 export type PropVal = number|boolean|string|((...args: any[]) => any)|BindingExpression;
-type PropExprs = Record<string, PropVal>;
+export type PropExprs = Record<string, PropVal>;
 
 export interface Config {
   id: string;
