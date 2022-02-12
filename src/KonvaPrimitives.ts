@@ -157,6 +157,18 @@ export const ChatBox: Config = {
   type: "Group",
   id: "root",
   props: {
+    x: {
+      expr: "$props.left",
+      evaluator: "pickSuppliedProp",
+      map: false,
+      default: 50
+    },
+    y: {
+      expr: "$props.top",
+      evaluator: "pickSuppliedProp",
+      map: false,
+      default: 50
+    },
     onClick: {
       expr: "$props.onActive",
       evaluator: "pickSuppliedProp",
@@ -177,7 +189,7 @@ export const ChatBox: Config = {
       id: "background",
       props: {
         x: 50,
-        y: 50,
+        y:50,
         width: 300,
         height: 450,
         fill: "white"

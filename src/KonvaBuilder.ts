@@ -71,9 +71,20 @@ export default function() {
     if (component && component.props) {
       const confToDrop: Config & { props: PropExprs } = JSON.parse(JSON.stringify(component));
       // confToDrop.id = Date.now().toString() + component.name;
-      confToDrop.props.x = dropEv.x;
-      confToDrop.props.y = dropEv.y;
-      updateIds: {
+      if (typeof confToDrop.props.x === "object") {
+        confToDrop.props.x.default = dropEv.x;
+      } else {
+        confToDrop.props.x = dropEv.x;
+      }
+
+      if (typeof confToDrop.props.y === "object") {
+        confToDrop.props.y.default = dropEv.y;
+      } else {
+        confToDrop.props.y = dropEv.y;
+      }
+
+      // Update node ids
+      {
         let nodeStack = [confToDrop];
         const uniqueId = Date.now().toString();
         while (nodeStack.length > 0) {

@@ -23669,6 +23669,18 @@
 	    type: "Group",
 	    id: "root",
 	    props: {
+	        x: {
+	            expr: "$props.left",
+	            evaluator: "pickSuppliedProp",
+	            map: false,
+	            default: 50
+	        },
+	        y: {
+	            expr: "$props.top",
+	            evaluator: "pickSuppliedProp",
+	            map: false,
+	            default: 50
+	        },
 	        onClick: {
 	            expr: "$props.onActive",
 	            evaluator: "pickSuppliedProp",
@@ -23861,16 +23873,7 @@
 	};
 
 	function editNumber(nodeId, props) {
-	    return react.exports.createElement("div", {
-	        className: "numberfield"
-	    }, [
-	        react.exports.createElement("div", {}, props.label),
-	        react.exports.createElement("input", {
-	            value: props.value,
-	            type: "number",
-	            onChange: function (ev) { return props.onChange(nodeId, props.label, parseFloat(ev.target.value)); }
-	        })
-	    ]);
+	    return editText(nodeId, props, "number");
 	}
 	function editColor(nodeId, props) {
 	    return react.exports.createElement("div", {
@@ -23884,12 +23887,13 @@
 	        })
 	    ]);
 	}
-	function editText(nodeId, props) {
+	function editText(nodeId, props, valueEditorType) {
+	    if (valueEditorType === void 0) { valueEditorType = "text"; }
 	    var editor = react.exports.createElement("div", {
 	        className: "boundfield"
 	    }, react.exports.createElement("div", {}, props.label), react.exports.createElement("input", {
-	        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
-	        type: "text",
+	        value: props.isProvided ? props.value.toString().substring("$props.".length) : props.value,
+	        type: props.isProvided ? "text" : valueEditorType,
 	        onChange: function (ev) { return props.onChange(nodeId, props.label, props.isProvided ? {
 	            expr: "$props." + ev.target.value,
 	            default: props.defaultValue,
@@ -23902,7 +23906,7 @@
 	        onChange: function (ev) {
 	            if (ev.target.checked) {
 	                if (!props.defaultValue) {
-	                    props.defaultValue = "default " + props.value.substring("$props.".length);
+	                    props.defaultValue = "default " + props.value.toString().substring("$props.".length);
 	                }
 	                props.onChange(nodeId, props.label, {
 	                    expr: "$props." + props.value,
@@ -23964,7 +23968,7 @@
 	                defaultValues = defaultValues.concat(props.defaultValue);
 	            }
 	            else {
-	                defaultValues.push(props.defaultValue);
+	                defaultValues.push(props.defaultValue.toString());
 	            }
 	            defaultValues.push("new");
 	            props.onChange(nodeId, props.label, {
@@ -23991,6 +23995,7 @@
 	    else if (typeof propval === "number") {
 	        return editNumber(nodeId, {
 	            label: propkey,
+	            defaultValue: 0,
 	            value: propval,
 	            onChange: onNodeUpdate,
 	            isProvided: false
@@ -24009,20 +24014,44 @@
 	        var defaultValue = void 0;
 	        if (typeof propval.default === "string") {
 	            defaultValue = propval.default;
+	            return editText(nodeId, {
+	                label: propkey,
+	                value: propval.expr,
+	                defaultValue: defaultValue,
+	                onChange: onNodeUpdate,
+	                isProvided: true
+	            });
+	        }
+	        else if (typeof propval.default === "number") {
+	            defaultValue = propval.default;
+	            return editNumber(nodeId, {
+	                label: propkey,
+	                value: propval.expr,
+	                defaultValue: defaultValue,
+	                onChange: onNodeUpdate,
+	                isProvided: true
+	            });
 	        }
 	        else if (Array.isArray(propval.default)) {
 	            defaultValue = propval.default;
+	            return editText(nodeId, {
+	                label: propkey,
+	                value: propval.expr,
+	                defaultValue: defaultValue,
+	                onChange: onNodeUpdate,
+	                isProvided: true
+	            });
 	        }
 	        else {
 	            defaultValue = (propval.default || "").toString();
+	            return editText(nodeId, {
+	                label: propkey,
+	                value: propval.expr,
+	                defaultValue: defaultValue,
+	                onChange: onNodeUpdate,
+	                isProvided: true
+	            });
 	        }
-	        return editText(nodeId, {
-	            label: propkey,
-	            value: propval.expr,
-	            defaultValue: defaultValue,
-	            onChange: onNodeUpdate,
-	            isProvided: true
-	        });
 	    }
 	    else {
 	        console.error("Cannot make an editor for prop: ", propkey, propval);
@@ -24142,8 +24171,19 @@
 	        if (component && component.props) {
 	            var confToDrop = JSON.parse(JSON.stringify(component));
 	            // confToDrop.id = Date.now().toString() + component.name;
-	            confToDrop.props.x = dropEv.x;
-	            confToDrop.props.y = dropEv.y;
+	            if (typeof confToDrop.props.x === "object") {
+	                confToDrop.props.x.default = dropEv.x;
+	            }
+	            else {
+	                confToDrop.props.x = dropEv.x;
+	            }
+	            if (typeof confToDrop.props.y === "object") {
+	                confToDrop.props.y.default = dropEv.y;
+	            }
+	            else {
+	                confToDrop.props.y = dropEv.y;
+	            }
+	            // Update node ids
 	            {
 	                var nodeStack = [confToDrop];
 	                var uniqueId = Date.now().toString();

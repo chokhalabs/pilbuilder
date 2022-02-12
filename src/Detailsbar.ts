@@ -6,28 +6,8 @@ type DetailsProps = {
   onNodeUpdate: (id: string, key: string, value: any) => void
 };
 
-function editNumber(nodeId: string, props: { label: string; value: number; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean }) {
-  return h(
-    "div", 
-    {
-      className: "numberfield"
-    },
-    [
-      h(
-        "div",
-        {},
-        props.label
-      ),
-      h(
-        "input",
-        {
-          value: props.value,
-          type: "number",
-          onChange: ev => props.onChange(nodeId, props.label, parseFloat(ev.target.value))
-        }
-      )
-    ] 
-  );
+function editNumber(nodeId: string, props: { label: string; defaultValue: number; value: number|string; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean }) {
+  return editText(nodeId, props, "number");
 }
 
 function editColor(nodeId: string, props: { label: string; value: string; onChange: DetailsProps["onNodeUpdate"], isProvided: boolean }) {
@@ -54,7 +34,7 @@ function editColor(nodeId: string, props: { label: string; value: string; onChan
   );
 }
 
-function editText(nodeId: string, props: { label: string; value: string; defaultValue: string | string[]; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean} ) {
+function editText(nodeId: string, props: { label: string; value: string|number; defaultValue: number | string | string[]; onChange: DetailsProps["onNodeUpdate"]; isProvided: boolean}, valueEditorType: "text"|"number" = "text" ) {
   const editor = h(
     "div", 
     {
@@ -68,8 +48,8 @@ function editText(nodeId: string, props: { label: string; value: string; default
     h(
       "input",
       {
-        value: props.isProvided ? props.value.substring("$props.".length) : props.value,
-        type: "text",
+        value: props.isProvided ? props.value.toString().substring("$props.".length) : props.value,
+        type: props.isProvided ? "text" : valueEditorType,
         onChange: ev => props.onChange(
           nodeId,
           props.label, 
@@ -90,7 +70,7 @@ function editText(nodeId: string, props: { label: string; value: string; default
         onChange: ev => {
           if (ev.target.checked) {
             if (!props.defaultValue) {
-              props.defaultValue = "default " + props.value.substring("$props.".length);
+              props.defaultValue = "default " + props.value.toString().substring("$props.".length);
             }
             props.onChange(nodeId, props.label, { 
               expr: "$props." + props.value, 
@@ -179,7 +159,7 @@ function editText(nodeId: string, props: { label: string; value: string; default
             if (Array.isArray(props.defaultValue)) {
               defaultValues = defaultValues.concat(props.defaultValue);
             } else {
-              defaultValues.push(props.defaultValue);
+              defaultValues.push(props.defaultValue.toString());
             }
             defaultValues.push("new")
             props.onChange(nodeId, props.label, { 
@@ -217,6 +197,7 @@ function resolveEditorType(nodeId: string, propkey: string, propval: PropVal | n
   } else if (typeof propval === "number") {
     return editNumber(nodeId, {
       label: propkey,
+      defaultValue: 0,
       value: propval,
       onChange: onNodeUpdate,
       isProvided: false
@@ -230,21 +211,45 @@ function resolveEditorType(nodeId: string, propkey: string, propval: PropVal | n
       isProvided: false
     });
   } else if (typeof propval === "object" && propval && propval.evaluator === "pickSuppliedProp") {
-    let defaultValue: string|string[];
+    let defaultValue: string|string[]|number;
     if (typeof propval.default === "string") {
       defaultValue = propval.default;
+      return editText(nodeId, {
+        label: propkey,
+        value: propval.expr as any,
+        defaultValue,
+        onChange: onNodeUpdate,
+        isProvided: true
+      });
+    } else if (typeof propval.default === "number") {
+      defaultValue = propval.default;
+      return editNumber(nodeId, {
+        label: propkey,
+        value: propval.expr as any,
+        defaultValue,
+        onChange: onNodeUpdate,
+        isProvided: true
+      });
     } else if (Array.isArray(propval.default)) {
       defaultValue = propval.default as string[];
+      return editText(nodeId, {
+        label: propkey,
+        value: propval.expr as any,
+        defaultValue,
+        onChange: onNodeUpdate,
+        isProvided: true
+      });
     } else {
       defaultValue = (propval.default || "").toString();
+      return editText(nodeId, {
+        label: propkey,
+        value: propval.expr as any,
+        defaultValue,
+        onChange: onNodeUpdate,
+        isProvided: true
+      });
     }
-    return editText(nodeId, {
-      label: propkey,
-      value: propval.expr as any,
-      defaultValue,
-      onChange: onNodeUpdate,
-      isProvided: true
-    });
+    
   } else {
     console.error("Cannot make an editor for prop: ", propkey, propval);
     return h("div", {}, "Cannot edit: " + propkey);
