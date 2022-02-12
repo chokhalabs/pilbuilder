@@ -53,10 +53,16 @@ export default function() {
           })
           .catch(err => {
             console.error("Project generation failed: ", err);
-          })
+          });
         } else {
           console.error("Could not find the node for download: ", selectedConf)
         }
+      } else if (ev.key === "Delete" && selectedConf) {
+        const newconf = conf.filter(it => it.id !== selectedConf);
+        setSelectedConf("");
+        setConf(newconf);
+      } else if (ev.key === "Escape" && selectedConf) {
+        setSelectedConf("");
       }
     }
     document.body.addEventListener("keydown", handleKeyDown);

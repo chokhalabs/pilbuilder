@@ -9,7 +9,8 @@
 - Dropping a saved component should update the x, y according to where it was dropped
 - Every component should have the x, y, width and height exposed as props
 - Handle isProvided for number props
-+ Make the positioning inside components wire to the components provided x, y and if a $prop is bound in multiple places, editor should show it only once
+- Make the positioning inside components wire to the components provided x, y  
++ if a $prop is bound in multiple places, editor should show it only once
 + Allow adding compoenents inside components
 + Allow conditional components
 + Allow dropping a component into a group

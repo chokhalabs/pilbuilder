@@ -24158,6 +24158,14 @@
 	                    console.error("Could not find the node for download: ", selectedConf);
 	                }
 	            }
+	            else if (ev.key === "Delete" && selectedConf) {
+	                var newconf = conf.filter(function (it) { return it.id !== selectedConf; });
+	                setSelectedConf("");
+	                setConf(newconf);
+	            }
+	            else if (ev.key === "Escape" && selectedConf) {
+	                setSelectedConf("");
+	            }
 	        };
 	        document.body.addEventListener("keydown", handleKeyDown);
 	        return function () { return document.body.removeEventListener("keydown", handleKeyDown); };
