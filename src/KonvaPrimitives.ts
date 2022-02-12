@@ -188,10 +188,10 @@ export const ChatBox: Config = {
       type: "Rect",
       id: "background",
       props: {
-        x: 50,
-        y:50,
+        x: 0,
+        y: 0,
         width: 300,
-        height: 450,
+        height: 500,
         fill: "white"
       },
       children: []
@@ -201,7 +201,7 @@ export const ChatBox: Config = {
       type: "Rect",
       id: "inputbox",
       props: {
-        x: 58,
+        x: 8,
         y: 462,
         width: 216,
         height: 30,
@@ -215,8 +215,8 @@ export const ChatBox: Config = {
       type: "Text",
       id: "inputelement",
       props: {
-        x: 58,
-        y: 462,
+        x: 15,
+        y: 470,
         width: 216,
         height: 30,
         fill: "black",
@@ -234,7 +234,7 @@ export const ChatBox: Config = {
       type: "Rect",
       id: "sendbutton",
       props: {
-        x: 281,
+        x: 230,
         y: 462,
         width: 62,
         height: 30,
@@ -253,7 +253,7 @@ export const ChatBox: Config = {
       type: "Text",
       id: "btntext",
       props: {
-        x: 296,
+        x: 245,
         y: 472,
         width: 62,
         height: 30,
@@ -268,10 +268,10 @@ export const ChatBox: Config = {
       type: "LayoutGroup",
       id: "grouproot",
       props: {
-        x: 50,
-        y: 50,
-        width: 200,
-        height: 200
+        x: 8,
+        y: 8,
+        width: 290,
+        height: 460
       },
       children: [
         {
@@ -279,8 +279,8 @@ export const ChatBox: Config = {
           id: "rect1",
           type: "Text",
           props: {
-            x: 50,
-            y: 50,
+            x: 0,
+            y: 0,
             fill: "black",
             text: {
               expr: "$props.messages",
