@@ -7,7 +7,7 @@ function traversePreOrder(config: Config, selectedNode: string): Array<{ step: n
   const stack: typeof traversal = [
     { 
       step: 0, 
-      label: config.type, 
+      label: config.type || config.name || "Neither name nor type was defined!", 
       children: config.children, 
       selected: config.id === selectedNode, 
       id: config.id 
@@ -33,7 +33,7 @@ function traversePreOrder(config: Config, selectedNode: string): Array<{ step: n
       if (node.children[i].name === null) {
         stack.push({
           step: node.step + 1,
-          label: node.children[i].type,
+          label: node.children[i].type || node.children[i].name || "Neither name nor type was defined!",
           children: node.children[i].children,
           id: node.children[i].id,
           selected: node.children[i].id === selectedNode

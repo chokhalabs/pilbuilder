@@ -275,23 +275,105 @@ export const ChatBox: Config = {
       },
       children: [
         {
-          name: null,
-          id: "rect1",
-          type: "Text",
+          name: "ChatMessage",
+          id: "chatMessage",
+          type: null,
           props: {
-            x: 0,
-            y: 0,
-            fill: "black",
-            text: {
-              expr: "$props.messages",
-              evaluator: "pickSuppliedProp",
+            in: {
+              expr: "$props.chatMessages",
               map: true,
-              default: ["Line1", "Line2", "Line3"]
-            }
+              evaluator: "pickSuppliedProp",
+              default: [
+                {
+                  username: "Gaurav Gautam",
+                  message: "First message sent by me"
+                },
+                {
+                  username: "Gaurav Gautam",
+                  message: "Second message sent by me"
+                },
+                {
+                  username: "Gaurav Gautam",
+                  message: "Third message sent by me"
+                }
+               ]
+             }  
           },
           children: []
         }
       ]
+    }
+  ]
+}
+
+export const ChatMessage: Config = {
+  name: "ChatMessage",
+  id: "chatmsg-root",
+  type: "Group",
+  props: {
+    x: 50,
+    y: 50,
+    width: 300,
+    height: 100
+  },
+  children: [
+    {
+      name: null,
+      id: "background",
+      type: "Rect",
+      props: {
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 100,
+        fill: "white"
+      },
+      children: []
+    },
+    {
+      name: null,
+      id: "image",
+      type: "Rect",
+      props: {
+        x: 10,
+        y: 10,
+        width: 80,
+        height: 80,
+        fill: "#c4c4c4"
+      },
+      children: []
+    },
+    {
+      name: null,
+      id: "username",
+      type: "Text",
+      props: {
+        x: 100,
+        y: 20,
+        text: {
+          expr: "$props.username",
+          evaluator: "pickSuppliedProp",
+          map: false,
+          default: "Gaurav Gautam"
+        }
+      },
+      children: []
+    },
+    {
+      name: null,
+      id: "message",
+      type: "Text",
+      props: {
+        x: 100,
+        y: 40,
+        text: {
+          expr: "$props.message",
+          evaluator: "pickSuppliedProp",
+          map: false,
+          default: "Some message sent by me"
+        }
+      },
+      children: []
     }
   ]
 }

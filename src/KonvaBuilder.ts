@@ -3,7 +3,7 @@ import "./KonvaBuilder.css";
 import Sidebar from "./Sidebar";
 import DesignBoard from './DesignBoard';
 import Menubar from "./Menubar";
-import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox, ScrollExample } from "./KonvaPrimitives";
+import { RectangleConf, GroupConf, TextConf, LayoutExample, EditText, ChatBox, ScrollExample, ChatMessage } from "./KonvaPrimitives";
 import Detailsbar from './Detailsbar';
 import { Config, ToolType, assertNever, findNodeById, PropExprs } from "./utils";
 
@@ -12,7 +12,7 @@ export default function() {
   const [ selectedConf, setSelectedConf ] = useState("");
   const [ leftsidebarWidth, setSidebarWidth ] = useState(250);
   const [ menubarHeight, setMuenubarHeight ] = useState(50);
-  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample ]);
+  const [ components, setComponents ] = useState([ RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample, ChatMessage ]);
   const [ selectedTool, setSelectedTool ] = useState("arrow" as ToolType);
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function() {
   );
 
   function addChildToNode(node: Config, cursor: Config, parent: string): boolean {
-    if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type)) {
+    if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type || "")) {
       cursor.children.push(node); 
       return true;
     } else if (cursor.id === parent) {

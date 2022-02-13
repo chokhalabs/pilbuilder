@@ -22,7 +22,7 @@ export type PropExprs = Record<string, PropVal>;
 export interface Config {
   id: string;
   name: string | null;
-  type: "Group" | "Rect" | "Text" | "LayoutGroup";
+  type: "Group" | "Rect" | "Text" | "LayoutGroup" | null;
   props: PropExprs | null; 
   children: Config[];
 }
@@ -104,14 +104,19 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
     // If there is a mapped prop then return a group with one component per item in the mapped prop
     if (mappedProps.length === 0) {
       const children = config.children.map(child => h(transformToVDOM(child, $props), { key: child.id }));
-      return h(
-        config.type,
-        { 
-          ...props,
-          id: config.id
-        },
-        children
-      );
+      if (config.type) {
+        return h(
+          config.type,
+          { 
+            ...props,
+            id: config.id
+          },
+          children
+        );
+      } else {
+        return h("div", null, "Cannot render named component");
+      }
+      
     } else {
       const mappedPropKey = mappedProps[0];
       const mappedProp: any[] = (props && props[mappedPropKey] || []) as any[];
@@ -119,15 +124,22 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
         console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey);
       }
       const children = config.children.map(child => h(transformToVDOM(child, $props), { key: child.id }));
-      return mappedProp.map((item, i) => h(
-        config.type,
-        {
-          ...props,
-          [mappedPropKey]: item,
-          id: config.id + i
-        },
-        children
-      )) 
+      return mappedProp.map((item, i) => {
+        if (config.type) {
+          return h(
+            config.type,
+            {
+              ...props,
+              [mappedPropKey]: item,
+              id: config.id + i
+            },
+            children
+          );
+        } else {
+          return h("div", null, "Cannot render named component");
+        }
+        
+      });
     }
   }
 }

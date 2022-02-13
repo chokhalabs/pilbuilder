@@ -7719,7 +7719,7 @@
 	    var stack = [
 	        {
 	            step: 0,
-	            label: config.type,
+	            label: config.type || config.name || "Neither name nor type was defined!",
 	            children: config.children,
 	            selected: config.id === selectedNode,
 	            id: config.id
@@ -7743,7 +7743,7 @@
 	            if (node.children[i].name === null) {
 	                stack.push({
 	                    step: node.step + 1,
-	                    label: node.children[i].type,
+	                    label: node.children[i].type || node.children[i].name || "Neither name nor type was defined!",
 	                    children: node.children[i].children,
 	                    id: node.children[i].id,
 	                    selected: node.children[i].id === selectedNode
@@ -23226,7 +23226,12 @@
 	        // If there is a mapped prop then return a group with one component per item in the mapped prop
 	        if (mappedProps.length === 0) {
 	            var children = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
-	            return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	            if (config.type) {
+	                return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	            }
+	            else {
+	                return react.exports.createElement("div", null, "Cannot render named component");
+	            }
 	        }
 	        else {
 	            var mappedPropKey_1 = mappedProps[0];
@@ -23237,7 +23242,12 @@
 	            var children_1 = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
 	            return mappedProp.map(function (item, i) {
 	                var _a;
-	                return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
+	                if (config.type) {
+	                    return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
+	                }
+	                else {
+	                    return react.exports.createElement("div", null, "Cannot render named component");
+	                }
 	            });
 	        }
 	    };
@@ -23786,23 +23796,104 @@
 	            },
 	            children: [
 	                {
-	                    name: null,
-	                    id: "rect1",
-	                    type: "Text",
+	                    name: "ChatMessage",
+	                    id: "chatMessage",
+	                    type: null,
 	                    props: {
-	                        x: 0,
-	                        y: 0,
-	                        fill: "black",
-	                        text: {
-	                            expr: "$props.messages",
-	                            evaluator: "pickSuppliedProp",
+	                        in: {
+	                            expr: "$props.chatMessages",
 	                            map: true,
-	                            default: ["Line1", "Line2", "Line3"]
+	                            evaluator: "pickSuppliedProp",
+	                            default: [
+	                                {
+	                                    username: "Gaurav Gautam",
+	                                    message: "First message sent by me"
+	                                },
+	                                {
+	                                    username: "Gaurav Gautam",
+	                                    message: "Second message sent by me"
+	                                },
+	                                {
+	                                    username: "Gaurav Gautam",
+	                                    message: "Third message sent by me"
+	                                }
+	                            ]
 	                        }
 	                    },
 	                    children: []
 	                }
 	            ]
+	        }
+	    ]
+	};
+	var ChatMessage = {
+	    name: "ChatMessage",
+	    id: "chatmsg-root",
+	    type: "Group",
+	    props: {
+	        x: 50,
+	        y: 50,
+	        width: 300,
+	        height: 100
+	    },
+	    children: [
+	        {
+	            name: null,
+	            id: "background",
+	            type: "Rect",
+	            props: {
+	                x: 0,
+	                y: 0,
+	                width: 300,
+	                height: 100,
+	                fill: "white"
+	            },
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "image",
+	            type: "Rect",
+	            props: {
+	                x: 10,
+	                y: 10,
+	                width: 80,
+	                height: 80,
+	                fill: "#c4c4c4"
+	            },
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "username",
+	            type: "Text",
+	            props: {
+	                x: 100,
+	                y: 20,
+	                text: {
+	                    expr: "$props.username",
+	                    evaluator: "pickSuppliedProp",
+	                    map: false,
+	                    default: "Gaurav Gautam"
+	                }
+	            },
+	            children: []
+	        },
+	        {
+	            name: null,
+	            id: "message",
+	            type: "Text",
+	            props: {
+	                x: 100,
+	                y: 40,
+	                text: {
+	                    expr: "$props.message",
+	                    evaluator: "pickSuppliedProp",
+	                    map: false,
+	                    default: "Some message sent by me"
+	                }
+	            },
+	            children: []
 	        }
 	    ]
 	};
@@ -24110,7 +24201,7 @@
 	    var _b = react.exports.useState(""), selectedConf = _b[0], setSelectedConf = _b[1];
 	    var _c = react.exports.useState(250), leftsidebarWidth = _c[0]; _c[1];
 	    var _d = react.exports.useState(50), menubarHeight = _d[0]; _d[1];
-	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample]), components = _e[0], setComponents = _e[1];
+	    var _e = react.exports.useState([RectangleConf, TextConf, GroupConf, LayoutExample, EditText, ChatBox, ScrollExample, ChatMessage]), components = _e[0], setComponents = _e[1];
 	    var _f = react.exports.useState("arrow"), selectedTool = _f[0], setSelectedTool = _f[1];
 	    react.exports.useEffect(function () {
 	        var handleKeyDown = function (ev) {
@@ -24244,7 +24335,7 @@
 	        components: components
 	    });
 	    function addChildToNode(node, cursor, parent) {
-	        if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type)) {
+	        if (cursor.id === parent && ["Group", "LayoutGroup"].includes(cursor.type || "")) {
 	            cursor.children.push(node);
 	            return true;
 	        }
