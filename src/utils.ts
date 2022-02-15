@@ -86,14 +86,24 @@ function traverse(cursor: Config, id: string): Config|undefined {
   }
 }
 
-function transformNamedComponent(config: Config, $props: PropExprs): any {
+function transformNamedComponent(config: Config, $props: PropExprs, injectedMapIndex?: number): any {
   if (config.name === null) {
     return null;
   } else {
     let resolvedConfig: any = null;
     const component: Config = JSON.parse(JSON.stringify((Components as any)[config.name]));
     component.id = config.id;
-    const injectedProps: any = config.props?.in || {};
+    let injectedProps = {};
+    if (injectedMapIndex !== undefined) {
+      if (config.props?.in && typeof config.props?.in === "object") {
+        // TODO: expect that in will not always be mapped and hence will not always be an array
+        injectedProps = config.props?.in?.default[injectedMapIndex];
+      }
+    } else {
+      injectedProps = config.props?.in?.default;
+    }
+    
+    // const injectedProps: any = config.props?.in || {};
     // TODO: handle map and evaluator
     // if (injectedProps.map) {
     //   const defaultValues = injectedProps.default[0];
@@ -107,7 +117,7 @@ function transformNamedComponent(config: Config, $props: PropExprs): any {
 
     // }
     resolvedConfig = component;
-    return resolvedConfig;
+    return { resolvedConfig, injectedProps };
   }
 }
 
@@ -140,8 +150,8 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
           children
         );
       } else {
-        const resolvedConfig = transformNamedComponent(config, $props);
-        return h(transformToVDOM(resolvedConfig, $props));
+        const { resolvedConfig, injectedProps } = transformNamedComponent(config, $props);
+        return h(transformToVDOM(resolvedConfig, { ...$props, ...injectedProps }));
         // return h("Text", { text: "Cannot render named component" });
       }
       
@@ -164,8 +174,8 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
             children
           );
         } else {
-          const resolvedConfig = transformNamedComponent(config, $props);
-          return h(transformToVDOM(resolvedConfig, $props));
+          const { resolvedConfig, injectedProps } = transformNamedComponent(config, $props, i);
+          return h(transformToVDOM(resolvedConfig, {...$props, ...injectedProps}));
           // return h("Text", { text: "Cannot render named component" });
         }
         

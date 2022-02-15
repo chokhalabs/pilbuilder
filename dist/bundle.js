@@ -23655,8 +23655,8 @@
 	        return candidates.find(function (c) { return !!c; });
 	    }
 	}
-	function transformNamedComponent(config, $props) {
-	    var _a;
+	function transformNamedComponent(config, $props, injectedMapIndex) {
+	    var _a, _b, _c, _d, _e, _f;
 	    if (config.name === null) {
 	        return null;
 	    }
@@ -23664,7 +23664,17 @@
 	        var resolvedConfig = null;
 	        var component = JSON.parse(JSON.stringify(Components[config.name]));
 	        component.id = config.id;
-	        ((_a = config.props) === null || _a === void 0 ? void 0 : _a.in) || {};
+	        var injectedProps = {};
+	        if (injectedMapIndex !== undefined) {
+	            if (((_a = config.props) === null || _a === void 0 ? void 0 : _a.in) && typeof ((_b = config.props) === null || _b === void 0 ? void 0 : _b.in) === "object") {
+	                // TODO: expect that in will not always be mapped and hence will not always be an array
+	                injectedProps = (_d = (_c = config.props) === null || _c === void 0 ? void 0 : _c.in) === null || _d === void 0 ? void 0 : _d.default[injectedMapIndex];
+	            }
+	        }
+	        else {
+	            injectedProps = (_f = (_e = config.props) === null || _e === void 0 ? void 0 : _e.in) === null || _f === void 0 ? void 0 : _f.default;
+	        }
+	        // const injectedProps: any = config.props?.in || {};
 	        // TODO: handle map and evaluator
 	        // if (injectedProps.map) {
 	        //   const defaultValues = injectedProps.default[0];
@@ -23677,7 +23687,7 @@
 	        // } else {
 	        // }
 	        resolvedConfig = component;
-	        return resolvedConfig;
+	        return { resolvedConfig: resolvedConfig, injectedProps: injectedProps };
 	    }
 	}
 	function transformToVDOM(config, $props) {
@@ -23703,8 +23713,8 @@
 	                return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
 	            }
 	            else {
-	                var resolvedConfig = transformNamedComponent(config);
-	                return react.exports.createElement(transformToVDOM(resolvedConfig, $props));
+	                var _a = transformNamedComponent(config), resolvedConfig = _a.resolvedConfig, injectedProps = _a.injectedProps;
+	                return react.exports.createElement(transformToVDOM(resolvedConfig, __assign(__assign({}, $props), injectedProps)));
 	                // return h("Text", { text: "Cannot render named component" });
 	            }
 	        }
@@ -23721,8 +23731,8 @@
 	                    return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
 	                }
 	                else {
-	                    var resolvedConfig = transformNamedComponent(config);
-	                    return react.exports.createElement(transformToVDOM(resolvedConfig, $props));
+	                    var _b = transformNamedComponent(config, $props, i), resolvedConfig = _b.resolvedConfig, injectedProps = _b.injectedProps;
+	                    return react.exports.createElement(transformToVDOM(resolvedConfig, __assign(__assign({}, $props), injectedProps)));
 	                    // return h("Text", { text: "Cannot render named component" });
 	                }
 	            });
