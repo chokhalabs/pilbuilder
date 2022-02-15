@@ -23153,380 +23153,6 @@
 	  }));
 	});
 
-	function assertNever(arg) {
-	    throw new Error("arg should never happen!");
-	}
-	function evaluateProps($props, propsExprs) {
-	    var evaluated = __assign({}, propsExprs);
-	    Object.keys(propsExprs).forEach(function (key) {
-	        var propval = propsExprs[key];
-	        if (typeof propval === "object") {
-	            switch (propval.evaluator) {
-	                case "makeClipFunc":
-	                    var functionBodySpec_1 = propval.expr;
-	                    evaluated[key] = function (ctx) {
-	                        functionBodySpec_1.forEach(function (shapeConfig) {
-	                            ctx.rect(shapeConfig.props.x, shapeConfig.props.y, shapeConfig.props.width, shapeConfig.props.height);
-	                        });
-	                    };
-	                    break;
-	                case "pickSuppliedProp":
-	                    {
-	                        var suppliedVal = $props[propval.expr.substring("$props.".length)];
-	                        if (suppliedVal === undefined) {
-	                            console.error("Value not supplied for " + propval.expr);
-	                            suppliedVal = propval.default;
-	                        }
-	                        evaluated[key] = suppliedVal;
-	                    }
-	                    break;
-	                default:
-	                    console.error("Unrecognized prop setting: ", propval);
-	                    assertNever();
-	            }
-	        }
-	    });
-	    return evaluated;
-	}
-	function findNodeById(id, forest) {
-	    for (var i = 0; i < forest.length; i++) {
-	        var tree = forest[i];
-	        var node = traverse(tree, id);
-	        if (node)
-	            return node;
-	    }
-	}
-	// Traverse the children of a node and find the childnode with the 
-	// required id, or look at its children recursively for the same
-	function traverse(cursor, id) {
-	    if (cursor.id === id) {
-	        return cursor;
-	    }
-	    else {
-	        var candidates = cursor.children.map(function (child) { return traverse(child, id); });
-	        return candidates.find(function (c) { return !!c; });
-	    }
-	}
-	function transformToVDOM(config, $props) {
-	    var props = null;
-	    var mappedProps = [];
-	    if (config.props) {
-	        props = evaluateProps($props, config.props);
-	        // If config has more than one mapped props then choose only one to map over and print an error 
-	        // telling that only one mapped prop is allowed per component
-	        mappedProps = Object.keys(props).filter(function (key) {
-	            var prop = (props || {})[key];
-	            return (typeof prop === "object") && prop.map;
-	        });
-	        if (mappedProps.length > 1) {
-	            console.error("There are multiple mapped props in the ccomponent which is not allowed!", config, $props, mappedProps);
-	        }
-	    }
-	    return function () {
-	        // If there is a mapped prop then return a group with one component per item in the mapped prop
-	        if (mappedProps.length === 0) {
-	            var children = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
-	            if (config.type) {
-	                return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
-	            }
-	            else {
-	                return react.exports.createElement("div", null, "Cannot render named component");
-	            }
-	        }
-	        else {
-	            var mappedPropKey_1 = mappedProps[0];
-	            var mappedProp = (props && props[mappedPropKey_1] || []);
-	            if (!Array.isArray(mappedProp)) {
-	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
-	            }
-	            var children_1 = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
-	            return mappedProp.map(function (item, i) {
-	                var _a;
-	                if (config.type) {
-	                    return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
-	                }
-	                else {
-	                    return react.exports.createElement("div", null, "Cannot render named component");
-	                }
-	            });
-	        }
-	    };
-	}
-
-	function DesignBoard (props) {
-	    var stageNode = react.exports.useRef(null);
-	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
-	    var _b = react.exports.useState(null), mouseDownAt = _b[0], setMouseDownAt = _b[1];
-	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
-	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
-	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
-	    var _f = react.exports.useState(null), selectionBox = _f[0], setSelectionBox = _f[1];
-	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(transformToVDOM(config, {
-	        key: props.selectedTool + "-" + i
-	    })); });
-	    react.exports.useEffect(function () {
-	        if (stageNode.current) {
-	            var root = stageNode.current;
-	            var canvas = root.children[0].canvas._canvas;
-	            // console.log("Adding event listener")
-	            if (!dropListener) {
-	                canvas.addEventListener("dragover", function (ev) {
-	                    // console.log("Dragover: ", ev)
-	                    ev.stopPropagation();
-	                    ev.preventDefault();
-	                });
-	            }
-	            console.log("Adding eventlistener");
-	            canvas.removeEventListener("drop", dropListener === null || dropListener === void 0 ? void 0 : dropListener.listener);
-	            var newDropListener = function (ev) {
-	                var _a, _b, _c, _d;
-	                var id = (_b = (_a = ev === null || ev === void 0 ? void 0 : ev.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text")) !== null && _b !== void 0 ? _b : "event not found";
-	                props.onDrop({
-	                    x: (_c = ev === null || ev === void 0 ? void 0 : ev.x) !== null && _c !== void 0 ? _c : 10,
-	                    y: (_d = ev === null || ev === void 0 ? void 0 : ev.y) !== null && _d !== void 0 ? _d : 10,
-	                    id: id
-	                });
-	            };
-	            setDropListener({ listener: newDropListener });
-	            canvas.addEventListener("drop", newDropListener);
-	        }
-	        else {
-	            console.error("Could not attach drop listener");
-	        }
-	    }, [stageNode, props.components, props.conf]);
-	    // Draw red box around the selected conf
-	    react.exports.useEffect(function () {
-	        if (stageNode.current) {
-	            var n = stageNode.current.find("#".concat(props.selectedConf))[0];
-	            if (n) {
-	                var clientRect = n.getClientRect();
-	                setSelectionBox(clientRect);
-	            }
-	            else {
-	                setSelectionBox(null);
-	            }
-	        }
-	    }, [props.selectedConf]);
-	    if (mouseAt && mouseDownAt) {
-	        var x = mouseDownAt.x;
-	        var y = mouseDownAt.y;
-	        if (parentid && parentrect) {
-	            x = x + parentrect.x;
-	            y = y + parentrect.y;
-	        }
-	        // Drawingbox is the temporary box drawn on the screen when you are drawing a shape
-	        var drawingbox = react.exports.createElement(Rect, {
-	            x: x,
-	            y: y,
-	            width: mouseAt.x - mouseDownAt.x,
-	            height: mouseAt.y - mouseDownAt.y,
-	            fill: "#c4c4c4"
-	        });
-	        nodes.push(drawingbox);
-	    }
-	    if (selectionBox) {
-	        nodes.push(react.exports.createElement(Rect, {
-	            x: selectionBox.x,
-	            y: selectionBox.y,
-	            width: selectionBox.width,
-	            height: selectionBox.height,
-	            stroke: "#FF0000",
-	            lineWidth: 1
-	        }));
-	    }
-	    function handleMouseDown(ev) {
-	        var parent = ev.target;
-	        if (parent.attrs.id !== "stage") {
-	            var parentFound = false;
-	            while (!parentFound) {
-	                parent = parent.getParent();
-	                if (parent) {
-	                    var className = parent.getClassName();
-	                    if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
-	                        parentFound = ["Stage", "Group", "LayoutGroup"].includes(className);
-	                    }
-	                    else if (props.selectedTool === "text") {
-	                        parentFound = ["Stage", "Group", "LayoutGroup", "Rect"].includes(className);
-	                    }
-	                }
-	                else {
-	                    console.log("Parent not found!");
-	                }
-	            }
-	            setParentId(parent.attrs.id);
-	        }
-	        else {
-	            setParentId(null);
-	        }
-	        if (props.selectedTool !== "arrow") {
-	            // debugger
-	            var parentrect_1 = parent.getClientRect();
-	            var mdownAt = parent.getRelativePointerPosition();
-	            setMouseDownAt(mdownAt);
-	            setParentRect(parentrect_1);
-	        }
-	    }
-	    function emitRect() {
-	        if (mouseAt && mouseDownAt) {
-	            var conf = {
-	                name: null,
-	                id: Date.now().toString() + "-rect",
-	                type: "Rect",
-	                props: {
-	                    x: mouseDownAt.x,
-	                    y: mouseDownAt.y,
-	                    width: mouseAt.x - mouseDownAt.x,
-	                    height: mouseAt.y - mouseDownAt.y,
-	                    fill: "#c4c4c4",
-	                    stroke: "#c4c4c4",
-	                    lineWidth: 1,
-	                    onClick: {
-	                        expr: "$props.onClick",
-	                        evaluator: "pickSuppliedProp",
-	                        default: function () { return alert("clicked!"); },
-	                        map: false
-	                    }
-	                },
-	                children: []
-	            };
-	            props.onAddItem(conf, parentid);
-	        }
-	    }
-	    function emitGroup() {
-	        if (mouseAt && mouseDownAt) {
-	            var newid = Date.now().toString();
-	            var conf = {
-	                name: null,
-	                id: newid + "-group",
-	                type: "Group",
-	                props: {
-	                    x: mouseDownAt.x,
-	                    y: mouseDownAt.y
-	                },
-	                children: [{
-	                        name: null,
-	                        id: newid + "-rect",
-	                        type: "Rect",
-	                        props: {
-	                            x: 0,
-	                            y: 0,
-	                            width: mouseAt.x - mouseDownAt.x,
-	                            height: mouseAt.y - mouseDownAt.y,
-	                            fill: "white"
-	                        },
-	                        children: []
-	                    }]
-	            };
-	            props.onAddItem(conf, parentid);
-	        }
-	    }
-	    function emitLayoutGroup() {
-	        if (mouseAt && mouseDownAt) {
-	            var newid = Date.now().toString();
-	            var conf = {
-	                name: null,
-	                id: newid + "-layoutgroup",
-	                type: "LayoutGroup",
-	                props: {
-	                    x: mouseDownAt.x,
-	                    y: mouseDownAt.y,
-	                    width: mouseAt.x - mouseDownAt.x,
-	                    height: mouseAt.y - mouseDownAt.y,
-	                    fill: "white"
-	                },
-	                children: []
-	            };
-	            props.onAddItem(conf, parentid);
-	        }
-	    }
-	    function emitText() {
-	        if (mouseAt && mouseDownAt) {
-	            var newid = Date.now().toString();
-	            var conf = {
-	                name: null,
-	                id: newid + "-text",
-	                type: "Text",
-	                props: {
-	                    x: mouseDownAt.x,
-	                    y: mouseDownAt.y,
-	                    text: "placeholder",
-	                    fill: "black"
-	                },
-	                children: []
-	            };
-	            props.onAddItem(conf, parentid);
-	        }
-	    }
-	    function resetMouse() {
-	        setMouseAt(null);
-	        setMouseDownAt(null);
-	    }
-	    function handleMouseUp(ev) {
-	        if (mouseDownAt && mouseAt) {
-	            switch (props.selectedTool) {
-	                case "rect":
-	                    emitRect();
-	                    break;
-	                case "group":
-	                    emitGroup();
-	                    break;
-	                case "text":
-	                    emitText();
-	                    break;
-	                case "layoutgroup":
-	                    emitLayoutGroup();
-	                    break;
-	                case "arrow":
-	                    resetMouse();
-	                    break;
-	                default:
-	                    assertNever(props.selectedTool);
-	            }
-	        }
-	        setMouseDownAt(null);
-	        setMouseAt(null);
-	    }
-	    function handleMouseMove(ev) {
-	        if (mouseDownAt) {
-	            var currentPos = ev.target.getRelativePointerPosition();
-	            setMouseAt(currentPos);
-	        }
-	    }
-	    return react.exports.createElement(Stage, {
-	        ref: stageNode,
-	        width: window.innerWidth - 2 * props.leftsidebarWidth,
-	        height: window.innerHeight - props.menubarHeight,
-	        className: "stage",
-	        key: "designboard",
-	        style: { cursor: props.cursor },
-	        id: "stage",
-	        onMouseDown: handleMouseDown,
-	        onMouseUp: handleMouseUp,
-	        onMouseMove: handleMouseMove
-	    }, [
-	        react.exports.createElement(Layer, {
-	            key: "layer1"
-	        }, nodes)
-	    ]);
-	}
-
-	function Menubar (props) {
-	    function createCssClass(key) {
-	        return key === props.selectedTool ? "tool selected" : "tool";
-	    }
-	    var tools = ["arrow", "rect", "text", "group", "layoutgroup"];
-	    return react.exports.createElement("div", {
-	        className: "menubar",
-	        key: "menubar"
-	    }, tools.map(function (it) {
-	        return react.exports.createElement("div", {
-	            key: it,
-	            className: createCssClass(it),
-	            onClick: function () { return props.onSelectTool(it); }
-	        }, it[0].toUpperCase());
-	    }));
-	}
-
 	var RectangleConf = {
 	    name: "Rectangle",
 	    type: "Rect",
@@ -23962,6 +23588,421 @@
 	        }
 	    ]
 	};
+
+	var Components = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		RectangleConf: RectangleConf,
+		TextConf: TextConf,
+		GroupConf: GroupConf,
+		LayoutExample: LayoutExample,
+		EditText: EditText,
+		ChatBox: ChatBox,
+		ChatMessage: ChatMessage,
+		ScrollExample: ScrollExample
+	});
+
+	function assertNever(arg) {
+	    throw new Error("arg should never happen!");
+	}
+	function evaluateProps($props, propsExprs) {
+	    var evaluated = __assign({}, propsExprs);
+	    Object.keys(propsExprs).forEach(function (key) {
+	        var propval = propsExprs[key];
+	        if (typeof propval === "object") {
+	            switch (propval.evaluator) {
+	                case "makeClipFunc":
+	                    var functionBodySpec_1 = propval.expr;
+	                    evaluated[key] = function (ctx) {
+	                        functionBodySpec_1.forEach(function (shapeConfig) {
+	                            ctx.rect(shapeConfig.props.x, shapeConfig.props.y, shapeConfig.props.width, shapeConfig.props.height);
+	                        });
+	                    };
+	                    break;
+	                case "pickSuppliedProp":
+	                    {
+	                        var suppliedVal = $props[propval.expr.substring("$props.".length)];
+	                        if (suppliedVal === undefined) {
+	                            console.error("Value not supplied for " + propval.expr);
+	                            suppliedVal = propval.default;
+	                        }
+	                        evaluated[key] = suppliedVal;
+	                    }
+	                    break;
+	                default:
+	                    console.error("Unrecognized prop setting: ", propval);
+	                    assertNever();
+	            }
+	        }
+	    });
+	    return evaluated;
+	}
+	function findNodeById(id, forest) {
+	    for (var i = 0; i < forest.length; i++) {
+	        var tree = forest[i];
+	        var node = traverse(tree, id);
+	        if (node)
+	            return node;
+	    }
+	}
+	// Traverse the children of a node and find the childnode with the 
+	// required id, or look at its children recursively for the same
+	function traverse(cursor, id) {
+	    if (cursor.id === id) {
+	        return cursor;
+	    }
+	    else {
+	        var candidates = cursor.children.map(function (child) { return traverse(child, id); });
+	        return candidates.find(function (c) { return !!c; });
+	    }
+	}
+	function transformNamedComponent(config, $props) {
+	    var _a;
+	    if (config.name === null) {
+	        return null;
+	    }
+	    else {
+	        var resolvedConfig = null;
+	        var component = JSON.parse(JSON.stringify(Components[config.name]));
+	        component.id = config.id;
+	        ((_a = config.props) === null || _a === void 0 ? void 0 : _a.in) || {};
+	        // TODO: handle map and evaluator
+	        // if (injectedProps.map) {
+	        //   const defaultValues = injectedProps.default[0];
+	        //   rendered.push(
+	        //     transformToVDOM(component, { 
+	        //       ...$props, 
+	        //       ...defaultValues
+	        //     })
+	        //   );
+	        // } else {
+	        // }
+	        resolvedConfig = component;
+	        return resolvedConfig;
+	    }
+	}
+	function transformToVDOM(config, $props) {
+	    var props = null;
+	    var mappedProps = [];
+	    if (config.props) {
+	        props = evaluateProps($props, config.props);
+	        // If config has more than one mapped props then choose only one to map over and print an error 
+	        // telling that only one mapped prop is allowed per component
+	        mappedProps = Object.keys(props).filter(function (key) {
+	            var prop = (props || {})[key];
+	            return (typeof prop === "object") && prop.map;
+	        });
+	        if (mappedProps.length > 1) {
+	            console.error("There are multiple mapped props in the ccomponent which is not allowed!", config, $props, mappedProps);
+	        }
+	    }
+	    return function () {
+	        // If there is a mapped prop then return a group with one component per item in the mapped prop
+	        if (mappedProps.length === 0) {
+	            var children = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
+	            if (config.type) {
+	                return react.exports.createElement(config.type, __assign(__assign({}, props), { id: config.id }), children);
+	            }
+	            else {
+	                var resolvedConfig = transformNamedComponent(config);
+	                return react.exports.createElement(transformToVDOM(resolvedConfig, $props));
+	                // return h("Text", { text: "Cannot render named component" });
+	            }
+	        }
+	        else {
+	            var mappedPropKey_1 = mappedProps[0];
+	            var mappedProp = (props && props[mappedPropKey_1] || []);
+	            if (!Array.isArray(mappedProp)) {
+	                console.error("Did not get array in mappedProp!", mappedProp, mappedPropKey_1);
+	            }
+	            var children_1 = config.children.map(function (child) { return react.exports.createElement(transformToVDOM(child, $props), { key: child.id }); });
+	            return mappedProp.map(function (item, i) {
+	                var _a;
+	                if (config.type) {
+	                    return react.exports.createElement(config.type, __assign(__assign({}, props), (_a = {}, _a[mappedPropKey_1] = item, _a.id = config.id + i, _a)), children_1);
+	                }
+	                else {
+	                    var resolvedConfig = transformNamedComponent(config);
+	                    return react.exports.createElement(transformToVDOM(resolvedConfig, $props));
+	                    // return h("Text", { text: "Cannot render named component" });
+	                }
+	            });
+	        }
+	    };
+	}
+
+	function DesignBoard (props) {
+	    var stageNode = react.exports.useRef(null);
+	    var _a = react.exports.useState(null), dropListener = _a[0], setDropListener = _a[1];
+	    var _b = react.exports.useState(null), mouseDownAt = _b[0], setMouseDownAt = _b[1];
+	    var _c = react.exports.useState(null), mouseAt = _c[0], setMouseAt = _c[1];
+	    var _d = react.exports.useState(null), parentid = _d[0], setParentId = _d[1];
+	    var _e = react.exports.useState(null), parentrect = _e[0], setParentRect = _e[1];
+	    var _f = react.exports.useState(null), selectionBox = _f[0], setSelectionBox = _f[1];
+	    var nodes = props.conf.map(function (config, i) { return react.exports.createElement(transformToVDOM(config, {
+	        key: props.selectedTool + "-" + i
+	    })); });
+	    react.exports.useEffect(function () {
+	        if (stageNode.current) {
+	            var root = stageNode.current;
+	            var canvas = root.children[0].canvas._canvas;
+	            // console.log("Adding event listener")
+	            if (!dropListener) {
+	                canvas.addEventListener("dragover", function (ev) {
+	                    // console.log("Dragover: ", ev)
+	                    ev.stopPropagation();
+	                    ev.preventDefault();
+	                });
+	            }
+	            console.log("Adding eventlistener");
+	            canvas.removeEventListener("drop", dropListener === null || dropListener === void 0 ? void 0 : dropListener.listener);
+	            var newDropListener = function (ev) {
+	                var _a, _b, _c, _d;
+	                var id = (_b = (_a = ev === null || ev === void 0 ? void 0 : ev.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text")) !== null && _b !== void 0 ? _b : "event not found";
+	                props.onDrop({
+	                    x: (_c = ev === null || ev === void 0 ? void 0 : ev.x) !== null && _c !== void 0 ? _c : 10,
+	                    y: (_d = ev === null || ev === void 0 ? void 0 : ev.y) !== null && _d !== void 0 ? _d : 10,
+	                    id: id
+	                });
+	            };
+	            setDropListener({ listener: newDropListener });
+	            canvas.addEventListener("drop", newDropListener);
+	        }
+	        else {
+	            console.error("Could not attach drop listener");
+	        }
+	    }, [stageNode, props.components, props.conf]);
+	    // Draw red box around the selected conf
+	    react.exports.useEffect(function () {
+	        if (stageNode.current) {
+	            var n = stageNode.current.find("#".concat(props.selectedConf))[0];
+	            if (n) {
+	                var clientRect = n.getClientRect();
+	                setSelectionBox(clientRect);
+	            }
+	            else {
+	                setSelectionBox(null);
+	            }
+	        }
+	    }, [props.selectedConf]);
+	    if (mouseAt && mouseDownAt) {
+	        var x = mouseDownAt.x;
+	        var y = mouseDownAt.y;
+	        if (parentid && parentrect) {
+	            x = x + parentrect.x;
+	            y = y + parentrect.y;
+	        }
+	        // Drawingbox is the temporary box drawn on the screen when you are drawing a shape
+	        var drawingbox = react.exports.createElement(Rect, {
+	            x: x,
+	            y: y,
+	            width: mouseAt.x - mouseDownAt.x,
+	            height: mouseAt.y - mouseDownAt.y,
+	            fill: "#c4c4c4"
+	        });
+	        nodes.push(drawingbox);
+	    }
+	    if (selectionBox) {
+	        nodes.push(react.exports.createElement(Rect, {
+	            x: selectionBox.x,
+	            y: selectionBox.y,
+	            width: selectionBox.width,
+	            height: selectionBox.height,
+	            stroke: "#FF0000",
+	            lineWidth: 1
+	        }));
+	    }
+	    function handleMouseDown(ev) {
+	        var parent = ev.target;
+	        if (parent.attrs.id !== "stage") {
+	            var parentFound = false;
+	            while (!parentFound) {
+	                parent = parent.getParent();
+	                if (parent) {
+	                    var className = parent.getClassName();
+	                    if (props.selectedTool === "rect" || props.selectedTool === "group" || props.selectedTool === "layoutgroup") {
+	                        parentFound = ["Stage", "Group", "LayoutGroup"].includes(className);
+	                    }
+	                    else if (props.selectedTool === "text") {
+	                        parentFound = ["Stage", "Group", "LayoutGroup", "Rect"].includes(className);
+	                    }
+	                }
+	                else {
+	                    console.log("Parent not found!");
+	                }
+	            }
+	            setParentId(parent.attrs.id);
+	        }
+	        else {
+	            setParentId(null);
+	        }
+	        if (props.selectedTool !== "arrow") {
+	            // debugger
+	            var parentrect_1 = parent.getClientRect();
+	            var mdownAt = parent.getRelativePointerPosition();
+	            setMouseDownAt(mdownAt);
+	            setParentRect(parentrect_1);
+	        }
+	    }
+	    function emitRect() {
+	        if (mouseAt && mouseDownAt) {
+	            var conf = {
+	                name: null,
+	                id: Date.now().toString() + "-rect",
+	                type: "Rect",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    width: mouseAt.x - mouseDownAt.x,
+	                    height: mouseAt.y - mouseDownAt.y,
+	                    fill: "#c4c4c4",
+	                    stroke: "#c4c4c4",
+	                    lineWidth: 1,
+	                    onClick: {
+	                        expr: "$props.onClick",
+	                        evaluator: "pickSuppliedProp",
+	                        default: function () { return alert("clicked!"); },
+	                        map: false
+	                    }
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitGroup() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                name: null,
+	                id: newid + "-group",
+	                type: "Group",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y
+	                },
+	                children: [{
+	                        name: null,
+	                        id: newid + "-rect",
+	                        type: "Rect",
+	                        props: {
+	                            x: 0,
+	                            y: 0,
+	                            width: mouseAt.x - mouseDownAt.x,
+	                            height: mouseAt.y - mouseDownAt.y,
+	                            fill: "white"
+	                        },
+	                        children: []
+	                    }]
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitLayoutGroup() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                name: null,
+	                id: newid + "-layoutgroup",
+	                type: "LayoutGroup",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    width: mouseAt.x - mouseDownAt.x,
+	                    height: mouseAt.y - mouseDownAt.y,
+	                    fill: "white"
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function emitText() {
+	        if (mouseAt && mouseDownAt) {
+	            var newid = Date.now().toString();
+	            var conf = {
+	                name: null,
+	                id: newid + "-text",
+	                type: "Text",
+	                props: {
+	                    x: mouseDownAt.x,
+	                    y: mouseDownAt.y,
+	                    text: "placeholder",
+	                    fill: "black"
+	                },
+	                children: []
+	            };
+	            props.onAddItem(conf, parentid);
+	        }
+	    }
+	    function resetMouse() {
+	        setMouseAt(null);
+	        setMouseDownAt(null);
+	    }
+	    function handleMouseUp(ev) {
+	        if (mouseDownAt && mouseAt) {
+	            switch (props.selectedTool) {
+	                case "rect":
+	                    emitRect();
+	                    break;
+	                case "group":
+	                    emitGroup();
+	                    break;
+	                case "text":
+	                    emitText();
+	                    break;
+	                case "layoutgroup":
+	                    emitLayoutGroup();
+	                    break;
+	                case "arrow":
+	                    resetMouse();
+	                    break;
+	                default:
+	                    assertNever(props.selectedTool);
+	            }
+	        }
+	        setMouseDownAt(null);
+	        setMouseAt(null);
+	    }
+	    function handleMouseMove(ev) {
+	        if (mouseDownAt) {
+	            var currentPos = ev.target.getRelativePointerPosition();
+	            setMouseAt(currentPos);
+	        }
+	    }
+	    return react.exports.createElement(Stage, {
+	        ref: stageNode,
+	        width: window.innerWidth - 2 * props.leftsidebarWidth,
+	        height: window.innerHeight - props.menubarHeight,
+	        className: "stage",
+	        key: "designboard",
+	        style: { cursor: props.cursor },
+	        id: "stage",
+	        onMouseDown: handleMouseDown,
+	        onMouseUp: handleMouseUp,
+	        onMouseMove: handleMouseMove
+	    }, [
+	        react.exports.createElement(Layer, {
+	            key: "layer1"
+	        }, nodes)
+	    ]);
+	}
+
+	function Menubar (props) {
+	    function createCssClass(key) {
+	        return key === props.selectedTool ? "tool selected" : "tool";
+	    }
+	    var tools = ["arrow", "rect", "text", "group", "layoutgroup"];
+	    return react.exports.createElement("div", {
+	        className: "menubar",
+	        key: "menubar"
+	    }, tools.map(function (it) {
+	        return react.exports.createElement("div", {
+	            key: it,
+	            className: createCssClass(it),
+	            onClick: function () { return props.onSelectTool(it); }
+	        }, it[0].toUpperCase());
+	    }));
+	}
 
 	function editNumber(nodeId, props) {
 	    return editText(nodeId, props, "number");

@@ -1,5 +1,6 @@
 // import { Rect, Text, Group } from 'react-konva';
 import { createElement as h } from 'react';
+import * as Components from "./KonvaPrimitives";
 
 type SimpleValueBinding = {
   expr: string;
@@ -85,6 +86,31 @@ function traverse(cursor: Config, id: string): Config|undefined {
   }
 }
 
+function transformNamedComponent(config: Config, $props: PropExprs): any {
+  if (config.name === null) {
+    return null;
+  } else {
+    let resolvedConfig: any = null;
+    const component: Config = JSON.parse(JSON.stringify((Components as any)[config.name]));
+    component.id = config.id;
+    const injectedProps: any = config.props?.in || {};
+    // TODO: handle map and evaluator
+    // if (injectedProps.map) {
+    //   const defaultValues = injectedProps.default[0];
+    //   rendered.push(
+    //     transformToVDOM(component, { 
+    //       ...$props, 
+    //       ...defaultValues
+    //     })
+    //   );
+    // } else {
+
+    // }
+    resolvedConfig = component;
+    return resolvedConfig;
+  }
+}
+
 export function transformToVDOM(config: Config, $props: PropExprs): any {
   let props: PropExprs|null = null;
   let mappedProps: string[] = [];
@@ -114,7 +140,9 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
           children
         );
       } else {
-        return h("div", null, "Cannot render named component");
+        const resolvedConfig = transformNamedComponent(config, $props);
+        return h(transformToVDOM(resolvedConfig, $props));
+        // return h("Text", { text: "Cannot render named component" });
       }
       
     } else {
@@ -136,7 +164,9 @@ export function transformToVDOM(config: Config, $props: PropExprs): any {
             children
           );
         } else {
-          return h("div", null, "Cannot render named component");
+          const resolvedConfig = transformNamedComponent(config, $props);
+          return h(transformToVDOM(resolvedConfig, $props));
+          // return h("Text", { text: "Cannot render named component" });
         }
         
       });
